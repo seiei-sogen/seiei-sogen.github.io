@@ -92,10 +92,10 @@ export const siteConfig = {
   // 6. Main Navigation
   navigation: [
     { name: 'nav.home', href: '/' },
-    { name: 'nav.projects', href: '/projects' },
-    { name: 'nav.services', href: '/services' },
+    // { name: 'nav.projects', href: '/projects' },
+    // { name: 'nav.services', href: '/services' },
     { name: 'nav.blog', href: '/blog' },
-    { name: 'nav.contact', href: '/contact' },
+    // { name: 'nav.contact', href: '/contact' },
   ],
 
   // 7. Legal Links (Footer)
