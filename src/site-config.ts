@@ -6,16 +6,16 @@
 export const siteConfig = {
   // 1. Core Configuration (Essential for Astro, Sitemaps, and RSS)
   site: {
-    url: 'https://buyportfolio.zutra.agency', // ⭐ Replace with your real domain before publishing
-    lang: 'en', // HTML lang attribute and i18n: 'es' | 'en' | 'pl' (Spanish, English, Polish)
-    locale: 'en-US', // Date format (e.g., es-CL, en-US, pl-PL)
-    name: 'dev.designer', // Brand name (appears in logo and copyright)
+    url: 'https://seiei-sogen.github.io/', // ⭐ Replace with your real domain before publishing
+    lang: 'jp', // HTML lang attribute and i18n: 'es' | 'en' | 'pl' (Spanish, English, Polish)
+    locale: 'jp-JP', // Date format (e.g., es-CL, en-US, pl-PL)
+    name: 'seiei-sogen.dev', // Brand name (appears in logo and copyright)
     favicon: '/favicon.svg', // Browser logo (in public/)
   },
 
   // 2. Brand and Profile Information (Change this and the entire site updates)
   profile: {
-    name: 'Juan Alfaro',
+    name: 'seiei-sogen',
     role: 'Frontend Developer & UI Designer',
     headline: 'Building the future of the web with a minimalist approach.',
     bio: 'Specialized in creating ultra-fast digital experiences with Astro and Tailwind. Passionate about clean design and extreme performance.',
@@ -28,7 +28,7 @@ export const siteConfig = {
     titleSuffix: ' | Minimalist Portfolio',
     defaultDescription: 'Minimalist portfolio built with Astro 6 and Tailwind CSS.',
     ogImage: '/og-image.jpg', // Ideally 1200x630px
-    twitterHandle: '@username',
+    twitterHandle: '@seiei_sogen',
     themeColor: {
       dark: '#09090b',
       light: '#fafafa',
@@ -45,7 +45,7 @@ export const siteConfig = {
   ui: {
     enableViewTransitions: true, // Allows disabling if client doesn't want them
     showThemePicker: true, // ⭐ Shows floating color picker (useful for testing)
-    showBuyBanner: true, // ⭐ Shows 'Buy Template' banner (hide for final client)
+    showBuyBanner: false, // ⭐ Shows 'Buy Template' banner (hide for final client)
     enableCustomCursor: true, // ⭐ Activates premium interactive cursor
     showBackgroundPattern: true, // ⭐ Shows dot pattern in background (false = clean background)
     showBackgroundOrbs: true, // ⭐ Shows colored orbs in background (false = no aurora/blobs)
@@ -109,7 +109,7 @@ export const siteConfig = {
   socials: [
     {
       name: 'GitHub',
-      href: 'https://github.com/yourusername',
+      href: 'https://github.com/seiei-sogen',
       icon: 'ph:github-logo-duotone',
       showInHeader: true,
     },
@@ -121,7 +121,7 @@ export const siteConfig = {
     },
     {
       name: 'Twitter / X',
-      href: 'https://twitter.com/yourusername',
+      href: 'https://twitter.com/seiei_sogen',
       icon: 'ph:twitter-logo-duotone',
       showInHeader: false, // Will only appear in the footer
     },
