@@ -1,0 +1,55 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectCard from '@/components/cards/ProjectCard.astro';
+import { getCollection } from 'astro:content';
+import { t } from '@/i18n';
+import { Icon } from 'astro-icon/components';
+import { siteConfig } from '@/site-config';
+import ContentPagination from '@/components/navigation/ContentPagination.astro';
+
+const allProjects = await getCollection('projects');
+const sortedProjects = allProjects.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const perPage = siteConfig.content.projectsPerPage;
+const totalPages = Math.ceil(sortedProjects.length / perPage);
+const currentPage = 1; // Static for now; extend with URL param if needed
+const paginatedProjects = sortedProjects.slice(0, perPage);
+---
+
+<BaseLayout title="Proyectos | Explorando la Web Minimalista">
+  <div class="mx-auto flex max-w-6xl flex-col gap-12 py-12">
+    <div class="flex max-w-2xl flex-col gap-4">
+      <h1 class="text-4xl font-bold tracking-tight text-foreground">
+        {t('projects.title_main')} <span class="text-muted-foreground">{t('projects.title_highlight')}</span>
+      </h1>
+      <p class="text-lg text-muted-foreground">
+        {t('projects.description')}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      {
+        paginatedProjects.length > 0 ? (
+          paginatedProjects.map((project) => <ProjectCard project={project} />)
+        ) : (
+          <div class="col-span-full flex flex-col items-center gap-4 rounded-[2rem] border border-dashed border-border py-24 text-center">
+            <Icon name="ph:hammer-duotone" class="h-8 w-8 animate-pulse text-muted-foreground/40" />
+            <p class="font-mono text-sm uppercase italic tracking-widest text-muted-foreground">
+              {t('projects.working_on_it')}
+            </p>
+          </div>
+        )
+      }
+    </div>
+
+    {
+      totalPages > 1 && (
+        <ContentPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          collection="projects"
+        />
+      )
+    }
+  </div>
+</BaseLayout>

@@ -1,0 +1,29 @@
+{
+  "title": "Portal de <span>Documentación</span> <span class=\"version-badge\">v2.9.0</span>",
+  "subtitle": "Elige la guía que mejor se adapte a tus necesidades.",
+  "stat": {
+    "built": "Páginas Incluidas",
+    "lighthouse": "Score Lighthouse",
+    "js": "JS por Defecto",
+    "version": "Versión Actual"
+  },
+  "card": {
+    "guide": {
+      "title": "La Guía",
+      "desc": "Documentación completa. Quick Start, configuración, contenido, personalización, features, deploy y troubleshooting."
+    },
+    "ttfb": {
+      "title": "Optimización TTFB",
+      "desc": "Guía práctica para reducir el Time to First Byte de 2.0s a < 0.8s en Cloudflare Pages."
+    },
+    "changelog": {
+      "title": "Changelog",
+      "desc": "Historial completo de versiones. Cada feature, fix y mejora documentada desde v1.0.0."
+    },
+    "ai": {
+      "title": "IA / GEO",
+      "desc": "Archivo para motores de búsqueda con IA. Stack, estructura y colecciones de contenido."
+    }
+  },
+  "footer": "¿Necesitas desarrollo personalizado? Contacta a <a href=\"https://zutra.agency\" target=\"_blank\">zutra.agency</a>"
+}

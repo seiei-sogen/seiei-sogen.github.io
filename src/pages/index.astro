@@ -1,0 +1,29 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Hero from '@/components/sections/Hero.astro';
+import Expertise from '@/components/sections/Expertise.astro';
+import RecentProjects from '@/components/sections/RecentProjects.astro';
+import Stack from '@/components/sections/Stack.astro';
+import Experience from '@/components/sections/Experience.astro';
+import Testimonials from '@/components/sections/Testimonials.astro';
+import FAQ from '@/components/sections/FAQ.astro';
+import ContactCTA from '@/components/sections/ContactCTA.astro';
+import { getCollection } from 'astro:content';
+import { getFaqSchema } from '@/utils/seo-schemas';
+
+const faqCollection = await getCollection('faq');
+const faqSchema = getFaqSchema(faqCollection);
+---
+
+<BaseLayout title="Inicio | Dev & Designer Minimalista" extraJsonLd={faqSchema}>
+  <div class="flex flex-col">
+    <Hero />
+    <Expertise />
+    <RecentProjects />
+    <Stack />
+    <Experience />
+    <Testimonials />
+    <FAQ />
+    <ContactCTA />
+  </div>
+</BaseLayout>

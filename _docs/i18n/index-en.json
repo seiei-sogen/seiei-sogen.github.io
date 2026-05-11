@@ -1,0 +1,29 @@
+{
+  "title": "Documentation <span>Portal</span> <span class=\"version-badge\">v2.9.0</span>",
+  "subtitle": "Choose the guide that best fits your needs right now.",
+  "stat": {
+    "built": "Pages Built",
+    "lighthouse": "Lighthouse Score",
+    "js": "JS by Default",
+    "version": "Current Version"
+  },
+  "card": {
+    "guide": {
+      "title": "The Guide",
+      "desc": "Complete documentation. Quick Start, configuration, content, customization, features, deploy and troubleshooting."
+    },
+    "ttfb": {
+      "title": "TTFB Optimization",
+      "desc": "Practical guide to reduce Time to First Byte from 2.0s to < 0.8s on Cloudflare Pages."
+    },
+    "changelog": {
+      "title": "Changelog",
+      "desc": "Complete version history. Every feature, fix and improvement documented since v1.0.0."
+    },
+    "ai": {
+      "title": "AI / GEO",
+      "desc": "File for AI search engines. Stack, structure and content collections."
+    }
+  },
+  "footer": "Need custom development? Reach out to <a href=\"https://zutra.agency\" target=\"_blank\">zutra.agency</a>"
+}

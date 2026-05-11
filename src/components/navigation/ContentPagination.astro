@@ -1,0 +1,90 @@
+---
+import { t } from '@/i18n';
+
+interface Item {
+  id: string;
+  data: {
+    title: string;
+    [key: string]: any;
+  };
+}
+
+interface Props {
+  // Prev/Next mode (detail pages)
+  prev?: Item | null | undefined;
+  next?: Item | null | undefined;
+  // Page mode (index pages)
+  currentPage?: number;
+  totalPages?: number;
+  collection: 'blog' | 'projects' | 'services';
+}
+
+const { prev, next, currentPage, totalPages, collection } = Astro.props;
+
+const getPath = (id: string) => `/${collection}/${id}`;
+const getPagePath = (page: number) => (page > 1 ? `/${collection}/page/${page}` : `/${collection}`);
+---
+
+{/* Prev/Next Mode (detail pages) */}
+{
+  (prev || next) && (
+    <div class="reveal mt-12 grid w-full grid-cols-1 gap-6 border-t border-border/40 py-12 sm:grid-cols-2">
+      {prev ? (
+        <a
+          href={getPath(prev.id)}
+          class="group flex flex-col gap-3 rounded-[2rem] border border-border/40 bg-secondary/20 p-8 transition-all duration-300 hover:border-primary/20"
+        >
+          <div class="flex items-center gap-2 font-mono text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-colors group-hover:text-primary">
+            <span>&larr;</span> {t('pagination.prev')}
+          </div>
+          <span class="text-lg font-extrabold leading-tight transition-colors group-hover:text-primary md:text-xl">
+            {prev.data.title}
+          </span>
+        </a>
+      ) : (
+        <div class="hidden sm:block" />
+      )}
+
+      {next ? (
+        <a
+          href={getPath(next.id)}
+          class="group flex flex-col gap-3 rounded-[2rem] border border-border/40 bg-secondary/20 p-8 text-right transition-all duration-300 hover:border-primary/20"
+        >
+          <div class="flex items-center justify-end gap-2 font-mono text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-colors group-hover:text-primary">
+            {t('pagination.next')} <span>&rarr;</span>
+          </div>
+          <span class="text-lg font-extrabold leading-tight transition-colors group-hover:text-primary md:text-xl">
+            {next.data.title}
+          </span>
+        </a>
+      ) : (
+        <div class="hidden sm:block" />
+      )}
+    </div>
+  )
+}
+
+{/* Page Mode (index pages) */}
+{
+  currentPage && totalPages && totalPages > 1 && (
+    <nav
+      class="flex items-center justify-center gap-2 border-t border-border/40 py-8"
+      aria-label={t('pagination.label')}
+    >
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+        <a
+          href={getPagePath(page)}
+          class:list={[
+            'flex h-10 w-10 items-center justify-center rounded-xl font-mono text-sm transition-all',
+            page === currentPage
+              ? 'bg-primary font-bold text-primary-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          ]}
+          aria-current={page === currentPage ? 'page' : undefined}
+        >
+          {page}
+        </a>
+      ))}
+    </nav>
+  )
+}

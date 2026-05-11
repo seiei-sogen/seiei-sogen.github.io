@@ -1,0 +1,51 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { t } from '@/i18n';
+import Button from '@/components/ui/Button.astro';
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+    error: unknown
+}
+
+const { error } = Astro.props;
+---
+
+<BaseLayout title="Error Servidor | 500" noIndex={true}>
+  <main class="min-h-[70vh] flex flex-col items-center justify-center text-center gap-12 animate-in fade-in duration-1000">
+    <!-- Visual Element -->
+    <div class="relative group">
+      <div class="absolute inset-0 bg-red-500/20 blur-[100px] rounded-full scale-150 group-hover:bg-red-500/30 transition-all duration-1000"></div>
+      <h1 class="text-[10rem] md:text-[15rem] font-black tracking-tighter leading-none select-none relative z-10 text-foreground/10 group-hover:text-foreground/20 transition-all duration-1000">
+        500
+      </h1>
+      <div class="absolute inset-0 flex items-center justify-center z-20">
+        <Icon name="ph:warning-circle-duotone" class="w-24 h-24 text-red-500 animate-pulse" />
+      </div>
+    </div>
+
+    <!-- Text Content -->
+    <div class="flex flex-col gap-6 max-w-lg relative z-30">
+      <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight">{t('500.title')}</h2>
+      <p class="text-xl text-muted-foreground leading-relaxed">
+        {t('500.description')}
+      </p>
+      {import.meta.env.DEV && error instanceof Error && (
+        <pre class="text-xs text-left bg-black/50 p-4 rounded-md border border-red-500/20 text-red-400 overflow-x-auto mt-4">
+          {error.message}
+        </pre>
+      )}
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-4 relative z-30">
+        <!-- Re-use the link to reload or go home -->
+      <Button href="/" variant="outline" size="lg">
+        {t('500.back')}
+      </Button>
+      <Button href="/#contact" variant="ghost" size="lg">
+        {t('500.report')}
+      </Button>
+    </div>
+  </main>
+</BaseLayout>

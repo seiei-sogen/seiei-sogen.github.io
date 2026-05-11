@@ -1,0 +1,144 @@
+---
+import { getCollection } from 'astro:content';
+import { t } from '@/i18n';
+import TestimonialItem from '@/components/ui/TestimonialItem.astro';
+import { Icon } from 'astro-icon/components';
+
+const testimonials = await getCollection('testimonials');
+---
+
+<section class="py-24 md:py-48 relative overflow-hidden border-t border-border/40" id="testimonials">
+  <div class="container px-4 md:px-6 mx-auto flex flex-col items-center w-full max-w-6xl">
+    
+    <div 
+      id="testimonials-carousel" 
+      class="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar relative z-10 w-full cursor-grab active:cursor-grabbing select-none"
+    >
+      {testimonials.map((item) => (
+        <TestimonialItem 
+          content={item.data.content}
+          author={item.data.author}
+          role={item.data.role}
+          company={item.data.company}
+          avatar={item.data.avatar}
+        />
+      ))}
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-12 mt-16 md:mt-24 w-full max-w-md">
+      <button 
+        id="prev-testimonial" 
+        class="hidden sm:flex p-4 rounded-full border border-border/40 hover:bg-secondary hover:border-primary/20 transition-all group shadow-sm" 
+        aria-label={t('testimonials.prev')}
+      >
+        <Icon name="ph:arrow-left-bold" class="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+      </button>
+      
+      <div class="flex gap-3" id="testimonial-dots">
+        {testimonials.map((_, i) => (
+          <button 
+            class="dot-indicator h-2 rounded-full transition-all duration-500 bg-border/40 hover:bg-primary/40" 
+            style={i === 0 ? "width: 2.5rem;" : "width: 0.75rem;"}
+            aria-label={`${t('testimonials.goto')} ${i + 1}`}
+            data-index={i}
+          ></button>
+        ))}
+      </div>
+      
+      <button 
+        id="next-testimonial" 
+        class="hidden sm:flex p-4 rounded-full border border-border/40 hover:bg-secondary hover:border-primary/20 transition-all group shadow-sm" 
+        aria-label={t('testimonials.next')}
+      >
+        <Icon name="ph:arrow-right-bold" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+      </button>
+    </div>
+
+  </div>
+</section>
+
+  </div>
+</section>
+
+<style>
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  
+  .dot-indicator.active {
+    background-color: hsl(var(--primary)) !important; 
+    width: 2rem !important;
+  }
+</style>
+
+<script>
+  function setupTestimonials() {
+    const carousel = document.getElementById('testimonials-carousel') as HTMLDivElement;
+    const prevBtn = document.getElementById('prev-testimonial');
+    const nextBtn = document.getElementById('next-testimonial');
+    const dots = document.querySelectorAll('.dot-indicator') as NodeListOf<HTMLButtonElement>;
+    
+    if (!carousel || dots.length === 0) return;
+
+    let currentIndex = 0;
+
+    const updateUI = (index: number) => {
+      currentIndex = index;
+      dots.forEach((dot, i) => {
+        if (i === index) {
+          dot.classList.add('active');
+          dot.style.width = '2rem';
+        } else {
+          dot.classList.remove('active');
+          dot.style.width = '0.75rem';
+        }
+      });
+    };
+
+    const scrollToIndex = (index: number) => {
+      const targetScroll = carousel.clientWidth * index;
+      carousel.scrollTo({ left: targetScroll, behavior: 'smooth' });
+      updateUI(index);
+    };
+
+    const observerOptions = {
+      root: carousel,
+      threshold: 0.6
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const index = Array.from(carousel.children).indexOf(entry.target);
+          updateUI(index);
+        }
+      });
+    }, observerOptions);
+
+    Array.from(carousel.children).forEach(child => observer.observe(child));
+
+    prevBtn?.addEventListener('click', () => {
+      const target = currentIndex === 0 ? dots.length - 1 : currentIndex - 1;
+      scrollToIndex(target);
+    });
+
+    nextBtn?.addEventListener('click', () => {
+      const target = currentIndex === dots.length - 1 ? 0 : currentIndex + 1;
+      scrollToIndex(target);
+    });
+
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => scrollToIndex(i));
+    });
+
+    let resizeTimer: number;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        scrollToIndex(currentIndex);
+      }, 100);
+    });
+  }
+
+  document.addEventListener('astro:page-load', setupTestimonials);
+  if (document.readyState === 'complete') setupTestimonials();
+</script>

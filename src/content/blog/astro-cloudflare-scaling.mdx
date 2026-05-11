@@ -1,0 +1,24 @@
+---
+title: "Escalando Aplicaciones Astro en Cloudflare"
+date: 2026-03-20
+summary: "Cómo aprovechar el poder del Edge Computing y las Workers para llevar tu portafolio a una audiencia global sin latencia."
+draft: false
+---
+
+Astro se ha posicionado como el framework líder para contenido estático, pero su verdadera potencia brilla cuando lo combinamos con **Cloudflare Workers**.
+
+## La Magia del SSR en el Borde (Edge)
+
+Tradicionalmente, el SSR significaba servidores lentos y centralizados. Hoy con Cloudflare:
+
+- **Reducción del TTTB**: El contenido se genera a milisegundos del usuario.
+- **Seguridad Nativa**: Aprovechamos el firewall de Cloudflare de forma integrada.
+- **Escalabilidad Infinita**: Tu portafolio puede manejar picos de tráfico de millones sin parpadeos.
+
+### Pasos para un despliegue Premium
+
+1. Configura el adaptador `@astrojs/cloudflare`.
+2. Utiliza **KV (Key-Value storage)** para datos persistentes súper rápidos.
+3. Optimiza tus imágenes con el servicio nativo de Cloudflare Images.
+
+Implementar estas técnicas no solo hace que tu sitio sea más rápido, sino que lo hace más **robusto**. En este portafolio, cada milisegundo cuenta.

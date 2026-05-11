@@ -1,0 +1,28 @@
+---
+import { t } from '@/i18n';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import ServiceCard from '@/components/cards/ServiceCard.astro';
+import { getCollection } from 'astro:content';
+
+const allServices = await getCollection('services');
+const expertises = allServices.sort((a, b) => a.data.order - b.data.order);
+---
+<section class="py-24 border-t border-border/40 scroll-mt-20 reveal" id="services">
+  <div class="flex flex-col gap-12">
+    <SectionHeader
+      title={t('expertise.title')}
+      subtitle={t('expertise.subtitle')}
+    />
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {expertises.map((item) => (
+        <ServiceCard 
+          id={item.id}
+          title={item.data.title}
+          summary={item.data.summary}
+          icon={item.data.icon}
+        />
+      ))}
+    </div>
+  </div>
+</section>

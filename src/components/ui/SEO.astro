@@ -1,0 +1,160 @@
+---
+/**
+ * SEO.astro - Full-featured SEO Head Component
+ * Handles: Primary meta, Open Graph, Twitter Cards, JSON-LD structured data,
+ *          Canonical URLs, Robots, Alternate hreflang, and PWA meta tags.
+ */
+import { siteConfig } from '@/site-config';
+import { pwaInfo } from 'virtual:pwa-info';
+
+interface Props {
+  /** Page title (without suffix — suffix is appended automatically) */
+  title: string;
+  /** Meta description override */
+  description?: string;
+  /** OG image URL (absolute path or relative from public/) */
+  image?: string;
+  /** Marks this page as a blog/article and adds article metadata */
+  articleDate?: Date;
+  /** Overrides the canonical URL */
+  canonicalUrl?: string;
+  /** Set to false to prevent indexing (e.g. for draft pages) */
+  noIndex?: boolean;
+  /** Extra keywords for the meta keywords tag */
+  keywords?: string[];
+  /** Author name override (defaults to profile.name) */
+  author?: string;
+  /** Extra JSON-LD objects for specifically structured data (FAQ, Services, etc.) */
+  extraJsonLd?: Record<string, any> | Record<string, any>[];
+}
+
+const {
+  title,
+  description = siteConfig.seo.defaultDescription,
+  image = siteConfig.seo.ogImage,
+  articleDate,
+  canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? siteConfig.site.url).toString(),
+  noIndex = false,
+  keywords = [],
+  author = siteConfig.profile.name,
+  extraJsonLd = [],
+} = Astro.props;
+
+const absoluteImage = image.startsWith('http') ? image : new URL(image, Astro.site ?? siteConfig.site.url).toString();
+// Avoid "Minimalist Portfolio | Minimalist Portfolio" if suffix is already in title
+const fullTitle = title.endsWith(siteConfig.seo.titleSuffix.trim()) || title === siteConfig.seo.titleSuffix.trim()
+  ? title
+  : `${title}${siteConfig.seo.titleSuffix}`;
+const isArticle = !!articleDate;
+
+// JSON-LD Structured Data
+const jsonLd = isArticle
+  ? {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": title,
+      "description": description,
+      "image": absoluteImage,
+      "author": {
+        "@type": "Person",
+        "name": author,
+        "url": siteConfig.site.url,
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": siteConfig.profile.name,
+        "url": siteConfig.site.url,
+      },
+      "datePublished": articleDate?.toISOString(),
+      "url": canonicalUrl,
+    }
+  : {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": siteConfig.profile.name,
+      "jobTitle": siteConfig.profile.role,
+      "description": description,
+      "url": siteConfig.site.url,
+      "image": absoluteImage,
+      "sameAs": siteConfig.socials.map((s) => s.href),
+    };
+---
+
+<!-- ═══════════════════════════════════ -->
+<!--  Global Meta                        -->
+<!-- ═══════════════════════════════════ -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<!-- Resource hints — preconnect to self for faster local resource loading -->
+<link rel="preconnect" href={siteConfig.site.url} />
+<link rel="dns-prefetch" href={siteConfig.site.url} />
+
+<!-- ═══════════════════════════════════ -->
+<!--  Canonical & Indexing               -->
+<!-- ═══════════════════════════════════ -->
+<link rel="canonical" href={canonicalUrl} />
+{noIndex && <meta name="robots" content="noindex, nofollow" />}
+{!noIndex && <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />}
+
+<!-- ═══════════════════════════════════ -->
+<!--  Primary Meta Tags                  -->
+<!-- ═══════════════════════════════════ -->
+<title>{fullTitle}</title>
+<meta name="title" content={fullTitle} />
+<meta name="description" content={description} />
+<meta name="author" content={author} />
+{keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
+
+<!-- ═══════════════════════════════════ -->
+<!--  Open Graph                         -->
+<!-- ═══════════════════════════════════ -->
+<meta property="og:type" content={isArticle ? 'article' : 'website'} />
+<meta property="og:site_name" content={siteConfig.profile.name} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={absoluteImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content={siteConfig.site.locale} />
+{isArticle && articleDate && (
+  <meta property="article:published_time" content={articleDate.toISOString()} />
+  <meta property="article:author" content={author} />
+)}
+
+<!-- ═══════════════════════════════════ -->
+<!--  Twitter / X Cards                  -->
+<!-- ═══════════════════════════════════ -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content={siteConfig.seo.twitterHandle} />
+<meta name="twitter:creator" content={siteConfig.seo.twitterHandle} />
+<meta name="twitter:url" content={canonicalUrl} />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={absoluteImage} />
+<meta name="twitter:image:alt" content={title} />
+
+<!-- ═══════════════════════════════════ -->
+<!--  Favicon & PWA Icons                -->
+<!-- ═══════════════════════════════════ -->
+<link rel="icon" type="image/svg+xml" href={siteConfig.site.favicon} />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+{pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+
+<!-- ═══════════════════════════════════ -->
+<!--  Theme Color (Mobile Browsers)      -->
+<!-- ═══════════════════════════════════ -->
+<meta name="theme-color" content={siteConfig.seo.themeColor.dark} media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content={siteConfig.seo.themeColor.light} media="(prefers-color-scheme: light)" />
+
+<!-- ═══════════════════════════════════ -->
+<!--  JSON-LD Structured Data            -->
+<!-- ═══════════════════════════════════ -->
+<script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+{extraJsonLd && (
+  Array.isArray(extraJsonLd)
+    ? extraJsonLd.map(ld => <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)} />)
+    : <script type="application/ld+json" is:inline set:html={JSON.stringify(extraJsonLd)} />
+)}

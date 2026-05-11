@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Docs - v2.9.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script defer src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+  <link rel="stylesheet" href="./styles/guide.css">
+</head>
+
+<body>
+
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('es')">ES</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('pl')">PL</button>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <a href="index.html">
+        <i class="ph-fill ph-check-badge"></i>
+        <span data-i18n="sidebar.brand">Portfolio Docs</span>
+        <span class="version">v2.9.0</span>
+      </a>
+    </div>
+
+    <nav>
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="sidebar.nav.intro.label">Inicio</div>
+        <a href="#intro" class="nav-link active"><i class="ph ph-house"></i> <span
+            data-i18n="sidebar.nav.intro.welcome">Bienvenida</span></a>
+        <a href="#quick-start" class="nav-link"><i class="ph ph-rocket-launch"></i> <span
+            data-i18n="sidebar.nav.intro.quickstart">Quick Start</span></a>
+        <a href="#project-structure" class="nav-link"><i class="ph ph-tree-structure"></i> <span
+            data-i18n="sidebar.nav.intro.structure">Estructura</span></a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="sidebar.nav.config.label">Configuración</div>
+        <a href="#site-config" class="nav-link"><i class="ph ph-gear"></i> <span
+            data-i18n="sidebar.nav.config.siteconfig">site-config.ts</span></a>
+        <a href="#colors" class="nav-link"><i class="ph ph-palette"></i> <span
+            data-i18n="sidebar.nav.config.colors">Colores & Temas</span></a>
+        <a href="#i18n" class="nav-link"><i class="ph ph-translate"></i> <span data-i18n="sidebar.nav.config.i18n">i18n
+            (Idiomas)</span></a>
+        <a href="#header-logo" class="nav-link"><i class="ph ph-text-t"></i> <span
+            data-i18n="sidebar.nav.config.header">Header & Logo</span></a>
+        <a href="#footer-logo" class="nav-link"><i class="ph ph-text-t"></i> <span
+            data-i18n="sidebar.nav.config.footer">Footer & Logo</span></a>
+        <a href="#toggles" class="nav-link"><i class="ph ph-toggle-left"></i> <span
+            data-i18n="sidebar.nav.config.toggles">Toggles UI</span></a>
+        <a href="#theme-control" class="nav-link"><i class="ph ph-moon-stars"></i> <span
+            data-i18n="sidebar.nav.config.theme">Control de Tema</span></a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="sidebar.nav.content.label">Contenido</div>
+        <a href="#content-overview" class="nav-link"><i class="ph ph-database"></i> <span
+            data-i18n="sidebar.nav.content.collections">Colecciones</span></a>
+        <a href="#projects-col" class="nav-link"><i class="ph ph-folder-open"></i> <span
+            data-i18n="sidebar.nav.content.projects">Proyectos</span></a>
+        <a href="#blog-col" class="nav-link"><i class="ph ph-article"></i> <span
+            data-i18n="sidebar.nav.content.blog">Blog</span></a>
+        <a href="#services-col" class="nav-link"><i class="ph ph-briefcase"></i> <span
+            data-i18n="sidebar.nav.content.services">Servicios</span></a>
+        <a href="#testimonials-col" class="nav-link"><i class="ph ph-chat-centered-text"></i> <span
+            data-i18n="sidebar.nav.content.testimonials">Testimonios</span></a>
+        <a href="#faq-col" class="nav-link"><i class="ph ph-question"></i> <span
+            data-i18n="sidebar.nav.content.faq">FAQ</span></a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="sidebar.nav.customize.label">Personalización</div>
+        <a href="#hardcoded" class="nav-link"><i class="ph ph-code"></i> <span
+            data-i18n="sidebar.nav.customize.components">Componentes</span></a>
+        <a href="#images" class="nav-link"><i class="ph ph-image"></i> <span
+            data-i18n="sidebar.nav.customize.images">Imágenes</span></a>
+        <a href="#fonts" class="nav-link"><i class="ph ph-text-aa"></i> <span
+            data-i18n="sidebar.nav.customize.typography">Tipografía</span></a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="sidebar.nav.features.label">Features</div>
+        <a href="#contact-form" class="nav-link"><i class="ph ph-paper-plane-tilt"></i> <span
+            data-i18n="sidebar.nav.features.contact">Form Contacto</span></a>
+        <a href="#pagination" class="nav-link"><i class="ph ph-browser"></i> <span
+            data-i18n="sidebar.nav.features.pagination">Paginación</span></a>
+        <a href="#seo-geo" class="nav-link"><i class="ph ph-magnifying-glass"></i> <span
+            data-i18n="sidebar.nav.features.seo">SEO & GEO</span></a>
+        <a href="#a11y" class="nav-link"><i class="ph ph-wheelchair-motion"></i> <span
+            data-i18n="sidebar.nav.features.a11y">Accesibilidad</span></a>
+        <a href="#pwa" class="nav-link"><i class="ph ph-device-mobile"></i> <span
+            data-i18n="sidebar.nav.features.pwa">PWA</span></a>
+        <a href="#analytics" class="nav-link"><i class="ph ph-chart-bar"></i> <span
+            data-i18n="sidebar.nav.features.analytics">Analytics</span></a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label" data-i18n="sidebar.nav.deploy.label">Deploy</div>
+        <a href="#deploy" class="nav-link"><i class="ph ph-cloud-arrow-up"></i> <span
+            data-i18n="sidebar.nav.deploy.cloudflare">Cloudflare</span></a>
+        <a href="#env-vars" class="nav-link"><i class="ph ph-key"></i> <span
+            data-i18n="sidebar.nav.deploy.vars">Variables</span></a>
+        <a href="#troubleshooting" class="nav-link"><i class="ph ph-wrench"></i> <span
+            data-i18n="sidebar.nav.deploy.troubleshooting">Troubleshooting</span></a>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="../CHANGELOG.md" data-i18n="sidebar.footer.changelog">Changelog</a> · <a href="https://zutra.agency"
+        target="_blank" data-i18n="sidebar.footer.agency">Zutra.agency</a>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <section id="intro">
+      <div class="doc-hero">
+        <div class="tagline"><i class="ph ph-book"></i> <span data-i18n="intro.tagline">DOCUMENTATION — v2.9.0</span>
+        </div>
+        <h1 data-i18n="intro.title">Tu Portfolio.<br><span>Documentado.</span></h1>
+        <p data-i18n="intro.desc">La guía completa para configurar, personalizar y desplegar tu portfolio minimalista.
+          Desde el primer comando
+          hasta producción en Cloudflare.</p>
+      </div>
+
+      <div class="card-grid">
+        <div class="card">
+          <h4><i class="ph ph-clock"></i> <span data-i18n="intro.card1.title">5 min setup</span></h4>
+          <p data-i18n="intro.card1.desc">Ten el sitio corriendo local con <code>pnpm dev</code> y edita tu nombre.</p>
+        </div>
+        <div class="card">
+          <h4><i class="ph ph-file-ts"></i> <span data-i18n="intro.card2.title">1 archivo config</span></h4>
+          <p data-i18n="intro.card2.desc">Casi todo se personaliza desde <code>src/site-config.ts</code>.</p>
+        </div>
+        <div class="card">
+          <h4><i class="ph ph-check-circle"></i> <span data-i18n="intro.card3.title">Cero dependencia externa</span>
+          </h4>
+          <p data-i18n="intro.card3.desc">Fuentes locales, sin CDNs de tracking, sin Google Fonts.</p>
+        </div>
+        <div class="card">
+          <h4><i class="ph ph-lightning"></i> <span data-i18n="intro.card4.title">Astro 6.1</span></h4>
+          <p data-i18n="intro.card4.desc">View Transitions, Content Layer API, Islands Architecture.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="quick-start">
+      <h2><i class="ph ph-rocket-launch sec-icon"></i> <span data-i18n="qs.title">Quick Start</span></h2>
+      <p class="section-desc" data-i18n="qs.subtitle">De cero a tu portfolio corriendo en menos de 5 minutos.</p>
+
+      <h3 data-i18n="qs.reqs.title">Requisitos</h3>
+      <ul>
+        <li><strong data-i18n="qs.reqs.node">Node.js 22+</strong> — <span data-i18n="qs.reqs.node.desc">verifica con
+            <code>node -v</code></span></li>
+        <li><strong data-i18n="qs.reqs.pnpm">pnpm 9+</strong> — <span data-i18n="qs.reqs.pnpm.desc">instala con
+            <code>npm i -g pnpm</code></span></li>
+        <li><strong data-i18n="qs.reqs.vscode">VS Code</strong> — <span data-i18n="qs.reqs.vscode.desc">con la extensión
+            oficial de Astro</span></li>
+      </ul>
+
+      <h3 data-i18n="qs.install.title">Instalación</h3>
+
+      <div class="callout callout-info">
+        <i class="ph ph-info"></i>
+        <div><strong data-i18n="qs.prereq.title">Prerequisites:</strong> <span data-i18n="qs.prereq.text">This template
+            uses <code>pnpm</code> instead of <code>npm</code>. Install it first:</span>
+          <code>npm install -g pnpm</code> (or <a href="https://pnpm.io/installation" target="_blank" rel="noopener"
+            data-i18n="qs.prereq.link">other install methods</a>)
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">Terminal</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="cmt" data-i18n="qs.comment.install"># 1. Install dependencies</span>
+pnpm install
+
+<span class="cmt" data-i18n="qs.comment.dev"># 2. Start dev server</span>
+pnpm dev
+
+<span class="cmt" data-i18n="qs.comment.browser"># 3. Open http://localhost:4321 in your browser</span></pre>
+      </div>
+
+      <div class="callout callout-tip">
+        <i class="ph ph-lightbulb"></i>
+        <div><strong data-i18n="qs.tip.title">¿Error en el dev server?</strong> <span data-i18n="qs.tip.text">Ejecuta
+            <code>rm -rf .astro node_modules/.vite && pnpm dev</code>
+            para limpiar cachés de Vite y Astro.</span></div>
+      </div>
+
+      <h3 data-i18n="qs.steps.title">Primeros pasos</h3>
+      <ol>
+        <li data-i18n="qs.steps.1">Edita <code>src/site-config.ts</code> — pon tu nombre, email y redes sociales</li>
+        <li data-i18n="qs.steps.2">Reemplaza <code>public/favicon.svg</code> con tu logo</li>
+        <li data-i18n="qs.steps.3">Reemplaza <code>public/og-image.jpg</code> con tu imagen social (1200×630px)</li>
+        <li data-i18n="qs.steps.4">Edita el contenido en <code>src/content/</code> — agrega tus proyectos reales</li>
+      </ol>
+    </section>
+
+    <section id="project-structure">
+      <h2><i class="ph ph-tree-structure sec-icon"></i> <span data-i18n="ps.title">Estructura del Proyecto</span></h2>
+      <p class="section-desc" data-i18n="ps.subtitle">Cada directorio tiene una responsabilidad única. Si sabes dónde
+        mirar, editas en segundos.
+      </p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">Árbol de archivos</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre>/
+├── <span class="prop">_docs/</span>              <span class="cmt" data-i18n="ps.tree.docs">← Esta documentación</span>
+├── <span class="prop">public/</span>             <span class="cmt" data-i18n="ps.tree.public">← Assets estáticos (favicon, og-image, llms.txt)</span>
+├── <span class="prop">src/</span>
+│   ├── <span class="prop">assets/</span>         <span class="cmt" data-i18n="ps.tree.assets">← Imágenes optimizadas por Astro (hero, proyectos)</span>
+│   ├── <span class="prop">components/</span>
+│   │   ├── <span class="str">sections/</span>   <span class="cmt" data-i18n="ps.tree.sections">← Bloques de página (Hero, FAQ, Stack...)</span>
+│   │   ├── <span class="str">ui/</span>         <span class="cmt" data-i18n="ps.tree.ui">← Primitivas (Button, Card, SEO, Input...)</span>
+│   │   ├── <span class="str">cards/</span>      <span class="cmt" data-i18n="ps.tree.cards">← Componentes de datos (ProjectCard, PostCard...)</span>
+│   │   └── <span class="str">navigation/</span> <span class="cmt" data-i18n="ps.tree.navigation">← Header, Footer, ThemeToggle, Cursor...</span>
+│   ├── <span class="prop">content/</span>        <span class="cmt" data-i18n="ps.tree.content">← MDX: tu base de datos de contenido</span>
+│   │   ├── blog/
+│   │   ├── projects/
+│   │   ├── services/
+│   │   ├── testimonials/
+│   │   └── faq/
+│   ├── <span class="prop">layouts/</span>        <span class="cmt" data-i18n="ps.tree.layouts">← BaseLayout.astro (el shell global de cada página)</span>
+│   ├── <span class="prop">pages/</span>          <span class="cmt" data-i18n="ps.tree.pages">← Rutas (file-based routing)</span>
+│   ├── <span class="prop">styles/</span>         <span class="cmt" data-i18n="ps.tree.styles">← global.css (variables CSS, animaciones)</span>
+│   ├── <span class="prop">utils/</span>          <span class="cmt" data-i18n="ps.tree.utils">← Helpers (seo-schemas.ts, debug-mock.js)</span>
+│   ├── <span class="prop">i18n.ts</span>         <span class="cmt" data-i18n="ps.tree.i18n">← Traducciones (ES/EN)</span>
+│   └── <span class="prop">site-config.ts</span>  <span class="cmt" data-i18n="ps.tree.siteconfig">← ⭐ TU PANEL DE CONTROL</span>
+├── astro.config.mjs
+├── tailwind.config.mjs
+├── tsconfig.json
+└── CHANGELOG.md</pre>
+      </div>
+    </section>
+
+    <section id="site-config">
+      <h2><i class="ph ph-gear sec-icon"></i> <span data-i18n="sc.title">site-config.ts</span></h2>
+      <p class="section-desc" data-i18n="sc.subtitle">El único archivo que necesitas editar para personalizar el 80% del
+        sitio. Cada campo documentado abajo.</p>
+
+      <h3 data-i18n="sc.core.title"><code>site</code> — Core</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Campo</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.what">Qué hace</th>
+              <th data-i18n="common.table.example">Ejemplo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>url</code></td>
+              <td>string</td>
+              <td data-i18n="sc.core.url">Tu dominio. Sin barra final. <strong>Crítico</strong> para SEO y sitemaps.</td>
+              <td><code>"https://miportfolio.dev"</code></td>
+            </tr>
+            <tr>
+              <td><code>lang</code></td>
+              <td>string</td>
+              <td data-i18n="sc.core.lang">Atributo <code>lang</code> del HTML.</td>
+              <td><code>"es"</code>, <code>"en"</code></td>
+            </tr>
+            <tr>
+              <td><code>locale</code></td>
+              <td>string</td>
+              <td data-i18n="sc.core.locale">Formato de fechas.</td>
+              <td><code>"es-CL"</code></td>
+            </tr>
+            <tr>
+              <td><code>name</code></td>
+              <td>string</td>
+              <td data-i18n="sc.core.name">Nombre comercial. Logo + copyright.</td>
+              <td><code>"dev.designer"</code></td>
+            </tr>
+            <tr>
+              <td><code>favicon</code></td>
+              <td>string</td>
+              <td data-i18n="sc.core.favicon">Ruta del favicon en <code>/public</code>.</td>
+              <td><code>"/favicon.svg"</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-i18n="sc.profile.title"><code>profile</code> — Tu identidad</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Campo</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.what">Qué hace</th>
+              <th data-i18n="common.table.example">Ejemplo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>name</code></td>
+              <td>string</td>
+              <td data-i18n="sc.profile.name">Tu nombre completo. SEO author + JSON-LD.</td>
+              <td><code>"Juan Alfaro"</code></td>
+            </tr>
+            <tr>
+              <td><code>role</code></td>
+              <td>string</td>
+              <td data-i18n="sc.profile.role">Tu cargo. JSON-LD jobTitle.</td>
+              <td><code>"Frontend Developer"</code></td>
+            </tr>
+            <tr>
+              <td><code>headline</code></td>
+              <td>string</td>
+              <td data-i18n="sc.profile.headline">Propuesta de valor corta. Se muestra en el Footer.</td>
+              <td><code>"Construyendo el futuro..."</code></td>
+            </tr>
+            <tr>
+              <td><code>bio</code></td>
+              <td>string</td>
+              <td data-i18n="sc.profile.bio">Tu biografía. <strong>Se renderiza como párrafo del Hero.</strong></td>
+              <td><code>"Especializado en crear..."</code></td>
+            </tr>
+            <tr>
+              <td><code>avatar</code></td>
+              <td>string</td>
+              <td data-i18n="sc.profile.avatar">Tu foto. Se guarda en <code>/public</code>. Si no existe, muestra iniciales.</td>
+              <td><code>"/images/avatar.webp"</code></td>
+            </tr>
+            <tr>
+              <td><code>heroImage</code></td>
+              <td>string</td>
+              <td data-i18n="sc.profile.heroImage">Foto principal del Hero. Va en <code>/src/assets/</code> para compresión automática.</td>
+              <td><code>"/src/assets/images/..."</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-i18n="sc.seo.title"><code>seo</code> — Metadatos</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Campo</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.what">Qué hace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>titleSuffix</code></td>
+              <td>string</td>
+              <td data-i18n="sc.seo.titleSuffix">Se añade a cada título de página.</td>
+            </tr>
+            <tr>
+              <td><code>defaultDescription</code></td>
+              <td>string</td>
+              <td data-i18n="sc.seo.defaultDescription">Meta description fallback.</td>
+            </tr>
+            <tr>
+              <td><code>ogImage</code></td>
+              <td>string</td>
+              <td data-i18n="sc.seo.ogImage">Imagen para Open Graph / Twitter Cards. 1200×630px.</td>
+            </tr>
+            <tr>
+              <td><code>twitterHandle</code></td>
+              <td>string</td>
+              <td data-i18n="sc.seo.twitterHandle">Tu usuario de X/Twitter.</td>
+            </tr>
+            <tr>
+              <td><code>themeColor</code></td>
+              <td>object</td>
+              <td data-i18n="sc.seo.themeColor">Colores para mobile browsers (dark/light).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-i18n="sc.contact.title"><code>contact</code> — Contacto</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Campo</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.what">Qué hace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>email</code></td>
+              <td>string</td>
+              <td data-i18n="sc.contact.email">Tu email. Se usa en la página de contacto, formulario y legales.</td>
+            </tr>
+            <tr>
+              <td><code>calCom</code></td>
+              <td>string</td>
+              <td data-i18n="sc.contact.calCom">Enlace a Cal.com para agendar llamadas.</td>
+            </tr>
+            <tr>
+              <td><code>formEndpoint</code></td>
+              <td>string</td>
+              <td data-i18n="sc.contact.formEndpoint"><strong>Backend del formulario.</strong> Pon la URL de Formspree o Cloudflare Forms. Si está vacío, el formulario muestra una pista de configuración.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-warn">
+        <i class="ph ph-warning"></i>
+        <div data-i18n="sc.url.warn"><strong>URL sin barra final.</strong> El campo <code>site.url</code> no debe
+          terminar en <code>/</code>.
+          <code>"https://miportfolio.dev"</code> ✅ <code>"https://miportfolio.dev/"</code> ❌
+        </div>
+      </div>
+    </section>
+
+    <section id="colors">
+      <h2><i class="ph ph-palette sec-icon"></i> <span data-i18n="colors.title">Colores & Temas</span></h2>
+      <p class="section-desc" data-i18n="colors.subtitle">El portfolio usa colores HSL en formato string. El color
+        primario se aplica a botones, links y acentos.</p>
+
+      <h3 data-i18n="colors.howto.title">Cómo cambiar tu color de marca</h3>
+      <ol>
+        <li data-i18n="colors.howto.1">Inicia <code>pnpm dev</code></li>
+        <li data-i18n="colors.howto.2">Haz clic en el ícono de paleta flotante (esquina inferior derecha)</li>
+        <li data-i18n="colors.howto.3">Elige una paleta o usa el selector de color</li>
+        <li data-i18n="colors.howto.4">Haz clic en <strong>"Copy"</strong> en el panel</li>
+        <li data-i18n="colors.howto.5">Pega el objeto en <code>site-config.ts → ui.brandColor</code></li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts — ui.brandColor</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">brandColor</span>: {
+  <span class="prop">light</span>: { <span class="prop">primary</span>: <span class="str">"152 70% 38%"</span>, <span class="prop">foreground</span>: <span class="str">"0 0% 100%"</span> },
+  <span class="prop">dark</span>: { <span class="prop">primary</span>: <span class="str">"152 70% 58%"</span>, <span class="prop">foreground</span>: <span class="str">"0 0% 100%"</span> }
+}</pre>
+      </div>
+
+      <h3 data-i18n="colors.vars.title">Variables CSS disponibles</h3>
+      <p data-i18n="colors.vars.desc">En <code>src/styles/global.css</code> se definen todos los tokens:
+        <code>--background</code>,
+        <code>--foreground</code>, <code>--primary</code>, etc. Cada uno tiene valores distintos para <code>:root</code>
+        (light) y <code>.dark</code>.
+      </p>
+    </section>
+
+    <section id="i18n">
+      <h2><i class="ph ph-translate sec-icon"></i> <span data-i18n="i18n.title">i18n (Idiomas)</span></h2>
+      <p class="section-desc" data-i18n="i18n.subtitle">
+        Sistema de internacionalización integrado. El idioma se controla desde <code>site.lang</code> en
+        <code>site-config.ts</code>.
+      </p>
+
+      <h3 data-i18n="i18n.idiomas.title">Idiomas soportados</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="i18n.table.code">Código</th>
+              <th data-i18n="i18n.table.idioma">Idioma</th>
+              <th data-i18n="i18n.table.locale">Locale (fechas)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>es</code></td>
+              <td data-i18n="i18n.table.es">Spanish (Español)</td>
+              <td><code>es-CL</code>, <code>es-ES</code>, <code>es-MX</code>...</td>
+            </tr>
+            <tr>
+              <td><code>en</code></td>
+              <td data-i18n="i18n.table.en">English</td>
+              <td><code>en-US</code>, <code>en-GB</code>...</td>
+            </tr>
+            <tr>
+              <td><code>pl</code></td>
+              <td data-i18n="i18n.table.pl">Polish (Polski)</td>
+              <td><code>pl-PL</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-i18n="i18n.change.title">Cómo cambiar el idioma</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">site</span>: {
+  <span class="prop">lang</span>: <span class="str">'en'</span>,      <span class="cmt" data-i18n="i18n.change.comments">// 'es' | 'en' | 'pl'</span>
+  <span class="prop">locale</span>: <span class="str">'en-US'</span>, 
+}</pre>
+      </div>
+
+      <div class="callout callout-info">
+        <i class="ph ph-info"></i>
+        <div data-i18n="i18n.note"><strong>Nota:</strong> El sitio usa un solo idioma global. Para activar el idioma
+          polaco, cambia ambos valores.
+        </div>
+      </div>
+
+      <div class="callout callout-success">
+        <i class="ph ph-check-circle"></i>
+        <div><strong>Navegación internacionalizada:</strong> Los ítems de <code>navigation</code> y <code>legal</code> en
+          <code>site-config.ts</code> usan claves de traducción (<code>nav.home</code>, <code>nav.projects</code>,
+          <code>legal.privacy</code>…). <code>Header.astro</code> y <code>Footer.astro</code> los resuelven con
+          <code>t()</code> automáticamente al cambiar <code>site.lang</code>.
+        </div>
+      </div>
+
+      <h3 data-i18n="i18n.add.title">Agregar un nuevo idioma</h3>
+      <ol>
+        <li data-i18n="i18n.add.1">Abre <code>src/i18n.ts</code></li>
+        <li data-i18n="i18n.add.2">Agrega un nuevo objeto en <code>translations</code> (ej: <code>fr: { ... }</code> para Francés)</li>
+        <li data-i18n="i18n.add.3">Copia todas las claves de <code>en</code> y traduce los valores</li>
+        <li data-i18n="i18n.add.4">Actualiza <code>SupportedLocale</code> para incluir el nuevo código</li>
+        <li data-i18n="i18n.add.5">Usa <code>site.lang: 'fr'</code> en <code>site-config.ts</code></li>
+      </ol>
+    </section>
+
+    <section id="header-logo">
+      <h2><i class="ph ph-header sec-icon"></i> <span data-i18n="header.title">Header & Logo</span></h2>
+      <p class="section-desc" data-i18n="header.subtitle">
+        Personaliza el logo en el header. Puedes usar texto (por defecto), un logo SVG, o una imagen.
+      </p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts — header</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">header</span>: {
+  <span class="cmt">// 'text' | 'svg' | 'image'</span>
+  <span class="prop">logoType</span>: <span class="str">'text'</span>,
+  <span class="prop">logoSvg</span>: <span class="str">''</span>,
+  <span class="prop">logoImage</span>: <span class="str">''</span>,
+  <span class="prop">logoAlt</span>: <span class="str">'Logo'</span>,
+},</pre>
+      </div>
+
+      <h4 data-i18n="header.options.title">Opciones de header.logoType</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Propiedad</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.desc">Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>logoType</code></td>
+              <td>'text' | 'svg' | 'image'</td>
+              <td data-i18n="header.options.logoType">Tipo de logo a mostrar en el header.</td>
+            </tr>
+            <tr>
+              <td><code>logoSvg</code></td>
+              <td>string</td>
+              <td data-i18n="header.options.logoSvg">Ruta al archivo SVG en <code>public/</code> (ej: <code>'/logo.svg'</code>). Solo para
+                <code>logoType: 'svg'</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>logoImage</code></td>
+              <td>string</td>
+              <td data-i18n="header.options.logoImage">Ruta a la imagen (ej: <code>'/images/logo.png'</code>). Solo para <code>logoType: 'image'</code>.</td>
+            </tr>
+            <tr>
+              <td><code>logoAlt</code></td>
+              <td>string</td>
+              <td data-i18n="header.options.logoAlt">Texto alternativo para accesibilidad (atributo <code>alt</code>).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 data-i18n="header.examples.title">Ejemplos</h4>
+
+      <p><strong data-i18n="header.examples.svg">Logo SVG:</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">header</span>: {
+  <span class="prop">logoType</span>: <span class="str">'svg'</span>,
+  <span class="prop">logoSvg</span>: <span class="str">'/logo.svg'</span>,
+  <span class="prop">logoAlt</span>: <span class="str">'Mi Empresa'</span>,
+},</pre>
+      </div>
+
+      <p><strong data-i18n="header.examples.image">Logo imagen (PNG/WebP):</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">header</span>: {
+  <span class="prop">logoType</span>: <span class="str">'image'</span>,
+  <span class="prop">logoImage</span>: <span class="str">'/images/logo.webp'</span>,
+  <span class="prop">logoAlt</span>: <span class="str">'Mi Empresa'</span>,
+},</pre>
+      </div>
+
+      <p><strong data-i18n="header.examples.text">Texto (por defecto):</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">header</span>: {
+  <span class="prop">logoType</span>: <span class="str">'text'</span>, <span class="cmt" data-i18n="header.examples.comment_text">// Usa site.name para generar el logo</span>
+},</pre>
+      </div>
+
+      <div class="callout callout-info">
+        <i class="ph ph-info"></i>
+        <div data-i18n="header.tip"><strong>Tip:</strong> Coloca tus archivos de logo en la carpeta <code>public/</code>
+          para que sean servidos estáticamente. SVG es preferible por ser escalable y ligero.
+        </div>
+      </div>
+    </section>
+
+    <section id="footer-logo">
+      <h2><i class="ph ph-layout sec-icon"></i> <span data-i18n="footer_logo.title">Footer & Logo</span></h2>
+      <p class="section-desc" data-i18n="footer_logo.subtitle">
+        Personaliza el logo en el footer. Funciona igual que el header: puedes usar texto (por defecto), un logo SVG, o una imagen. Además incluye el campo <code>text</code> para el texto de versión/copyright.
+      </p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts — footer</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">footer</span>: {
+  <span class="cmt">// 'text' | 'svg' | 'image'</span>
+  <span class="prop">logoType</span>: <span class="str">'text'</span>,
+  <span class="prop">logoSvg</span>: <span class="str">''</span>,
+  <span class="prop">logoImage</span>: <span class="str">''</span>,
+  <span class="prop">logoAlt</span>: <span class="str">'Logo'</span>,
+  <span class="prop">text</span>: <span class="str">'v2.9.0'</span>,
+},</pre>
+      </div>
+
+      <h4 data-i18n="footer_logo.options.title">Opciones de footer</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Propiedad</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.desc">Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>logoType</code></td>
+              <td>'text' | 'svg' | 'image'</td>
+              <td data-i18n="footer_logo.options.logoType">Tipo de logo a mostrar en el footer.</td>
+            </tr>
+            <tr>
+              <td><code>logoSvg</code></td>
+              <td>string</td>
+              <td data-i18n="footer_logo.options.logoSvg">Ruta al archivo SVG en <code>public/</code>. Solo para <code>logoType: 'svg'</code>.</td>
+            </tr>
+            <tr>
+              <td><code>logoImage</code></td>
+              <td>string</td>
+              <td data-i18n="footer_logo.options.logoImage">Ruta a la imagen. Solo para <code>logoType: 'image'</code>.</td>
+            </tr>
+            <tr>
+              <td><code>logoAlt</code></td>
+              <td>string</td>
+              <td data-i18n="footer_logo.options.logoAlt">Texto alternativo para accesibilidad.</td>
+            </tr>
+            <tr>
+              <td><code>text</code></td>
+              <td>string</td>
+              <td data-i18n="footer_logo.options.text">Texto de versión/copyright que aparece junto al nombre del sitio en la barra inferior del footer.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 data-i18n="footer_logo.examples.title">Ejemplos</h4>
+
+      <p><strong data-i18n="footer_logo.examples.svg">Logo SVG en footer:</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">footer</span>: {
+  <span class="prop">logoType</span>: <span class="str">'svg'</span>,
+  <span class="prop">logoSvg</span>: <span class="str">'/logo.svg'</span>,
+  <span class="prop">logoAlt</span>: <span class="str">'Mi Empresa'</span>,
+  <span class="prop">text</span>: <span class="str">'v2.9.0'</span>,
+},</pre>
+      </div>
+
+      <p><strong data-i18n="footer_logo.examples.image">Logo imagen en footer:</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">footer</span>: {
+  <span class="prop">logoType</span>: <span class="str">'image'</span>,
+  <span class="prop">logoImage</span>: <span class="str">'/images/logo.webp'</span>,
+  <span class="prop">logoAlt</span>: <span class="str">'Mi Empresa'</span>,
+  <span class="prop">text</span>: <span class="str">'v2.9.0'</span>,
+},</pre>
+      </div>
+
+      <p><strong data-i18n="footer_logo.examples.text">Texto (por defecto):</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">footer</span>: {
+  <span class="prop">logoType</span>: <span class="str">'text'</span>, <span class="cmt" data-i18n="footer_logo.examples.comment_text">// Usa site.name para generar el logo</span>
+  <span class="prop">text</span>: <span class="str">'v2.9.0'</span>,
+},</pre>
+      </div>
+
+      <div class="callout callout-info">
+        <i class="ph ph-info"></i>
+        <div data-i18n="footer_logo.tip"><strong>Tip:</strong> Puedes usar el mismo archivo SVG tanto en el header como en el footer. Si tu marca tiene versiones distintas (horizontal/compacta), usa rutas diferentes en cada sección.
+        </div>
+      </div>
+    </section>
+
+    <section id="toggles">
+      <h2><i class="ph ph-toggle-left sec-icon"></i> <span data-i18n="toggles.title">Toggles de Interfaz</span></h2>
+      <p class="section-desc" data-i18n="toggles.subtitle">Activa o desactiva features desde
+        <code>site-config.ts → ui</code>. Ponlo en <code>false</code> para desactivarlo.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Toggle</th>
+              <th data-i18n="common.table.what">Qué controla</th>
+              <th data-i18n="common.table.default">Default</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>enableViewTransitions</code></td>
+              <td data-i18n="toggles.table.transitions">Transiciones SPA entre páginas (sin recarga).</td>
+              <td><code>true</code></td>
+            </tr>
+            <tr>
+              <td><code>showThemePicker</code></td>
+              <td data-i18n="toggles.table.theme">Panel flotante de colores. <strong>Desactívalo en producción.</strong></td>
+              <td><code>true</code></td>
+            </tr>
+            <tr>
+              <td><code>showBuyBanner</code></td>
+              <td data-i18n="toggles.table.banner">Banner "Comprar Plantilla". <strong>Desactívalo para el cliente final.</strong></td>
+              <td><code>true</code></td>
+            </tr>
+            <tr>
+              <td><code>enableCustomCursor</code></td>
+              <td data-i18n="toggles.table.cursor">Cursor interactivo premium con efecto magnético.</td>
+              <td><code>true</code></td>
+            </tr>
+            <tr>
+              <td><code>showBackgroundPattern</code></td>
+              <td data-i18n="toggles.table.pattern">Patrón de puntos (dot grid) en el fondo. <code>false</code> para fondo limpio.</td>
+              <td><code>true</code></td>
+            </tr>
+            <tr>
+              <td><code>showBackgroundOrbs</code></td>
+              <td data-i18n="toggles.table.orbs">Orbes de color/aurora en el fondo. Combina con <code>showBackgroundPattern: false</code> para fondo
+                blanco.</td>
+              <td><code>true</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="theme-control">
+      <h2><i class="ph ph-moon-stars sec-icon"></i> <span data-i18n="theme.title">Control de Tema (Dark/Light)</span>
+      </h2>
+      <p class="section-desc" data-i18n="theme.subtitle">
+        La sección <code>theme</code> en <code>site-config.ts</code> te da control total sobre el modo oscuro/claro.
+        Puedes permitir que el usuario elija o forzar un tema específico.
+      </p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts — theme</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">theme</span>: {
+  <span class="cmt" data-i18n="theme.comments.allow">// Si es false, el usuario NO puede cambiar el tema</span>
+  <span class="prop">allowToggle</span>: <span class="bool">true</span>,
+  <span class="cmt" data-i18n="theme.comments.default">// 'light' o 'dark' — tema por defecto</span>
+  <span class="prop">defaultMode</span>: <span class="str">'dark'</span>,
+},</pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Propiedad</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.desc">Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>allowToggle</code></td>
+              <td>boolean</td>
+              <td data-i18n="theme.options.allowToggle">Si es <code>false</code>, el botón de tema desaparece y se bloquea en <code>defaultMode</code>.</td>
+            </tr>
+            <tr>
+              <td><code>defaultMode</code></td>
+              <td>'light' | 'dark'</td>
+              <td data-i18n="theme.options.defaultMode">Tema forzado cuando <code>allowToggle: false</code>. Ignora preferencias del sistema.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 data-i18n="theme.examples.title">Ejemplos de uso</h4>
+
+      <p><strong data-i18n="theme.examples.light">Tema forzado a light (sin toggle):</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">theme</span>: {
+  <span class="prop">allowToggle</span>: <span class="bool">false</span>,
+  <span class="prop">defaultMode</span>: <span class="str">'light'</span>,
+},</pre>
+      </div>
+
+      <p><strong data-i18n="theme.examples.toggle">Toggle habilitado (comportamiento por defecto):</strong></p>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">theme</span>: {
+  <span class="prop">allowToggle</span>: <span class="bool">true</span>,
+  <span class="prop">defaultMode</span>: <span class="str">'dark'</span>, <span class="cmt" data-i18n="theme.comments.solo">// Solo afecta carga inicial</span>
+},</pre>
+      </div>
+
+      <div class="callout callout-warning">
+        <i class="ph ph-warning"></i>
+        <div data-i18n="theme.migration"><strong>Migración desde enableDarkMode:</strong> La opción <code>ui.enableDarkMode</code> fue reemplazada
+          por la sección <code>theme</code>. Si tenías <code>enableDarkMode: false</code>, usa
+          <code>allowToggle: false, defaultMode: 'light'</code> en su lugar.
+        </div>
+      </div>
+    </section>
+
+    <section id="content-overview">
+      <h2><i class="ph ph-database sec-icon"></i> <span data-i18n="collections.title">Colecciones de Contenido</span></h2>
+      <p class="section-desc" data-i18n="collections.subtitle">Tu contenido vive en <code>src/content/</code> como archivos MDX con frontmatter validado
+        por Zod. Si omites un campo obligatorio, Astro fallará en el build.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.collection">Colección</th>
+              <th data-i18n="common.table.folder">Ruta</th>
+              <th data-i18n="common.table.format">Formato</th>
+              <th data-i18n="common.table.purpose">Para qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong data-i18n="sidebar.nav.content.projects">Proyectos</strong></td>
+              <td><code>src/content/projects/</code></td>
+              <td>MDX</td>
+              <td data-i18n="collections.table.projects">Casos de estudio del portfolio</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="sidebar.nav.content.blog">Blog</strong></td>
+              <td><code>src/content/blog/</code></td>
+              <td>MDX</td>
+              <td data-i18n="collections.table.blog">Artículos y reflexiones</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="sidebar.nav.content.services">Servicios</strong></td>
+              <td><code>src/content/services/</code></td>
+              <td>MDX</td>
+              <td data-i18n="collections.table.services">Páginas de servicios / ofertas</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="sidebar.nav.content.testimonials">Testimonios</strong></td>
+              <td><code>src/content/testimonials/</code></td>
+              <td>MD</td>
+              <td data-i18n="collections.table.testimonials">Reseñas de clientes</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="sidebar.nav.content.faq">FAQ</strong></td>
+              <td><code>src/content/faq/</code></td>
+              <td>MD</td>
+              <td data-i18n="collections.table.faq">Preguntas frecuentes del accordion</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="sidebar.footer.changelog">Changelog</strong></td>
+              <td><code>src/content/changelog/</code></td>
+              <td>MD</td>
+              <td data-i18n="collections.table.changelog">Historial de versiones</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-info">
+        <i class="ph ph-info"></i>
+        <div data-i18n="collections.naming"><strong>¿Cómo se nombra un archivo?</strong> Usa kebab-case: <code>mi-proyecto.md</code> → la URL será
+          <code>/projects/mi-proyecto</code>.
+        </div>
+      </div>
+    </section>
+
+    <section id="projects-col">
+      <h2><i class="ph ph-folder-open sec-icon"></i> <span data-i18n="projects.title">Proyectos</span></h2>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">src/content/projects/mi-proyecto.md</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre>---
+<span class="prop">title</span>: <span class="str">"Mi Proyecto Increíble"</span>
+<span class="prop">description</span>: <span class="str">"Una app web ultrarrápida construida con Astro."</span>
+<span class="prop">technologies</span>: [<span class="str">"Astro"</span>, <span class="str">"Tailwind"</span>, <span class="str">"Cloudflare"</span>]
+<span class="prop">date</span>: <span class="num">2026-04-01</span>
+<span class="prop">repo</span>: <span class="str">"https://github.com/usuario/proyecto"</span>  <span class="cmt" data-i18n="common.optional"># opcional</span>
+<span class="prop">live</span>: <span class="str">"https://miproyecto.dev"</span>                <span class="cmt" data-i18n="common.optional"># opcional</span>
+<span class="prop">image</span>: <span class="str">"/src/assets/images/mi-proyecto.webp"</span> <span class="cmt" data-i18n="common.optional"># opcional</span>
+---
+
+<span data-i18n="projects.comments.body">Aquí va el cuerpo del proyecto en Markdown o MDX.
+Puedes incluir imágenes, código y lo que necesites.</span></pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="common.table.field">Campo</th>
+              <th data-i18n="common.table.required">Requerido</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th data-i18n="common.table.notes">Notas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>title</code></td>
+              <td><strong>Sí</strong></td>
+              <td>string</td>
+              <td data-i18n="projects.table.title">—</td>
+            </tr>
+            <tr>
+              <td><code>description</code></td>
+              <td><strong>Sí</strong></td>
+              <td>string</td>
+              <td data-i18n="projects.table.description">Resumen corto para la tarjeta.</td>
+            </tr>
+            <tr>
+              <td><code>technologies</code></td>
+              <td><strong>Sí</strong></td>
+              <td>array</td>
+              <td data-i18n="projects.table.technologies">Debe ser <code>["A", "B"]</code>, no un string.</td>
+            </tr>
+            <tr>
+              <td><code>date</code></td>
+              <td><strong>Sí</strong></td>
+              <td>date</td>
+              <td data-i18n="projects.table.date">Formato <code>YYYY-MM-DD</code>. Ordena del más nuevo al más viejo.</td>
+            </tr>
+            <tr>
+              <td><code>repo</code></td>
+              <td>No</td>
+              <td>URL</td>
+              <td data-i18n="projects.table.repo">Si existe, muestra ícono GitHub.</td>
+            </tr>
+            <tr>
+              <td><code>live</code></td>
+              <td>No</td>
+              <td>URL</td>
+              <td data-i18n="projects.table.live">Si existe, muestra enlace "Ver en vivo".</td>
+            </tr>
+            <tr>
+              <td><code>image</code></td>
+              <td>No</td>
+              <td>ruta</td>
+              <td data-i18n="projects.table.image">Apunta a <code>/src/assets/</code> para compresión automática.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="blog-col">
+      <h2><i class="ph ph-article sec-icon"></i> <span data-i18n="blog.title">Blog</span></h2>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">src/content/blog/mi-post.md</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre>---
+<span class="prop">title</span>: <span class="str">"Mi Primer Post"</span>
+<span class="prop">date</span>: <span class="num">2026-04-01</span>
+<span class="prop">summary</span>: <span class="str">"Un resumen corto del contenido del artículo."</span>
+<span class="prop">draft</span>: <span class="num">false</span>  <span class="cmt" data-i18n="blog.comments.draft"># true = no se publica</span>
+---
+
+<span data-i18n="blog.comments.body"># Título del post
+
+Aquí escribes el contenido...</span></pre>
+      </div>
+
+      <div class="callout callout-warn">
+        <i class="ph ph-warning"></i>
+        <div data-i18n="blog.warn"><strong><code>summary</code> es obligatorio y tiene doble función:</strong> 1) Meta description SEO. 2)
+          Cabecera del artículo al leerlo. No lo omitas.</div>
+      </div>
+
+      <div class="callout callout-tip">
+        <i class="ph ph-lightbulb"></i>
+        <div data-i18n="blog.tip"><strong>Modo borrador:</strong> Pon <code>draft: true</code> en el frontmatter y el post desaparece del
+          build. Ideal para artículos en progreso.</div>
+      </div>
+    </section>
+
+    <section id="services-col">
+      <h2><i class="ph ph-briefcase sec-icon"></i> <span data-i18n="services.title">Servicios</span></h2>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">src/content/services/frontend.md</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre>---
+<span class="prop">title</span>: <span class="str">"Frontend Engineering"</span>
+<span class="prop">summary</span>: <span class="str">"Desarrollo rápido y escalable con Astro."</span>
+<span class="prop">description</span>: <span class="str">"Descripción larga del servicio..."</span>
+<span class="prop">icon</span>: <span class="str">"ph:code"</span>    <span class="cmt" data-i18n="services.comments.icon"># ¡El prefijo ph: es obligatorio!</span>
+<span class="prop">order</span>: <span class="num">1</span>         <span class="cmt" data-i18n="services.comments.order"># Controla el orden en el grid</span>
+---</pre>
+      </div>
+
+      <div class="callout callout-danger">
+        <i class="ph ph-x-circle"></i>
+        <div data-i18n="services.danger"><strong>El ícono debe empezar con <code>ph:</code>.</strong> Busca en <a
+            href="https://icon-sets.iconify.design/ph/" target="_blank">Phosphor Icons</a> y usa el nombre exacto. Ej:
+          <code>ph:desktop</code>, <code>ph:palette</code>.
+        </div>
+      </div>
+    </section>
+
+    <section id="testimonials-col">
+      <h2><i class="ph ph-chat-centered-text sec-icon"></i> <span data-i18n="testimonials.title">Testimonios</span></h2>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">src/content/testimonials/cliente.md</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre>---
+<span class="prop">author</span>: <span class="str">"María García"</span>
+<span class="prop">role</span>: <span class="str">"CEO en StartupXYZ"</span>
+<span class="prop">content</span>: <span class="str">"Increíble trabajo. El resultado superó nuestras expectativas."</span>
+<span class="prop">company</span>: <span class="str">"StartupXYZ"</span>     <span class="cmt" data-i18n="common.optional"># opcional</span>
+<span class="prop">avatar</span>: <span class="str">"/images/maria.jpg"</span>  <span class="cmt" data-i18n="common.optional"># opcional</span>
+---</pre>
+      </div>
+    </section>
+
+    <section id="faq-col">
+      <h2><i class="ph ph-question sec-icon"></i> <span data-i18n="faq.title">FAQ</span></h2>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">src/content/faq/proceso.md</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre>---
+<span class="prop">question</span>: <span class="str">"¿Cómo es tu proceso de trabajo?"</span>
+<span class="prop">answer</span>: <span class="str">"Mi proceso se divide en tres fases: Estrategia, Diseño y Desarrollo..."</span>
+<span class="prop">order</span>: <span class="num">1</span>
+---</pre>
+      </div>
+    </section>
+
+    <section id="hardcoded">
+      <h2><i class="ph ph-code sec-icon"></i> <span data-i18n="hardcoded.title">Componentes Hardcodeados</span></h2>
+      <p class="section-desc" data-i18n="hardcoded.subtitle">No todo está en site-config. Estos textos están
+        directamente en los componentes y requieren editar el archivo .astro.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="hardcoded.table.what">Qué</th>
+              <th>Archivo</th>
+              <th data-i18n="hardcoded.table.how">Qué editar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong data-i18n="hardcoded.table.hero.what">Título del Hero</strong></td>
+              <td><code>src/components/sections/Hero.astro</code></td>
+              <td data-i18n="hardcoded.table.hero.how">El h1 "Diseño y Programo..." y los textos de botones.</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="hardcoded.table.stack.what">Stack de tecnologías</strong></td>
+              <td><code>src/components/sections/Stack.astro</code></td>
+              <td data-i18n="hardcoded.table.stack.how">El array <code>techStack</code> con las tecnologías que dominas.</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="hardcoded.table.experience.what">Experiencia laboral</strong></td>
+              <td><code>src/components/sections/Experience.astro</code></td>
+              <td data-i18n="hardcoded.table.experience.how">El array <code>experiences</code> con empresa, rol, período y descripción.</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="hardcoded.table.error.what">Página 404</strong></td>
+              <td><code>src/pages/404.astro</code></td>
+              <td data-i18n="hardcoded.table.error.how">Título, descripción y textos de la página de error.</td>
+            </tr>
+            <tr>
+              <td><strong data-i18n="hardcoded.table.legal.what">Legales</strong></td>
+              <td><code>src/pages/legal/privacidad.astro</code></td>
+              <td data-i18n="hardcoded.table.legal.how">Textos de privacidad y términos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="images">
+      <h2><i class="ph ph-image sec-icon"></i> <span data-i18n="images.title">Imágenes</span></h2>
+      <p class="section-desc" data-i18n="images.subtitle">Dos ubicaciones con propósitos distintos.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h4 data-i18n="images.public.title"><i class="ph ph-mountains"></i> /public/images/</h4>
+          <p data-i18n="images.public.desc">Assets que se sirven tal cual. Avatares, logos. <strong>No se optimizan.</strong></p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="images.src.title"><i class="ph ph-aperture"></i> /src/assets/images/</h4>
+          <p data-i18n="images.src.desc">Imágenes que Astro procesa y optimiza automáticamente (webp, responsive, tamaños). <strong>Úsalas para hero
+              y proyectos.</strong></p>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <i class="ph ph-lightbulb"></i>
+        <div data-i18n="images.tip"><strong>Formato recomendado:</strong> WebP para fotos, SVG para logos e íconos. Tamaño máximo de OG image:
+          1200×630px.</div>
+      </div>
+    </section>
+
+    <section id="fonts">
+      <h2><i class="ph ph-text-aa sec-icon"></i> <span data-i18n="fonts.title">Tipografía</span></h2>
+      <p data-i18n="fonts.desc">Se usan dos fuentes locales (sin Google Fonts, sin tracking):</p>
+      <ul>
+        <li data-i18n="fonts.inter"><strong>Inter</strong> — Sans-serif principal. Importada desde <code>@fontsource-variable/inter</code>.</li>
+        <li data-i18n="fonts.roboto"><strong>Roboto Mono</strong> — Monospace para código y etiquetas. Importada desde
+          <code>@fontsource-variable/roboto-mono</code>.
+        </li>
+      </ul>
+      <p data-i18n="fonts.footer">Ambas se importan en <code>src/layouts/BaseLayout.astro</code> y se configuran en
+        <code>tailwind.config.mjs</code>.
+      </p>
+    </section>
+
+    <section id="contact-form">
+      <h2><i class="ph ph-paper-plane-tilt sec-icon"></i> <span data-i18n="contact.title">Formulario de Contacto</span>
+      </h2>
+      <p class="section-desc" data-i18n="contact.subtitle">El formulario envía datos reales. Solo necesitas configurar
+        un endpoint.</p>
+
+      <h3 data-i18n="contact.option1">Opción 1: Formspree (Recomendado)</h3>
+      <ol>
+        <li data-i18n="contact.steps.1">Crea cuenta en <a href="https://formspree.io" target="_blank">formspree.io</a></li>
+        <li data-i18n="contact.steps.2">Crea un formulario nuevo y copia la URL</li>
+        <li data-i18n="contact.steps.3">Pégala en <code>site-config.ts → contact.formEndpoint</code></li>
+      </ol>
+
+      <h3 data-i18n="contact.option2">Opción 2: Cloudflare Forms / Custom API</h3>
+      <p data-i18n="contact.option2_desc">Cualquier endpoint que acepte <code>POST</code> con <code>FormData</code>. Configura
+        <code>contact.formEndpoint</code> con tu URL.
+      </p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">contact</span>: {
+  <span class="prop">email</span>: <span class="str">"hola@miportfolio.dev"</span>,
+  <span class="prop">formEndpoint</span>: <span class="str">"https://formspree.io/f/xzyabc"</span>,  <span class="cmt" data-i18n="contact.comments.url">// ← tu URL aquí</span>
+  <span class="prop">calCom</span>: <span class="str">"https://cal.com/tuusuario"</span>
+}</pre>
+      </div>
+
+      <div class="callout callout-info">
+        <i class="ph ph-info"></i>
+        <div data-i18n="contact.info"><strong>Anti-spam incluido:</strong> El formulario incluye un campo honeypot invisible
+          (<code>_gotcha</code>) que bloquea bots.</div>
+      </div>
+    </section>
+
+    <section id="pagination">
+      <h2><i class="ph ph-browser sec-icon"></i> <span data-i18n="pagination.title">Paginación</span></h2>
+      <p class="section-desc" data-i18n="pagination.subtitle">Configura cuántos items mostrar antes de crear nuevas
+        páginas.</p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">site-config.ts</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="prop">content</span>: {
+  <span class="prop">projectsPerPage</span>: <span class="num">6</span>,
+  <span class="prop">postsPerPage</span>: <span class="num">4</span>
+}</pre>
+      </div>
+
+      <p data-i18n="pagination.generates">Esto genera automáticamente:</p>
+      <ul>
+        <li data-i18n="pagination.list.1"><code>/projects</code> — página 1 (6 proyectos)</li>
+        <li data-i18n="pagination.list.2"><code>/projects/page/2</code> — página 2 (si hay más de 6)</li>
+        <li data-i18n="pagination.list.3"><code>/blog</code> — página 1 (4 posts)</li>
+        <li data-i18n="pagination.list.4"><code>/blog/page/2</code> — página 2 (si hay más de 4)</li>
+      </ul>
+    </section>
+
+    <section id="seo-geo">
+      <h2><i class="ph ph-magnifying-glass sec-icon"></i> <span data-i18n="seo.title">SEO & GEO</span></h2>
+      <p class="section-desc" data-i18n="seo.subtitle">El componente <code>SEO.astro</code> genera todo automáticamente. Tú solo llenas el
+        config.</p>
+
+      <h3 data-i18n="seo.auto_title">Qué genera automáticamente</h3>
+      <ul>
+        <li data-i18n="seo.list.meta"><strong>Meta tags:</strong> title, description, keywords, author, canonical</li>
+        <li data-i18n="seo.list.og"><strong>Open Graph:</strong> og:type, og:title, og:description, og:image (1200×630), og:locale</li>
+        <li data-i18n="seo.list.twitter"><strong>Twitter Cards:</strong> summary_large_image con todos los campos</li>
+        <li data-i18n="seo.list.jsonld"><strong>JSON-LD:</strong> Person (home), Article (blog), CreativeWork (projects), FAQPage (faq), Service
+          (services)</li>
+        <li data-i18n="seo.list.sitemap"><strong>Sitemap:</strong> <code>sitemap-index.xml</code> generado en cada build</li>
+        <li data-i18n="seo.list.robots"><strong>Robots.txt:</strong> Ruta dinámica que referencia el sitemap</li>
+      </ul>
+
+      <h3 data-i18n="seo.geo_title">GEO (Generative Engine Optimization)</h3>
+      <p data-i18n="seo.geo_desc">El archivo <code>public/llms.txt</code> describe tu sitio para motores de búsqueda con IA (Perplexity, ChatGPT
+        Search, Claude). Contiene: stack, estructura de carpetas, colecciones de contenido y enlaces rápidos.</p>
+    </section>
+
+    <section id="a11y">
+      <h2><i class="ph ph-wheelchair-motion sec-icon"></i> <span data-i18n="a11y.title">Accesibilidad</span></h2>
+      <p class="section-desc" data-i18n="a11y.subtitle">El template cumple con WCAG 2.2 AA. Estas son las protecciones activas:</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h4 data-i18n="a11y.cards.motion.title"><i class="ph ph-eye"></i> Reduced Motion</h4>
+          <p data-i18n="a11y.cards.motion.desc">Si el usuario tiene <code>prefers-reduced-motion: reduce</code>, todas las animaciones (reveal, hover,
+            magnetic, mobile menu) se desactivan automáticamente.</p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="a11y.cards.keyboard.title"><i class="ph ph-keyboard"></i> Navegación por teclado</h4>
+          <p data-i18n="a11y.cards.keyboard.desc">El mobile menu se cierra con Escape. Todos los botones tienen <code>aria-label</code> y los iconos sociales
+            tienen <code>sr-only</code> text.</p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="a11y.cards.contrast.title"><i class="ph ph-contrast"></i> Contraste AA</h4>
+          <p data-i18n="a11y.cards.contrast.desc">Los tokens HSL están calibrados para cumplir WCAG AA en ambos modos (light y dark).</p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="a11y.cards.alt.title"><i class="ph ph-image"></i> Alt texts descriptivos</h4>
+          <p data-i18n="a11y.cards.alt.desc">Las imágenes del Hero incluyen nombre, rol y contexto. Los proyectos usan el título como alt fallback.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="pwa">
+      <h2><i class="ph ph-device-mobile sec-icon"></i> <span data-i18n="pwa.title">PWA</span></h2>
+      <p class="section-desc" data-i18n="pwa.subtitle">Progressive Web App con service worker auto-update.</p>
+
+      <h3 data-i18n="pwa.includes">Qué incluye</h3>
+      <ul>
+        <li data-i18n="pwa.list.1"><code>site.webmanifest</code> en <code>/public/</code></li>
+        <li data-i18n="pwa.list.2">Service worker con estrategia de caché para <code>.js, .css, .html, .ico, .png, .svg, .webp, .avif</code>
+        </li>
+        <li data-i18n="pwa.list.3">Registro automático con <code>autoUpdate</code></li>
+      </ul>
+
+      <h3 data-i18n="pwa.generate.title">Generar íconos PNG</h3>
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">Terminal</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="cmt" data-i18n="pwa.generate.comment1"># Genera icon-192x192.png, icon-512x512.png y apple-touch-icon.png</span>
+<span class="cmt" data-i18n="pwa.generate.comment2"># desde public/favicon.svg usando Sharp</span>
+node scripts/generate-pwa-icons.mjs</pre>
+      </div>
+    </section>
+
+    <section id="analytics">
+      <h2><i class="ph ph-chart-bar sec-icon"></i> <span data-i18n="analytics.title">Analytics</span></h2>
+      <p class="section-desc" data-i18n="analytics.subtitle">El template viene <strong>sin tracking por
+          defecto</strong>. Estos son los proveedores soportados:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th data-i18n="common.table.type">Tipo</th>
+              <th>Setup</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Cloudflare Web Analytics</strong></td>
+              <td data-i18n="analytics.table.cloudflare.type">Zero-JS, server-side</td>
+              <td data-i18n="analytics.table.cloudflare.setup">Actívalo en Cloudflare Dashboard. Sin código.</td>
+            </tr>
+            <tr>
+              <td><strong>Plausible</strong></td>
+              <td data-i18n="analytics.table.plausible.type">Privacy-friendly</td>
+              <td data-i18n="analytics.table.plausible.setup">Agrega el script tag en <code>BaseLayout.astro</code> head.</td>
+            </tr>
+            <tr>
+              <td><strong>Umami</strong></td>
+              <td data-i18n="analytics.table.umami.type">Self-hosted</td>
+              <td data-i18n="analytics.table.umami.setup">Igual que Plausible, con tu URL de instancia.</td>
+            </tr>
+            <tr>
+              <td><strong>Google Analytics</strong></td>
+              <td data-i18n="analytics.table.google.type">Via Partytown (sandboxed)</td>
+              <td data-i18n="analytics.table.google.setup">Configurado en <code>astro.config.mjs</code>. Solo setea <code>PUBLIC_GA_MEASUREMENT_ID</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-tip">
+        <i class="ph ph-lightbulb"></i>
+        <div data-i18n="analytics.tip"><strong>Recomendación:</strong> Cloudflare Web Analytics es la opción más simple — cero JavaScript
+          adicional. Ve a Cloudflare Dashboard > Analytics > Web Analytics.</div>
+      </div>
+    </section>
+
+    <section id="deploy">
+      <h2><i class="ph ph-cloud-arrow-up sec-icon"></i> <span data-i18n="deploy.title">Deploy en Cloudflare Pages</span>
+      </h2>
+      <p class="section-desc" data-i18n="deploy.subtitle">La opción recomendada. Astro + Cloudflare = edge deployment
+        global.</p>
+
+      <h3 data-i18n="deploy.github_title">Desde GitHub (recomendado)</h3>
+      <div class="card" style="margin-bottom: 16px;">
+        <h4 data-i18n="deploy.step1.title">Paso 1: Sube tu código</h4>
+        <p data-i18n="deploy.step1.desc">Haz commit y push a tu repositorio: <code>git push origin main</code></p>
+      </div>
+      <div class="card" style="margin-bottom: 16px;">
+        <h4 data-i18n="deploy.step2.title">Paso 2: Conecta en Cloudflare</h4>
+        <p data-i18n="deploy.step2.desc">Ve a <a href="https://dash.cloudflare.com" target="_blank">dash.cloudflare.com</a> → Workers & Pages → Create
+          → Connect to Git → selecciona tu repo.</p>
+      </div>
+      <div class="card" style="margin-bottom: 16px;">
+        <h4 data-i18n="deploy.step3.title">Paso 3: Configura el build</h4>
+        <p data-i18n="deploy.step3.desc">Usa el preset <strong>Astro</strong> o configúralo manualmente:</p>
+        <ul style="margin-bottom: 0;">
+          <li data-i18n="deploy.step3.list1"><strong>Build command:</strong> <code>pnpm build</code></li>
+          <li data-i18n="deploy.step3.list2"><strong>Build output directory:</strong> <code>dist</code></li>
+          <li data-i18n="deploy.step3.list3"><strong>Node version:</strong> <code>22</code></li>
+        </ul>
+      </div>
+
+      <div class="callout callout-warn">
+        <i class="ph ph-warning"></i>
+        <div data-i18n="deploy.warn"><strong>Node 22 es obligatorio.</strong> En Cloudflare Pages, agrega la variable de entorno
+          <code>NODE_VERSION = 22</code> en Settings > Environment Variables.
+        </div>
+      </div>
+
+      <h3 data-i18n="deploy.domain.title">Dominio personalizado</h3>
+      <p data-i18n="deploy.domain.desc">En Cloudflare Pages → tu proyecto → Custom domains → agrega tu dominio. Cloudflare maneja SSL automáticamente.
+      </p>
+    </section>
+
+    <section id="env-vars">
+      <h2><i class="ph ph-key sec-icon"></i> <span data-i18n="env.title">Variables de Entorno</span></h2>
+      <p class="section-desc" data-i18n="env.subtitle">Copia <code>.env.example</code> a <code>.env</code> y configura
+        según necesites.</p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <span class="code-filename">.env</span>
+          <button class="code-copy" onclick="copyCode(this)" data-i18n="copy.button">Copiar</button>
+        </div>
+        <pre><span class="cmt" data-i18n="env.comments.form"># Contact form backend</span>
+<span class="prop">PUBLIC_CONTACT_FORM_ENDPOINT</span>=<span class="str">https://formspree.io/f/xxxx</span>
+
+<span class="cmt" data-i18n="env.comments.analytics"># Analytics (elige uno)</span>
+<span class="prop">PUBLIC_PLAUSIBLE_DOMAIN</span>=<span class="str">miportfolio.dev</span>
+<span class="prop">PUBLIC_GA_MEASUREMENT_ID</span>=<span class="str">G-XXXXXXXXXX</span></pre>
+      </div>
+
+      <div class="callout callout-danger">
+        <i class="ph ph-x-circle"></i>
+        <div data-i18n="env.danger"><strong>Nunca comitees <code>.env</code>.</strong> El archivo está en <code>.gitignore</code>. Usa
+          <code>.env.example</code> como referencia para el equipo.
+        </div>
+      </div>
+    </section>
+
+    <section id="troubleshooting">
+      <h2><i class="ph ph-wrench sec-icon"></i> <span data-i18n="troubleshoot.title">Troubleshooting</span></h2>
+      <p class="section-desc" data-i18n="troubleshoot.subtitle">Errores comunes y sus soluciones.</p>
+
+      <div class="card" style="margin-bottom: 12px;">
+        <h4 data-i18n="troubleshoot.cards.cloudflare.title"><i class="ph ph-skull"></i> "Dev server crashes with Cloudflare worker error"</h4>
+        <p style="margin-top: 8px; margin-bottom: 0;" data-i18n="troubleshoot.cards.cloudflare.desc">Caché corrupto de Vite/Astro. Ejecuta:</p>
+        <div class="code-block" style="margin-top: 12px; margin-bottom: 0;">
+          <pre>rm -rf .astro node_modules/.vite && pnpm dev</pre>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 12px;">
+        <h4 data-i18n="troubleshoot.cards.commonjs.title"><i class="ph ph-skull"></i> "CommonJS dependency breaks the build"</h4>
+        <p style="margin-top: 8px; margin-bottom: 0;" data-i18n="troubleshoot.cards.commonjs.desc">Agrega la dependencia a <code>ssr.noExternal</code> en
+          <code>astro.config.mjs</code>:
+        </p>
+        <div class="code-block" style="margin-top: 12px; margin-bottom: 0;">
+          <pre><span class="kw">vite</span>: {
+  <span class="prop">ssr</span>: { <span class="prop">noExternal</span>: [<span class="str">'your-package-name'</span>] }
+}</pre>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 12px;">
+        <h4 data-i18n="troubleshoot.cards.zod.title"><i class="ph ph-skull"></i> "Zod validation error en content"</h4>
+        <p style="margin-top: 8px; margin-bottom: 0;" data-i18n="troubleshoot.cards.zod.desc">Revisa el frontmatter del archivo MDX que el error menciona. Un
+          campo obligatorio está faltando o tiene el tipo incorrecto.</p>
+      </div>
+
+      <div class="card" style="margin-bottom: 12px;">
+        <h4 data-i18n="troubleshoot.cards.form.title"><i class="ph ph-skull"></i> "El formulario de contacto no envía"</h4>
+        <p style="margin-top: 8px; margin-bottom: 0;" data-i18n="troubleshoot.cards.form.desc">Verifica que <code>contact.formEndpoint</code> en
+          <code>site-config.ts</code> tenga una URL válida. Si está vacío, el formulario muestra un aviso de
+          configuración.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom: 12px;">
+        <h4 data-i18n="troubleshoot.cards.pwa.title"><i class="ph ph-skull"></i> "PWA no funciona en producción"</h4>
+        <p style="margin-top: 8px; margin-bottom: 0;" data-i18n="troubleshoot.cards.pwa.desc">Asegúrate de que el <code>manifest</code> en
+          <code>astro.config.mjs</code> tenga la URL correcta. Ejecuta <code>node scripts/generate-pwa-icons.mjs</code>
+          para generar los PNGs necesarios.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom: 12px;">
+        <h4 data-i18n="troubleshoot.cards.config.title"><i class="ph ph-skull"></i> "Cambios en site-config.ts no se reflejan"</h4>
+        <p style="margin-top: 8px; margin-bottom: 0;" data-i18n="troubleshoot.cards.config.desc">El dev server de Astro a veces cachea el config. Reinicia el
+          servidor: <code>Ctrl+C</code> → <code>pnpm dev</code>.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Active section tracking
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const id = entry.target.getAttribute('id');
+        const link = document.querySelector(`.nav-link[href="#${id}"]`);
+        if (entry.isIntersecting) {
+          document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+          if (link) link.classList.add('active');
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '-80px 0px -50% 0px' });
+
+    document.querySelectorAll('section[id]').forEach(s => observer.observe(s));
+
+    // I18N State
+    let docsI18n = {};
+
+    // Get nested property from string path like 'intro.title'
+    function getNestedValue(obj, path) {
+      return path.split('.').reduce((current, key) => current && current[key], obj);
+    }
+
+    // Copy code (Now fully reliant on JSON translations)
+    function copyCode(btn) {
+      const pre = btn.closest('.code-block').querySelector('pre');
+      const text = pre.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const lang = document.documentElement.lang || 'es';
+        const defaultBtn = getNestedValue(docsI18n[lang], 'copy.button') || 'Copiar';
+        const successBtn = getNestedValue(docsI18n[lang], 'copy.success') || 'Copiado';
+        
+        btn.textContent = successBtn;
+        setTimeout(() => { btn.textContent = defaultBtn; }, 2000);
+      });
+    }
+
+    // Load translations from JSON files
+    async function loadTranslations(lang) {
+      try {
+        const response = await fetch(`./i18n/${lang}.json`);
+        const translations = await response.json();
+        docsI18n[lang] = translations;
+        return translations;
+      } catch (error) {
+        console.error(`Failed to load ${lang} translations:`, error);
+        return null;
+      }
+    }
+
+    // Update all elements with data-i18n
+    function updateElements(lang) {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const value = getNestedValue(docsI18n[lang], key);
+        if (value) {
+          el.innerHTML = value;
+        }
+      });
+    }
+
+    async function setLang(lang) {
+      localStorage.setItem('docsLang', lang);
+      document.documentElement.lang = lang;
+
+      // Update buttons
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === lang);
+      });
+
+      // Load translations if not already loaded
+      if (!docsI18n[lang]) {
+        await loadTranslations(lang);
+      }
+
+      // Update all elements
+      updateElements(lang);
+    }
+
+    // Initialize
+    async function init() {
+      const savedLang = localStorage.getItem('docsLang') || 'es';
+      // Load current language
+      await setLang(savedLang);
+    }
+
+    // Start the application
+    init();
+  </script>
+
+</body>
+
+</html>

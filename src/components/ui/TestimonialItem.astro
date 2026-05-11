@@ -1,0 +1,63 @@
+---
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  content: string;
+  author: string;
+  role?: string | undefined;
+  company?: string | undefined;
+  avatar?: any | undefined;
+}
+
+const { content, author, role, company, avatar } = Astro.props;
+---
+
+<div
+  class="reveal flex w-full flex-[0_0_100%] snap-center flex-col items-center justify-center px-4 text-center md:px-12 lg:px-24"
+>
+  <div
+    class="mb-10 transform text-primary/30 transition-transform duration-700 hover:scale-110 md:mb-14"
+  >
+    <Icon name="ph:quotes-duotone" class="h-16 w-16 md:h-20 md:w-20" />
+  </div>
+
+  <blockquote
+    class="mx-auto mb-10 w-full max-w-5xl text-balance text-xl font-extrabold italic leading-[1.2] tracking-tight text-foreground sm:text-2xl md:mb-16 md:text-3xl md:leading-[1.1] lg:text-5xl"
+  >
+    "{content}"
+  </blockquote>
+
+  <footer class="flex flex-col items-center gap-5">
+    {
+      avatar ? (
+        <div class="group relative">
+          <div class="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary to-primary/20 opacity-25 blur transition duration-1000 group-hover:opacity-50" />
+          <Image
+            src={avatar}
+            alt={author}
+            width={100}
+            height={100}
+            class="relative h-16 w-16 rounded-full border-2 border-border object-cover opacity-90 shadow-2xl grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0 md:h-24 md:w-24"
+          />
+        </div>
+      ) : (
+        <div class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-border bg-secondary/50 text-2xl font-black text-foreground shadow-lg md:h-24 md:w-24">
+          {author.charAt(0)}
+        </div>
+      )
+    }
+    <div class="flex flex-col items-center gap-1">
+      <cite class="text-lg font-black not-italic tracking-tighter text-foreground md:text-xl"
+        >{author}</cite
+      >
+      <p
+        class="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground md:text-xs"
+      >
+        {role}
+        <span class="mx-2 text-primary/40">•</span>
+        {company}
+      </p>
+    </div>
+  </footer>
+</div>

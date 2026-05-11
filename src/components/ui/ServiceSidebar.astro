@@ -1,0 +1,52 @@
+---
+import { t } from '@/i18n';
+import Button from './Button.astro';
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ctaText?: string;
+  ctaHref?: string;
+  guarantees?: string[];
+}
+
+const {
+  title = t('sidebar.title'),
+  description = t('sidebar.description'),
+  ctaText = t('sidebar.cta'),
+  ctaHref = "/contact",
+  guarantees = [
+    t('sidebar.guarantee_1'),
+    t('sidebar.guarantee_2'),
+    t('sidebar.guarantee_3'),
+  ],
+} = Astro.props;
+---
+
+<aside class="md:col-span-4 flex flex-col gap-10 sticky top-32 h-fit reveal">
+  <div class="p-10 rounded-[2.5rem] bg-secondary/30 border border-border/60 flex flex-col gap-8 shadow-xl shadow-primary/5">
+    <div class="flex flex-col gap-4">
+      <h3 class="text-2xl font-extrabold tracking-tighter leading-none">{title}</h3>
+      <p class="text-sm text-foreground/70 leading-relaxed font-medium">
+        {description}
+      </p>
+    </div>
+    
+    <Button href={ctaHref} variant="primary" class="w-full h-14 text-sm font-bold tracking-widest uppercase">
+      {ctaText} <span>&rarr;</span>
+    </Button>
+  </div>
+
+  <div class="flex flex-col gap-5 px-6">
+    <span class="text-[10px] font-mono uppercase tracking-[0.2em] text-foreground/40 font-black">{t('sidebar.guarantees_title')}</span>
+    <ul class="flex flex-col gap-4 text-sm text-foreground/80 font-bold">
+      {guarantees.map((item) => (
+        <li class="flex items-center gap-3 transition-colors hover:text-primary leading-tight">
+          <Icon name="ph:check-circle-duotone" class="w-5 h-5 text-primary" /> 
+          {item}
+        </li>
+      ))}
+    </ul>
+  </div>
+</aside>

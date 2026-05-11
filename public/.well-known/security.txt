@@ -1,0 +1,8 @@
+# Security Policy
+# Report vulnerabilities to the email below.
+
+Contact: mailto:hello@yourdomain.com
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en, es
+Canonical: https://buyportfolio.zutra.agency/.well-known/security.txt
+Policy: https://buyportfolio.zutra.agency/legal/privacidad

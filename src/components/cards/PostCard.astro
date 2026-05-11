@@ -1,0 +1,33 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { t } from '@/i18n';
+import { siteConfig } from '@/site-config';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+}
+
+const { post } = Astro.props;
+---
+
+<a href={`/blog/${post.id}`} class="group flex flex-col gap-2 max-w-2xl reveal">
+  <div class="flex items-center gap-4 text-xs font-mono text-muted-foreground">
+    <time datetime={post.data.date.toISOString()}>
+      {post.data.date.toLocaleDateString(siteConfig.site.locale, { year: 'numeric', month: 'long', day: 'numeric' })}
+    </time>
+    <span class="opacity-20">&bull;</span>
+    <span class="group-hover:text-primary transition-colors uppercase tracking-widest font-bold">{t('card.post_label')}</span>
+  </div>
+  <h2 
+    class="text-2xl md:text-3xl font-bold tracking-tight group-hover:underline underline-offset-8 decoration-primary/30 decoration-2 transition-all"
+    transition:name={`title-${post.id}`}
+  >
+    {post.data.title}
+  </h2>
+  <p class="text-muted-foreground leading-relaxed text-balance">
+    {post.data.summary}
+  </p>
+  <div class="mt-2 text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0 flex items-center gap-2">
+    {t('card.read_article')} <span>&rarr;</span>
+  </div>
+</a>

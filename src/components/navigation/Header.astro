@@ -1,0 +1,206 @@
+---
+import { siteConfig } from '@/site-config';
+import { t, type TranslationKey } from '@/i18n';
+import { Icon } from 'astro-icon/components';
+import ThemeToggle from './ThemeToggle.astro';
+
+const navItems = siteConfig.navigation;
+const headerSocials = siteConfig.socials.filter((s) => s.showInHeader);
+const headerConfig = siteConfig.header;
+---
+
+<header
+  class:list={[
+    'glass sticky z-50 w-full border-b border-border/40 transition-all duration-300',
+    siteConfig.ui.showBuyBanner ? 'top-10' : 'top-0',
+  ]}
+  id="main-header"
+>
+  <div class="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-8">
+    <a
+      href="/"
+      class="z-[60] font-mono text-lg font-medium tracking-tighter transition-opacity hover:opacity-70"
+    >
+      {
+        headerConfig.logoType === 'svg' && headerConfig.logoSvg ? (
+          <img src={headerConfig.logoSvg} alt={headerConfig.logoAlt} class="h-8 w-auto" />
+        ) : headerConfig.logoType === 'image' && headerConfig.logoImage ? (
+          <img src={headerConfig.logoImage} alt={headerConfig.logoAlt} class="h-8 w-auto" />
+        ) : (
+          <>
+            {siteConfig.site.name.split('.')[0]}
+            <span class="text-primary/70">.</span>
+            {siteConfig.site.name.split('.')[1]}
+          </>
+        )
+      }
+    </a>
+
+    {/* Desktop Nav */}
+    <div class="hidden items-center gap-8 md:flex">
+      <nav class="flex items-center gap-8 text-sm font-medium">
+        {
+          navItems.map((item) => (
+            <a href={item.href} class="group relative py-2">
+              <span class="transition-colors hover:text-primary">{t(item.name as TranslationKey)}</span>
+              <span class="absolute bottom-0 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+            </a>
+          ))
+        }
+      </nav>
+      <div class="h-4 w-px bg-border/60"></div>
+      {
+        headerSocials.map((social) => (
+          <a
+            href={social.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted-foreground transition-colors hover:text-primary"
+            aria-label={social.name}
+          >
+            <span class="sr-only">{social.name}</span>
+            <Icon name={social.icon} class="h-5 w-5" />
+          </a>
+        ))
+      }
+      <div class="h-4 w-px bg-border/60"></div>
+      <ThemeToggle />
+    </div>
+
+    {/* Mobile Toggle & Theme Toggle */}
+    <div class="z-[60] flex items-center gap-4 md:hidden">
+      <ThemeToggle />
+      <button
+        id="menu-toggle"
+        class="-mr-2 p-2 text-foreground focus:outline-none"
+        aria-label={t('nav.menu_open')}
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        data-label-open={t('nav.menu_open')}
+        data-label-close={t('nav.menu_close')}
+      >
+        <Icon name="ph:list" class="h-6 w-6 transition-all duration-300" id="icon-open" />
+        <Icon name="ph:x" class="hidden h-6 w-6 transition-all duration-300" id="icon-close" />
+      </button>
+    </div>
+  </div>
+
+  {/* Mobile Menu Overlay */}
+  <div
+    id="mobile-menu"
+    role="dialog"
+    aria-modal="true"
+    aria-label={t('nav.mobile_menu')}
+    class="pointer-events-none invisible fixed inset-0 z-50 flex flex-col items-center justify-center gap-12 bg-background/95 opacity-0 backdrop-blur-2xl transition-all duration-500 ease-in-out"
+  >
+    <div class="flex flex-col items-center gap-8 overflow-hidden">
+      {
+        navItems.map((item, index) => (
+          <a
+            href={item.href}
+            class="menu-item translate-y-20 scale-95 text-4xl font-bold tracking-tighter opacity-0 transition-all duration-700 ease-out hover:text-primary sm:text-6xl"
+            style={`transition-delay: ${index * 80}ms;`}
+          >
+            {t(item.name as TranslationKey)}
+          </a>
+        ))
+      }
+    </div>
+
+    <div
+      class="absolute bottom-12 flex translate-y-10 items-center gap-8 opacity-0 transition-all delay-500 duration-1000"
+      id="mobile-socials"
+    >
+      {
+        siteConfig.socials.map((social) => (
+          <a
+            href={social.href}
+            class="font-mono text-sm opacity-50 transition-opacity hover:opacity-100"
+          >
+            {social.name}
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</header>
+
+<script>
+  function setupMenu() {
+    const toggle = document.querySelector('#menu-toggle');
+    const menu = document.querySelector('#mobile-menu');
+    const items = document.querySelectorAll('.menu-item');
+    const socials = document.querySelector('#mobile-socials');
+    const iconOpen = document.querySelector('#icon-open');
+    const iconClose = document.querySelector('#icon-close');
+    const header = document.querySelector('#main-header');
+
+    let isOpen = false;
+
+    function toggleMenu() {
+      isOpen = !isOpen;
+
+      if (isOpen) {
+        // Open
+        menu?.classList.remove('opacity-0', 'pointer-events-none', 'invisible');
+        menu?.classList.add('opacity-100');
+        iconOpen?.classList.add('hidden');
+        iconClose?.classList.remove('hidden');
+        toggle?.setAttribute('aria-expanded', 'true');
+        toggle?.setAttribute('aria-label', (toggle as HTMLElement).dataset.labelClose ?? '');
+        document.body.style.overflow = 'hidden';
+        header?.classList.remove('glass');
+
+        items.forEach((item) => {
+          item.classList.remove('translate-y-20', 'opacity-0', 'scale-95');
+          item.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+        });
+
+        socials?.classList.remove('translate-y-10', 'opacity-0');
+        socials?.classList.add('translate-y-0', 'opacity-100');
+      } else {
+        // Close
+        menu?.classList.add('opacity-0', 'pointer-events-none', 'invisible');
+        menu?.classList.remove('opacity-100');
+        iconOpen?.classList.remove('hidden');
+        iconClose?.classList.add('hidden');
+        toggle?.setAttribute('aria-expanded', 'false');
+        toggle?.setAttribute('aria-label', (toggle as HTMLElement).dataset.labelOpen ?? '');
+        document.body.style.overflow = '';
+        header?.classList.add('glass');
+
+        items.forEach((item) => {
+          item.classList.add('translate-y-20', 'opacity-0', 'scale-95');
+          item.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        });
+
+        socials?.classList.add('translate-y-10', 'opacity-0');
+        socials?.classList.remove('translate-y-0', 'opacity-100');
+      }
+    }
+
+    toggle?.addEventListener('click', toggleMenu);
+
+    // Close menu when clicking items
+    items.forEach((item) => {
+      item.addEventListener('click', () => {
+        if (isOpen) toggleMenu();
+      });
+    });
+
+    // Close on Escape key
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        toggleMenu();
+        (toggle as HTMLElement)?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+
+    // Initial state cleanup (in case of cached pages)
+    document.body.style.overflow = '';
+  }
+
+  // Support for View Transitions
+  document.addEventListener('astro:page-load', setupMenu);
+</script>

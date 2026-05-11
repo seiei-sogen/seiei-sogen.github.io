@@ -1,0 +1,82 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, description, technologies, image } = project.data;
+---
+
+<a
+  href={`/projects/${project.id}`}
+  class="group relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-border/40 bg-card p-2 transition-all hover:border-border hover:shadow-2xl hover:shadow-primary/5 active:scale-[0.98]"
+>
+  <div
+    class="relative aspect-video overflow-hidden rounded-2xl bg-muted"
+    transition:name={`image-${project.id}`}
+  >
+    {
+      image && (
+        <Image
+          src={image}
+          alt={title}
+          width={640}
+          height={360}
+          format="avif"
+          loading="lazy"
+          decoding="async"
+          densities={[1, 2]}
+          class="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+        />
+      )
+    }
+    {
+      !image && (
+        <div class="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-transparent object-cover">
+          <span class="font-mono text-sm opacity-20">{title}</span>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="flex flex-col gap-2 p-3">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="text-lg font-semibold tracking-tight" transition:name={`title-${project.id}`}>
+        {title}
+      </h3>
+      <span class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        {project.data.date.getFullYear()}
+      </span>
+    </div>
+
+    <p class="line-clamp-2 text-sm text-muted-foreground">
+      {description}
+    </p>
+
+    <div class="mt-2 flex flex-wrap gap-2">
+      {
+        technologies.map((tech) => (
+          <span class="rounded-full bg-secondary px-2.5 py-0.5 font-mono text-[10px] font-medium text-secondary-foreground">
+            {tech}
+          </span>
+        ))
+      }
+    </div>
+  </div>
+</a>
+<style>
+  /* Optional: adds a subtle highlight to the top edge */
+  a::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    z-index: 10;
+  }
+</style>

@@ -1,0 +1,59 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { t } from '@/i18n';
+import ContactForm from '@/components/ui/ContactForm.astro';
+import { siteConfig } from '@/site-config';
+import { Icon } from 'astro-icon/components';
+import ContentHeader from '@/components/ui/ContentHeader.astro';
+---
+
+<BaseLayout title="Contacto | Hablemos de tu Próximo Proyecto">
+  <div class="flex flex-col gap-20 py-12 md:py-24 max-w-3xl mx-auto px-6">
+    
+    <ContentHeader
+      title={t('contact.title')}
+      description={t('contact.description')}
+      backUrl="/"
+      backText={t('common.back_home')}
+      centered={true}
+    />
+
+    <div class="flex flex-col gap-16 items-center">
+      
+      <!-- Contact Links -->
+      <div class="flex flex-wrap justify-center gap-x-12 gap-y-6 reveal">
+        <a href={`mailto:${siteConfig.contact.email}`} class="group flex items-center gap-3">
+          <Icon name="ph:envelope-simple-duotone" class="w-6 h-6 text-primary" />
+          <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">Email</span>
+        </a>
+        
+        {siteConfig.socials.filter(s => s.name === "LinkedIn").map(social => (
+          <a href={social.href} target="_blank" rel="noopener noreferrer" class="group flex items-center gap-3">
+            <Icon name="ph:linkedin-logo-duotone" class="w-6 h-6 text-primary" />
+            <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">LinkedIn</span>
+          </a>
+        ))}
+
+        {siteConfig.contact.calCom && (
+          <a href={siteConfig.contact.calCom} target="_blank" rel="noopener noreferrer" class="group flex items-center gap-3">
+            <Icon name="ph:calendar-blank-duotone" class="w-6 h-6 text-primary" />
+            <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">Calendario</span>
+          </a>
+        )}
+      </div>
+
+      <div class="w-full reveal">
+        <ContactForm />
+      </div>
+
+      <!-- Simple Location -->
+      <div class="pt-12 border-t border-border/10 w-full text-center reveal">
+        <p class="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.3em] font-black">
+          Disponible para proyectos remotos a nivel global
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+</BaseLayout>

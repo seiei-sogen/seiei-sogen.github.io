@@ -1,0 +1,203 @@
+---
+import { t } from '@/i18n';
+import Button from './Button.astro';
+import Input from './Input.astro';
+import Textarea from './Textarea.astro';
+import { Icon } from 'astro-icon/components';
+import { siteConfig } from '@/site-config';
+
+const formEndpoint = siteConfig.contact.formEndpoint;
+const hasBackend = formEndpoint && formEndpoint.startsWith('http');
+---
+
+<div class="relative w-full">
+  <form
+    id="contact-form"
+    class="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-700"
+    method="POST"
+    action={hasBackend ? formEndpoint : undefined}
+    enctype="multipart/form-data"
+  >
+    <!-- Honeypot field for spam protection -->
+    <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off" />
+
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <Input type="text" name="name" label={t('contact.form.name')} placeholder={t('contact.form.name_placeholder')} required />
+      <Input type="email" name="email" label="Email" placeholder={t('footer.newsletter_placeholder')} required />
+    </div>
+
+    <Input
+      type="text"
+      name="subject"
+      label={t('contact.form.subject')}
+      placeholder={t('contact.form.subject_placeholder')}
+      required
+    />
+
+    <Textarea
+      name="message"
+      label={t('contact.form.message')}
+      placeholder={t('contact.form.message_placeholder')}
+      required
+      rows={6}
+    />
+
+    <div class="flex flex-col gap-4">
+      <Button type="submit" variant="primary" size="lg" class="group h-14 w-full px-12 sm:w-auto" data-label-sending={t('contact.sending')}>
+        {t('contact.send')}
+        <Icon
+          name="ph:paper-plane-tilt-bold"
+          class="ml-2 h-5 w-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1"
+        />
+      </Button>
+      {
+        !hasBackend && (
+          <p class="text-xs text-muted-foreground">
+            <Icon name="ph:info-duotone" class="mr-1 inline h-3 w-3" />
+            Configura <code class="font-mono text-primary">contact.formEndpoint</code> en{' '}
+            <code class="font-mono text-primary">site-config.ts</code> para habilitar el envío real
+            (Formspree, Cloudflare Forms, etc.)
+          </p>
+        )
+      }
+    </div>
+  </form>
+
+  <!-- Success State Overlay -->
+  <div
+    id="contact-success"
+    class="animate-in zoom-in-95 absolute inset-0 z-50 hidden flex-col items-center justify-center rounded-3xl bg-background/80 p-8 text-center backdrop-blur-sm duration-500"
+  >
+    <div
+      class="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary"
+    >
+      <Icon name="ph:check-circle-bold" class="h-10 w-10" />
+    </div>
+    <h3 class="mb-2 text-2xl font-bold tracking-tight">{t('contact.sent')}</h3>
+    <p class="mx-auto max-w-xs text-muted-foreground">
+      {t('contact.sent_desc')}
+    </p>
+    <button
+      id="reset-contact-form"
+      class="mt-8 font-mono text-sm font-bold text-primary hover:underline"
+    >
+      {t('contact.reset')}
+    </button>
+  </div>
+
+  <!-- Error State Overlay -->
+  <div
+    id="contact-error"
+    class="animate-in zoom-in-95 absolute inset-0 z-50 hidden flex-col items-center justify-center rounded-3xl bg-background/80 p-8 text-center backdrop-blur-sm duration-500"
+  >
+    <div
+      class="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-destructive/20 bg-destructive/10 text-destructive"
+    >
+      <Icon name="ph:warning-circle-bold" class="h-10 w-10" />
+    </div>
+    <h3 class="mb-2 text-2xl font-bold tracking-tight">{t('contact.error')}</h3>
+    <p class="mx-auto max-w-xs text-muted-foreground">
+      {t('contact.error_desc')} <a
+        href={`mailto:${siteConfig.contact.email}`}
+        class="text-primary hover:underline">{siteConfig.contact.email}</a
+      >
+    </p>
+    <button
+      id="retry-contact-form"
+      class="mt-8 font-mono text-sm font-bold text-primary hover:underline"
+    >
+      {t('contact.retry')}
+    </button>
+  </div>
+</div>
+
+<script>
+  function setupContact() {
+    const form = document.getElementById('contact-form') as HTMLFormElement;
+    const success = document.getElementById('contact-success');
+    const error = document.getElementById('contact-error');
+    const resetBtn = document.getElementById('reset-contact-form');
+    const retryBtn = document.getElementById('retry-contact-form');
+
+    if (!form) return;
+
+    const hasBackend =
+      form.hasAttribute('action') && form.getAttribute('action')?.startsWith('http');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      const originalBtnText = submitBtn?.innerHTML || '';
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        const sendingLabel = submitBtn.dataset.labelSending ?? 'Sending...';
+        submitBtn.innerHTML = `<span class="animate-pulse">${sendingLabel}</span>`;
+      }
+
+      // Hide previous states
+      success?.classList.add('hidden');
+      success?.classList.remove('flex');
+      error?.classList.add('hidden');
+      error?.classList.remove('flex');
+
+      if (!hasBackend) {
+        // No backend configured — show config hint
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
+        }
+        form.classList.add('opacity-0', 'pointer-events-none');
+        error?.classList.remove('hidden');
+        error?.classList.add('flex');
+        return;
+      }
+
+      try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action || window.location.href, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          form.reset();
+          form.classList.add('opacity-0', 'pointer-events-none');
+          success?.classList.remove('hidden');
+          success?.classList.add('flex');
+        } else {
+          throw new Error('Server error');
+        }
+      } catch {
+        form.classList.add('opacity-0', 'pointer-events-none');
+        error?.classList.remove('hidden');
+        error?.classList.add('flex');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
+        }
+      }
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      form.reset();
+      form.classList.remove('opacity-0', 'pointer-events-none');
+      success?.classList.add('hidden');
+      success?.classList.remove('flex');
+    });
+
+    retryBtn?.addEventListener('click', () => {
+      form.classList.remove('opacity-0', 'pointer-events-none');
+      error?.classList.add('hidden');
+      error?.classList.remove('flex');
+    });
+  }
+
+  // Soporte para View Transitions
+  document.addEventListener('astro:page-load', setupContact);
+</script>

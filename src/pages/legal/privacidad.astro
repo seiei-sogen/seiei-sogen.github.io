@@ -1,0 +1,38 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { siteConfig } from '@/site-config';
+
+const lastUpdated = "Marzo 2026";
+---
+<BaseLayout title={`Política de Privacidad - ${siteConfig.site.name}`}>
+  <article class="max-w-3xl mx-auto py-12 md:py-24 prose prose-neutral dark:prose-invert">
+    <h1>Política de Privacidad</h1>
+    <p class="text-sm text-foreground/70">Última actualización: {lastUpdated}</p>
+    
+    <p>En <strong>{siteConfig.site.name}</strong>, accesible desde {siteConfig.site.url}, una de nuestras principales prioridades es la privacidad de nuestros visitantes. Este documento de Política de Privacidad describe los tipos de información que recopilamos y registramos, y cómo la utilizamos.</p>
+
+    <h2>1. Información que recopilamos</h2>
+    <p>La información personal que se le pide que proporcione, y las razones por las que se le pide que la proporcione, se le aclararán en el momento en que le pidamos que proporcione su información personal.</p>
+    <p>Si se pone en contacto con nosotros directamente, es posible que recibamos información adicional sobre usted, como su nombre, dirección de correo electrónico, número de teléfono, el contenido del mensaje y/o los archivos adjuntos que nos envíe, y cualquier otra información que decida proporcionar.</p>
+
+    <h2>2. Cómo utilizamos su información</h2>
+    <p>Utilizamos la información que recopilamos de varias maneras, incluyendo para:</p>
+    <ul>
+      <li>Proporcionar, operar y mantener nuestro sitio web</li>
+      <li>Mejorar, personalizar y expandir nuestro sitio web</li>
+      <li>Comprender y analizar cómo utiliza nuestro sitio web</li>
+      <li>Desarrollar nuevos productos, servicios, características y funcionalidades</li>
+      <li>Comunicarnos con usted para el servicio al cliente, actualizaciones y marketing</li>
+      <li>Enviar correos electrónicos y prevenir fraude</li>
+    </ul>
+
+    <h2>3. Archivos de registro (Log Files)</h2>
+    <p>{siteConfig.site.name} sigue un procedimiento estándar de uso de archivos de registro. Estos archivos registran a los visitantes cuando visitan sitios web. Todas las empresas de alojamiento hacen esto y es parte del análisis de los servicios de alojamiento. La información recopilada incluye direcciones IP, tipo de navegador, Proveedor de Servicios de Internet (ISP), sello de fecha y hora, páginas de referencia/salida, y posiblemente el número de clics.</p>
+
+    <h2>4. Cookies y balizas web</h2>
+    <p>Como cualquier otro sitio web, {siteConfig.site.name} utiliza 'cookies'. Estas cookies se utilizan para almacenar información, incluyendo las preferencias de los visitantes, y las páginas web que el visitante accedió o visitó. La información se utiliza para optimizar la experiencia de los usuarios personalizando el contenido de nuestra página web basado en el tipo de navegador de los visitantes y/u otra información.</p>
+
+    <h2>5. Consentimiento</h2>
+    <p>Al utilizar nuestro sitio web, usted acepta por la presente nuestra Política de Privacidad y acepta sus términos.</p>
+  </article>
+</BaseLayout>

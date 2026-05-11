@@ -1,0 +1,141 @@
+---
+/**
+ * CustomCursor.astro - Interactive custom pointer
+ * Features smooth follow, hover states for links/buttons, 
+ * and theme-aware integration.
+ */
+---
+<div id="custom-cursor-container" class="hidden lg:block pointer-events-none">
+  <div 
+    id="cursor-dot" 
+    class="fixed w-1.5 h-1.5 bg-primary rounded-full z-[10000] opacity-0"
+  ></div>
+  <div 
+    id="cursor-outline" 
+    class="fixed w-8 h-8 border border-primary/40 rounded-full z-[9999] opacity-0 flex items-center justify-center transition-[width,height,background-color,border-color] duration-300 ease-out"
+  >
+    <div class="cursor-ring-inner w-full h-full rounded-full bg-primary/5 scale-0 transition-transform duration-500"></div>
+  </div>
+</div>
+
+<style is:global>
+  /* Hide default cursor only if we have the custom one */
+  @media (min-width: 1024px) {
+    html.has-custom-cursor, 
+    html.has-custom-cursor a, 
+    html.has-custom-cursor button {
+      cursor: none !important;
+    }
+  }
+
+  #cursor-dot, #cursor-outline {
+    transform: translate(-50%, -50%);
+    will-change: left, top, width, height, opacity;
+  }
+
+  .cursor-hover #cursor-outline {
+    width: 60px !important;
+    height: 60px !important;
+    background-color: hsl(var(--primary) / 0.05);
+    border-color: hsl(var(--primary) / 0.8);
+  }
+  
+  .cursor-hover .cursor-ring-inner {
+    transform: scale(1);
+  }
+
+  .cursor-hover #cursor-dot {
+    opacity: 0.2 !important;
+    transform: translate(-50%, -50%) scale(2);
+  }
+</style>
+
+<script>
+  function initCursor() {
+    // Only run on desktop
+    if (window.innerWidth < 1024) return;
+
+    const dot = document.getElementById('cursor-dot');
+    const outline = document.getElementById('cursor-outline');
+    if (!dot || !outline) return;
+
+    document.documentElement.classList.add('has-custom-cursor');
+
+    let posX = 0, posY = 0;
+    let mouseX = 0, mouseY = 0;
+    let firstMove = true;
+
+    // Update coordinates
+    const onMouseMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+
+      if (firstMove) {
+        dot.style.opacity = '1';
+        outline.style.opacity = '1';
+        // Jump to position immediately on first move
+        posX = mouseX;
+        posY = mouseY;
+        firstMove = false;
+      }
+
+      dot.style.left = `${mouseX}px`;
+      dot.style.top = `${mouseY}px`;
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+
+    // Smooth animation for the outline
+    function animate() {
+      const distX = mouseX - posX;
+      const distY = mouseY - posY;
+
+      posX += distX * 0.15;
+      posY += distY * 0.15;
+
+      if (outline) {
+        outline.style.left = `${posX}px`;
+        outline.style.top = `${posY}px`;
+      }
+
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Hover listeners
+    const updateInteractiveElements = () => {
+      const elements = document.querySelectorAll('a, button, .theme-option, #picker-trigger, input, textarea');
+      elements.forEach((el) => {
+        el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+        el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+      });
+    };
+
+    updateInteractiveElements();
+
+    // Cleanup and Visibility
+    const handleMouseLeave = () => {
+      if (dot && outline) {
+        dot.style.opacity = '0';
+        outline.style.opacity = '0';
+      }
+    };
+    const handleMouseEnter = () => {
+      if (dot && outline) {
+        dot.style.opacity = '1';
+        outline.style.opacity = '1';
+      }
+    };
+
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseenter', handleMouseEnter);
+
+    // Support for View Transitions: Re-bind on swap
+    document.addEventListener('astro:after-swap', updateInteractiveElements);
+  }
+
+  // Initial load
+  initCursor();
+  // View transition support
+  document.addEventListener('astro:after-swap', initCursor);
+</script>

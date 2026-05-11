@@ -1,0 +1,40 @@
+---
+import { siteConfig } from '@/site-config';
+import { t } from '@/i18n';
+import Button from '@/components/ui/Button.astro';
+import { Icon } from 'astro-icon/components';
+---
+<section class="py-12 md:py-24">
+  <div class="container px-4 sm:px-8 max-w-6xl mx-auto">
+    <div class="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-card/60 backdrop-blur-md border border-border/60 p-8 sm:p-12 md:p-24 flex flex-col items-center text-center gap-8 md:gap-12 group">
+      <!-- Animated Background Glows -->
+      <div class="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+      
+      <div class="flex flex-col gap-4 md:gap-6 max-w-2xl relative z-10">
+        <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter text-balance text-foreground leading-[1.1]">
+          {t('cta.title')}
+        </h2>
+        <p class="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed text-balance">
+          {t('cta.description')}
+        </p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 relative z-10 w-full sm:w-auto justify-center">
+        <Button href="/contact" size="xl" class="bg-primary text-primary-foreground hover:scale-105 shadow-xl shadow-primary/20 transition-all font-medium justify-center w-full sm:w-auto">
+          {t('cta.start')}
+        </Button>
+
+        {siteConfig.contact.calCom && (
+          <Button href={siteConfig.contact.calCom} variant="outline" size="xl" target="_blank" rel="noopener noreferrer" class="gap-2 justify-center w-full sm:w-auto group/cal border-border/80 hover:bg-card hover:border-border">
+            <Icon name="ph:calendar-plus-duotone" class="w-5 h-5 text-primary group-hover/cal:scale-110 transition-transform" />
+            {t('cta.schedule')}
+          </Button>
+        )}
+      </div>
+
+      <!-- Decorative blurry elements -->
+      <div class="absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-primary/10 blur-[80px] group-hover:bg-primary/20 transition-colors duration-1000 -z-10" />
+      <div class="absolute -top-24 -left-24 h-64 w-64 rounded-full bg-primary/5 blur-[80px] -z-10" />
+    </div>
+  </div>
+</section>

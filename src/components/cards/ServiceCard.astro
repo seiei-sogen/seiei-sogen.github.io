@@ -1,0 +1,41 @@
+---
+import { t } from '@/i18n';
+import { Icon } from 'astro-icon/components';
+import Card from '@/components/ui/Card.astro';
+
+interface Props {
+  id: string;
+  title: string;
+  summary: string;
+  icon: string;
+}
+
+const { id, title, summary, icon } = Astro.props;
+---
+
+<a href={`/services/${id}`} class="group reveal">
+  <Card class="h-full transition-all duration-500 group-hover:border-primary/30 group-hover:shadow-2xl group-hover:shadow-primary/5 active:scale-[0.98] group-hover:-translate-y-1">
+    <div 
+      class="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-all duration-500 group-hover:bg-primary group-hover:text-primary-foreground border border-primary/10 group-hover:border-primary"
+      transition:name={`service-icon-${id}`}
+    >
+      <Icon name={icon} class="w-7 h-7" />
+    </div>
+    
+    <div class="flex flex-col gap-3">
+      <h3 
+        class="text-2xl font-extrabold tracking-tight group-hover:text-primary transition-colors"
+        transition:name={`service-title-${id}`}
+      >
+        {title}
+      </h3>
+      <p class="text-muted-foreground text-base leading-relaxed line-clamp-3 font-medium">
+        {summary}
+      </p>
+    </div>
+
+    <div class="mt-auto pt-6 flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+      {t('card.service_details')} <span>&rarr;</span>
+    </div>
+  </Card>
+</a>

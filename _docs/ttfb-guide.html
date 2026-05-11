@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TTFB Optimization Guide — Portfolio Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script defer src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+  <style>
+    :root {
+      --bg: #09090b;
+      --bg-elevated: #111114;
+      --bg-code: #0c0c0e;
+      --border: rgba(255,255,255,0.06);
+      --border-strong: rgba(255,255,255,0.1);
+      --primary: #a78bfa;
+      --primary-dim: rgba(167,139,250,0.08);
+      --green: #10b981;
+      --green-dim: rgba(16,185,129,0.08);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245,158,11,0.08);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.08);
+      --text: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --text-dim: #52525b;
+      --content-max: 820px;
+      --radius: 12px;
+      --transition: 0.2s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      letter-spacing: -0.01em;
+      max-width: var(--content-max);
+      margin: 0 auto;
+      padding: 64px 24px 120px;
+    }
+    ::selection { background: rgba(167,139,250,0.2); color: #fff; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+    img { max-width: 100%; display: block; border-radius: var(--radius); }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--text-muted); font-size: 14px; margin-bottom: 48px;
+    }
+    .back-link:hover { color: var(--primary); text-decoration: none; }
+
+    h1 { font-size: 36px; font-weight: 900; letter-spacing: -0.04em; color: #fff; margin-bottom: 8px; }
+    h1 span { color: var(--primary); }
+    .subtitle { color: var(--text-muted); font-size: 16px; margin-bottom: 48px; }
+
+    h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: #fff; margin: 56px 0 12px; display: flex; align-items: center; gap: 10px; }
+    h2 .icon { color: var(--primary); font-size: 20px; }
+    h3 { font-size: 17px; font-weight: 700; color: var(--text); margin: 32px 0 8px; }
+    p { margin-bottom: 16px; color: var(--text-muted); }
+
+    code {
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      padding: 2px 6px; border-radius: 5px; color: #e2e8f0;
+    }
+    .code-block {
+      position: relative; background: var(--bg-code); border: 1px solid var(--border-strong);
+      border-radius: var(--radius); margin: 20px 0 28px; overflow: hidden;
+    }
+    .code-block-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+    }
+    .code-filename { font-size: 11px; font-weight: 600; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+    .code-copy {
+      background: none; border: 1px solid var(--border); color: var(--text-muted);
+      cursor: pointer; font-size: 10px; font-weight: 600; padding: 4px 10px;
+      border-radius: 6px; font-family: 'Inter', sans-serif; transition: var(--transition);
+    }
+    .code-copy:hover { background: var(--primary-dim); color: var(--primary); border-color: var(--primary); }
+    .code-block pre {
+      padding: 20px; overflow-x: auto; font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; line-height: 1.7; color: #c4c4c8; margin: 0;
+    }
+    .kw { color: #c084fc; } .str { color: #4ade80; } .cmt { color: #52525b; font-style: italic; }
+    .prop { color: #60a5fa; } .num { color: #fbbf24; }
+
+    .callout {
+      display: flex; gap: 14px; padding: 20px; border-radius: var(--radius);
+      margin: 24px 0; font-size: 14px; line-height: 1.6;
+    }
+    .callout i { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .callout strong { color: #fff; }
+    .callout-info { background: var(--primary-dim); border-left: 3px solid var(--primary); color: var(--text-muted); }
+    .callout-info i { color: var(--primary); }
+    .callout-tip { background: var(--green-dim); border-left: 3px solid var(--green); color: var(--text-muted); }
+    .callout-tip i { color: var(--green); }
+    .callout-warn { background: var(--amber-dim); border-left: 3px solid var(--amber); color: var(--text-muted); }
+    .callout-warn i { color: var(--amber); }
+
+    .metric-card {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px; margin: 24px 0;
+    }
+    .metric {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; text-align: center;
+    }
+    .metric .value { font-size: 28px; font-weight: 900; color: #fff; }
+    .metric .value.bad { color: var(--red); }
+    .metric .value.good { color: var(--green); }
+    .metric .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+    .table-wrap {
+      margin: 24px 0; border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      padding: 12px 16px; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+      color: var(--text-dim); text-align: left;
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.01); }
+    td code { font-size: 12px; }
+    td strong { color: #fff; }
+
+    .step {
+      display: flex; gap: 20px; margin-bottom: 24px; align-items: flex-start;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+    }
+    .step-num {
+      width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      color: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 15px; flex-shrink: 0;
+    }
+    .step h4 { font-size: 15px; font-weight: 700; color: #fff; margin: 0 0 6px; }
+    .step p { margin: 0; font-size: 14px; color: var(--text-muted); }
+
+    @media (max-width: 640px) {
+      body { padding: 40px 16px 80px; }
+      h1 { font-size: 28px; }
+      h2 { font-size: 20px; }
+      .metric-card { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="guide.html" class="back-link">← Back to Documentation Portal</a>
+
+<h1>TTFB <span>Optimization</span></h1>
+<p class="subtitle">Guía práctica para reducir el Time to First Byte de 2.0s a < 0.8s en Cloudflare Pages.</p>
+
+<!-- ═══ DIAGNOSIS ═══ -->
+<h2><i class="ph ph-stethoscope icon"></i> Diagnóstico</h2>
+
+<p>El TTFB (Time to First Byte) mide cuánto tarda el servidor en responder el primer byte de datos. Para un portfolio estático en Cloudflare Pages, debería ser <strong>< 0.3s</strong>.</p>
+
+<div class="metric-card">
+  <div class="metric">
+    <div class="value bad">2.0s</div>
+    <div class="label">Actual (TTFB)</div>
+  </div>
+  <div class="metric">
+    <div class="value">< 0.3s</div>
+    <div class="label">Objetivo</div>
+  </div>
+  <div class="metric">
+    <div class="value good">0.0s</div>
+    <div class="label">CLS (actual)</div>
+  </div>
+  <div class="metric">
+    <div class="value good">100</div>
+    <div class="label">SEO / A11Y</div>
+  </div>
+</div>
+
+<div class="callout callout-warn">
+  <i class="ph ph-warning"></i>
+  <div><strong>¿Por qué 2.0s es alto?</strong> Un sitio estático servido desde el edge de Cloudflare debería responder en milisegundos. Si tarda 2s, algo está bloqueando la respuesta.</div>
+</div>
+
+<!-- ═══ ROOT CAUSES ═══ -->
+<h2><i class="ph ph-magnifying-glass icon"></i> Causas comunes</h2>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Causa</th><th>Síntoma</th><th>Solución</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Edge cache miss</strong></td>
+        <td>Primer request lento, segundo rápido</td>
+        <td>Cache-Control headers + pre-warm</td>
+      </tr>
+      <tr>
+        <td><strong>Build output no optimizado</strong></td>
+        <td>TTFB lento siempre</td>
+        <td>Verificar <code>output: 'static'</code></td>
+      </tr>
+      <tr>
+        <td><strong>SSL/TLS negotiation</strong></td>
+        <td>Lento solo en primera visita</td>
+        <td>Cloudflare proxy + HSTS</td>
+      </tr>
+      <tr>
+        <td><strong>DNS resolution lento</strong></td>
+        <td>TTFB + connection time alto</td>
+        <td>Cloudflare DNS + preconnect</td>
+      </tr>
+      <tr>
+        <td><strong>Functions/Workers activos</strong></td>
+        <td>TTFB alto incluso para HTML estático</td>
+        <td>Desactivar SSR innecesario</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══ STEP-BY-STEP ═══ -->
+<h2><i class="ph ph-wrench icon"></i> Plan de corrección</h2>
+
+<!-- Step 1 -->
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content">
+    <h4>Verificar modo static (no SSR)</h4>
+    <p>Este portfolio es 100% estático. Asegúrate de que <code>astro.config.mjs</code> tenga:</p>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-filename">astro.config.mjs</span>
+        <button class="code-copy" onclick="copyCode(this)">Copiar</button>
+      </div>
+      <pre><span class="kw">export default</span> <span class="kw">defineConfig</span>({
+  <span class="prop">output</span>: <span class="str">'static'</span>,  <span class="cmt">// ← CRÍTICO: genera HTML puro</span>
+  <span class="cmt">// NO usar output: 'server' si no necesitas SSR</span>
+})</pre>
+    </div>
+    <p>Si usas <code>output: 'server'</code>, Cloudflare ejecuta un Worker para cada request — eso añade 200-800ms de cold start.</p>
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content">
+    <h4>Configurar Cloudflare Cache</h4>
+    <p>En Cloudflare Dashboard > <strong>Caching > Configuration</strong>:</p>
+    <ul>
+      <li><strong>Caching Level:</strong> Standard</li>
+      <li><strong>Browser Cache TTL:</strong> 1 year (para assets con hash)</li>
+      <li><strong>Edge Cache TTL:</strong> 1 month (para HTML estático)</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-filename">public/_headers (ya incluido)</span>
+        <button class="code-copy" onclick="copyCode(this)">Copiar</button>
+      </div>
+      <pre><span class="cmt"># Cache para assets estáticos (1 año)</span>
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+<span class="cmt"># Cache para HTML (revalida en cada request)</span>
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate</pre>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3 -->
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content">
+    <h4>Pre-warm el edge cache</h4>
+    <p>Después de cada deploy, Cloudflare sirve HTML desde el Worker sin caché. Para evitar TTFB alto en la primera visita:</p>
+    <div class="callout callout-tip">
+      <i class="ph ph-lightbulb"></i>
+      <div><strong>Tip:</strong> Usa Cloudflare's <strong>Cache Reserve</strong> o crea un <strong>Cloudflare Worker</strong> que haga un <code>fetch()</code> a tu URL después de cada deploy para calentar el edge cache. El script está incluido abajo.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 4: Worker script -->
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content">
+    <h4>Worker de Cache Warm (opcional)</h4>
+    <p>Este Worker se ejecuta después de cada deploy para "calentar" el cache del edge:</p>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-filename">wrangler.toml</span>
+        <button class="code-copy" onclick="copyCode(this)">Copiar</button>
+      </div>
+      <pre><span class="prop">name</span> = <span class="str">"cache-warm"</span>
+<span class="prop">main</span> = <span class="str">"cache-warm.js"</span>
+<span class="prop">compatibility_date</span> = <span class="str">"2026-04-01"</span>
+
+<span class="cmt">// Trigger después de cada deploy de Pages</span>
+[<span class="prop">triggers</span>]
+<span class="prop">crons</span> = [<span class="str">"0 */6 * * *"</span>]  <span class="cmt">// Cada 6 horas</span>
+
+[<span class="prop">env.production</span>]
+<span class="prop">vars</span> = { <span class="prop">SITE_URL</span> = <span class="str">"https://buyportfolio.zutra.agency"</span> }
+
+[[<span class="prop">routes</span>]]
+<span class="prop">pattern</span> = <span class="str">"buyportfolio.zutra.agency/*"</span>
+<span class="prop">zone_name</span> = <span class="str">"zutra.agency"</span></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-filename">cache-warm.js</span>
+        <button class="code-copy" onclick="copyCode(this)">Copiar</button>
+      </div>
+      <pre><span class="cmt">// Cache warm — hace fetch de todas las rutas importantes</span>
+<span class="cmt">// para que el edge cache las tenga listas</span>
+
+<span class="kw">const</span> PAGES = [
+  <span class="str">'/'</span>,
+  <span class="str">'/projects'</span>,
+  <span class="str">'/blog'</span>,
+  <span class="str">'/services'</span>,
+  <span class="str">'/contact'</span>,
+  <span class="str">'/changelog'</span>,
+];
+
+<span class="kw">export default</span> {
+  <span class="kw">async</span> <span class="prop">scheduled</span>(controller, env, ctx) {
+    <span class="kw">const</span> results = <span class="kw">await</span> Promise.<span class="kw">allSettled</span>(
+      PAGES.<span class="kw">map</span>(path => <span class="kw">fetch</span>(env.<span class="prop">SITE_URL</span> + path))
+    );
+
+    <span class="kw">const</span> warmed = results.<span class="kw">filter</span>(r => r.<span class="prop">status</span> === <span class="str">'fulfilled'</span>);
+    console.<span class="kw">log</span>(<span class="str">`Cache warm: </span>${warmed.<span class="prop">length</span>}<span class="str">/</span>${PAGES.<span class="prop">length</span>}<span class="str"> pages cached`</span>);
+  },
+};</pre>
+    </div>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content">
+    <h4>Reducir el tamaño del HTML</h4>
+    <p>Un HTML más grande = más tiempo para el primer byte. Optimizaciones:</p>
+    <ul>
+      <li>Eliminar <code>astro:transitions</code> si no lo usas (añade ~14 KB de JS al <code>&lt;head&gt;</code>)</li>
+      <li>Minificar HTML: Astro ya lo hace en build</li>
+      <li>Reducir JSON-LD: incluir solo en las páginas que lo necesitan</li>
+      <li>Eliminar <code>&lt;script&gt;</code> inline innecesarios del <code>&lt;head&gt;</code></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Step 6 -->
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-content">
+    <h4>Verificar en producción</h4>
+    <p>Después de aplicar los cambios, verifica:</p>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-filename">Terminal</span>
+        <button class="code-copy" onclick="copyCode(this)">Copiar</button>
+      </div>
+      <pre><span class="cmt"># Test 1: Primera visita (sin cache)</span>
+curl -o /dev/null -w "TTFB: %{time_starttransfer}s\n" \
+  -H "Cache-Control: no-cache" \
+  https://buyportfolio.zutra.agency/
+
+<span class="cmt"># Test 2: Segunda visita (con cache)</span>
+curl -o /dev/null -w "TTFB: %{time_starttransfer}s\n" \
+  https://buyportfolio.zutra.agency/
+
+<span class="cmt"># Test 3: Headers de cache</span>
+curl -I https://buyportfolio.zutra.agency/ | grep -i cache</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CHECKLIST ═══ -->
+<h2><i class="ph ph-clipboard-text icon"></i> Checklist final</h2>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>#</th><th>Acción</th><th>Estado</th><th>Impacto</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>output: 'static'</code> confirmado</td><td>✅</td><td>Alto</td></tr>
+      <tr><td>2</td><td>Cache-Control headers en <code>_headers</code></td><td>✅</td><td>Alto</td></tr>
+      <tr><td>3</td><td>Cloudflare Cache Level: Standard</td><td>⬜</td><td>Alto</td></tr>
+      <tr><td>4</td><td>Edge Cache TTL: 1 month</td><td>⬜</td><td>Alto</td></tr>
+      <tr><td>5</td><td>HSTS activado (ya incluido)</td><td>✅</td><td>Medio</td></tr>
+      <tr><td>6</td><td>Cache warm Worker (opcional)</td><td>⬜</td><td>Medio</td></tr>
+      <tr><td>7</td><td>View Transitions off (si no se usa)</td><td>⬜</td><td>Bajo</td></tr>
+      <tr><td>8</td><td>Custom Cursor off (si no se usa)</td><td>⬜</td><td>Bajo</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="callout callout-info">
+  <i class="ph ph-info"></i>
+  <div><strong>Nota:</strong> Los pasos 3 y 4 se configuran en el dashboard de Cloudflare, no en el código. El paso 6 requiere un deploy separado del Worker.</div>
+</div>
+
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.textContent).then(() => {
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>

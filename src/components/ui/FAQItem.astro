@@ -1,0 +1,33 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  question: string;
+  answer: string;
+}
+
+const { question, answer } = Astro.props;
+---
+
+<details class="group border border-border/40 rounded-3xl bg-secondary/10 overflow-hidden transition-all duration-500 open:bg-secondary/20 reveal">
+  <summary class="flex items-center justify-between p-8 cursor-pointer list-none select-none focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-t-3xl">
+    <h3 class="text-xl font-extrabold tracking-tight pr-8 leading-tight group-hover:text-primary transition-colors">
+      {question}
+    </h3>
+    <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10 transition-all duration-500 group-open:rotate-180 group-open:bg-primary group-open:text-primary-foreground group-hover:scale-110">
+      <Icon name="ph:caret-down-bold" class="w-5 h-5 transition-transform" />
+    </div>
+  </summary>
+  <div class="px-8 pb-8 animate-in fade-in slide-in-from-top-4 duration-500 ease-out">
+    <div class="w-full h-px bg-border/20 mb-6"></div>
+    <p class="text-muted-foreground leading-relaxed text-lg font-medium italic border-l-4 border-primary/30 pl-6">
+      {answer}
+    </p>
+  </div>
+</details>
+
+<style>
+  summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

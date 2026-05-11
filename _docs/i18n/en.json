@@ -1,0 +1,571 @@
+{
+  "copy": {
+    "button": "Copy",
+    "success": "Copied"
+  },
+  "common": {
+    "table": {
+      "field": "Field",
+      "type": "Type",
+      "desc": "Description",
+      "what": "What it does",
+      "example": "Example",
+      "required": "Required",
+      "notes": "Notes",
+      "default": "Default",
+      "collection": "Collection",
+      "folder": "Path",
+      "format": "Format",
+      "purpose": "Purpose"
+    },
+    "optional": "optional"
+  },
+  "sidebar": {
+    "brand": "Portfolio Docs",
+    "nav": {
+      "intro": {
+        "label": "Getting Started",
+        "welcome": "Welcome",
+        "quickstart": "Quick Start",
+        "structure": "Structure"
+      },
+      "config": {
+        "label": "Configuration",
+        "siteconfig": "site-config.ts",
+        "colors": "Colors & Themes",
+        "i18n": "i18n (Languages)",
+        "header": "Header & Logo",
+        "footer": "Footer & Logo",
+        "toggles": "UI Toggles",
+        "theme": "Theme Control"
+      },
+      "content": {
+        "label": "Content",
+        "collections": "Collections",
+        "projects": "Projects",
+        "blog": "Blog",
+        "services": "Services",
+        "testimonials": "Testimonials",
+        "faq": "FAQ"
+      },
+      "customize": {
+        "label": "Customization",
+        "components": "Components",
+        "images": "Images",
+        "typography": "Typography"
+      },
+      "features": {
+        "label": "Features",
+        "contact": "Contact Form",
+        "pagination": "Pagination",
+        "seo": "SEO & GEO",
+        "a11y": "Accessibility",
+        "pwa": "PWA",
+        "analytics": "Analytics"
+      },
+      "deploy": {
+        "label": "Deploy",
+        "cloudflare": "Cloudflare",
+        "vars": "Variables",
+        "troubleshooting": "Troubleshooting"
+      }
+    },
+    "footer": {
+      "changelog": "Changelog",
+      "agency": "Zutra.agency"
+    }
+  },
+  "intro": {
+    "tagline": "DOCUMENTATION — v2.9.0",
+    "title": "Your Portfolio.<br><span>Documented.</span>",
+    "desc": "The complete guide to configure, customize, and deploy your minimalist portfolio. From the first command to production on Cloudflare.",
+    "card1": {
+      "title": "5 min setup",
+      "desc": "Get the site running locally with <code>pnpm dev</code> and edit your name."
+    },
+    "card2": {
+      "title": "1 config file",
+      "desc": "Almost everything is customized from <code>src/site-config.ts</code>."
+    },
+    "card3": {
+      "title": "Zero external dependencies",
+      "desc": "Local fonts, no tracking CDNs, no Google Fonts."
+    },
+    "card4": {
+      "title": "Astro 6.1",
+      "desc": "View Transitions, Content Layer API, Islands Architecture."
+    }
+  },
+  "qs": {
+    "title": "Quick Start",
+    "subtitle": "From zero to your portfolio running in less than 5 minutes.",
+    "reqs": {
+      "title": "Requirements",
+      "node": "Node.js 22+",
+      "node.desc": "verify with <code>node -v</code>",
+      "pnpm": "pnpm 9+",
+      "pnpm.desc": "install with <code>npm i -g pnpm</code>",
+      "vscode": "VS Code",
+      "vscode.desc": "with the official Astro extension"
+    },
+    "prereq": {
+      "title": "Prerequisites:",
+      "text": "This template uses <code>pnpm</code> instead of <code>npm</code>. Install it first:",
+      "link": "other install methods"
+    },
+    "install": {
+      "title": "Installation"
+    },
+    "comment": {
+      "install": "# 1. Install dependencies",
+      "dev": "# 2. Start dev server",
+      "browser": "# 3. Open http://localhost:4321 in your browser"
+    },
+    "tip": {
+      "title": "Dev server error?",
+      "text": "Run <code>rm -rf .astro node_modules/.vite && pnpm dev</code> to clear Vite and Astro caches."
+    },
+    "steps": {
+      "title": "First Steps",
+      "1": "Edit <code>src/site-config.ts</code> — set your name, email, and social networks",
+      "2": "Replace <code>public/favicon.svg</code> with your logo",
+      "3": "Replace <code>public/og-image.jpg</code> with your social image (1200×630px)",
+      "4": "Edit content in <code>src/content/</code> — add your real projects"
+    }
+  },
+  "ps": {
+    "title": "Project Structure",
+    "subtitle": "Each directory has a unique responsibility. If you know where to look, you can edit in seconds.",
+    "tree": {
+      "docs": "This documentation",
+      "public": "Static assets (favicon, og-image, llms.txt)",
+      "assets": "Images optimized by Astro (hero, projects)",
+      "sections": "Page blocks (Hero, FAQ, Stack...)",
+      "ui": "Primitives (Button, Card, SEO, Input...)",
+      "cards": "Data components (ProjectCard, PostCard...)",
+      "navigation": "Header, Footer, ThemeToggle, Cursor...",
+      "content": "MDX: your content database",
+      "layouts": "BaseLayout.astro (the global shell for every page)",
+      "pages": "Routes (file-based routing)",
+      "styles": "global.css (CSS variables, animations)",
+      "utils": "Helpers (seo-schemas.ts, debug-mock.js)",
+      "i18n": "Translations (ES/EN)",
+      "siteconfig": "⭐ YOUR CONTROL PANEL"
+    }
+  },
+  "sc": {
+    "title": "site-config.ts",
+    "subtitle": "The only file you need to edit to customize 80% of the site. Every field is documented below.",
+    "core": {
+      "title": "<code>site</code> — Core",
+      "url": "Your domain. No trailing slash. <strong>Critical</strong> for SEO and sitemaps.",
+      "lang": "HTML <code>lang</code> attribute.",
+      "locale": "Date formatting.",
+      "name": "Commercial name. Logo + copyright.",
+      "favicon": "Favicon path in <code>/public</code>."
+    },
+    "profile": {
+      "title": "<code>profile</code> — Your Identity",
+      "name": "Your full name. SEO author + JSON-LD.",
+      "role": "Your job title. JSON-LD jobTitle.",
+      "headline": "Short value proposition. Shown in the Footer.",
+      "bio": "Your biography. <strong>Rendered as the Hero paragraph.</strong>",
+      "avatar": "Your photo. Saved in <code>/public</code>. If it doesn't exist, shows initials.",
+      "heroImage": "Main Hero photo. Located in <code>/src/assets/</code> for automatic compression."
+    },
+    "seo": {
+      "title": "<code>seo</code> — Metadata",
+      "titleSuffix": "Appended to every page title.",
+      "defaultDescription": "Meta description fallback.",
+      "ogImage": "Image for Open Graph / Twitter Cards. 1200×630px.",
+      "twitterHandle": "Your X/Twitter handle.",
+      "themeColor": "Colors for mobile browsers (dark/light)."
+    },
+    "contact": {
+      "title": "<code>contact</code> — Contact",
+      "email": "Your email. Used on contact page, form, and legal pages.",
+      "calCom": "Cal.com link to schedule calls.",
+      "formEndpoint": "<strong>Form backend.</strong> Enter your Formspree or Cloudflare Forms URL. If empty, the form shows a configuration hint."
+    },
+    "url": {
+      "warn": "<strong>URL without trailing slash.</strong> The <code>site.url</code> field must not end with <code>/</code>. <code>\"https://myportfolio.dev\"</code> ✅ <code>\"https://myportfolio.dev/\"</code> ❌"
+    }
+  },
+  "colors": {
+    "title": "Colors & Themes",
+    "subtitle": "The portfolio uses HSL colors in string format. The primary color is applied to buttons, links, and accents.",
+    "howto": {
+      "title": "How to change your brand color",
+      "1": "Start <code>pnpm dev</code>",
+      "2": "Click the floating palette icon (bottom right corner)",
+      "3": "Choose a palette or use the color picker",
+      "4": "Click <strong>\"Copy\"</strong> in the panel",
+      "5": "Paste the object into <code>site-config.ts → ui.brandColor</code>"
+    },
+    "vars": {
+      "title": "Available CSS Variables",
+      "desc": "All tokens are defined in <code>src/styles/global.css</code>: <code>--background</code>, <code>--foreground</code>, <code>--primary</code>, etc. Each has different values for <code>:root</code> (light) and <code>.dark</code>."
+    }
+  },
+  "i18n": {
+    "title": "i18n (Languages)",
+    "subtitle": "Integrated internationalization system. The language is controlled from <code>site.lang</code> in <code>site-config.ts</code>.",
+    "idiomas": {
+      "title": "Supported Languages"
+    },
+    "table": {
+      "code": "Code",
+      "idioma": "Language",
+      "locale": "Locale (dates)",
+      "es": "Spanish (Español)",
+      "en": "English",
+      "pl": "Polish (Polski)"
+    },
+    "change": {
+      "title": "How to change the language",
+      "comments": "// 'es' | 'en' | 'pl'\n// Date formats"
+    },
+    "note": "<strong>Note:</strong> The site uses a single global language. To activate Polish, change both values.",
+    "add": {
+      "title": "Add a new language",
+      "1": "Open <code>src/i18n.ts</code>",
+      "2": "Add a new object in <code>translations</code> (e.g., <code>fr: { ... }</code> for French)",
+      "3": "Copy all keys from <code>en</code> and translate the values",
+      "4": "Update <code>SupportedLocale</code> to include the new code",
+      "5": "Set <code>site.lang: 'fr'</code> in <code>site-config.ts</code>"
+    }
+  },
+  "header": {
+    "title": "Header & Logo",
+    "subtitle": "Customize the header logo. You can use text (default), an SVG logo, or an image.",
+    "options": {
+      "title": "header.logoType Options",
+      "logoType": "Type of logo to display in the header.",
+      "logoSvg": "Path to the SVG file in <code>public/</code> (e.g., <code>'/logo.svg'</code>). Only for <code>logoType: 'svg'</code>.",
+      "logoImage": "Path to the image (e.g., <code>'/images/logo.png'</code>). Only for <code>logoType: 'image'</code>.",
+      "logoAlt": "Alternative text for accessibility (<code>alt</code> attribute)."
+    },
+    "examples": {
+      "title": "Examples",
+      "svg": "SVG Logo:",
+      "image": "Image Logo (PNG/WebP):",
+      "text": "Text (default):",
+      "comment_text": "// Uses site.name to generate the logo"
+    },
+    "tip": "<strong>Tip:</strong> Place your logo files in the <code>public/</code> folder so they are served statically. SVG is preferred for being scalable and lightweight."
+  },
+  "footer_logo": {
+    "title": "Footer & Logo",
+    "subtitle": "Customize the footer logo. Works the same as the header: text, SVG, or image. The <code>text</code> field controls the version/copyright text.",
+    "options": {
+      "title": "Footer Options",
+      "logoType": "Type of logo to display in the footer.",
+      "logoSvg": "Path to the SVG file in <code>public/</code>. Only for <code>logoType: 'svg'</code>.",
+      "logoImage": "Path to the image. Only for <code>logoType: 'image'</code>.",
+      "logoAlt": "Alternative text for accessibility.",
+      "text": "Version/copyright text shown in the footer bottom bar."
+    },
+    "examples": {
+      "title": "Examples",
+      "svg": "SVG Logo in footer:",
+      "image": "Image Logo in footer:",
+      "text": "Text (default):",
+      "comment_text": "// Uses site.name to generate the logo"
+    },
+    "tip": "<strong>Tip:</strong> You can use the same SVG file in both the header and footer. If your brand has different versions (horizontal/compact), use different paths for each section."
+  },
+  "toggles": {
+    "title": "UI Toggles",
+    "subtitle": "Enable or disable features from <code>site-config.ts → ui</code>. Set to <code>false</code> to disable.",
+    "table": {
+      "transitions": "SPA transitions between pages (no reload).",
+      "theme": "Floating color panel. <strong>Disable this in production.</strong>",
+      "banner": "\"Buy Template\" banner. <strong>Disable this for the end client.</strong>",
+      "cursor": "Premium interactive cursor with magnetic effect.",
+      "pattern": "Dot grid background pattern. <code>false</code> for a clean background.",
+      "orbs": "Color/aurora orbs in the background. Combine with <code>showBackgroundPattern: false</code> for a white background."
+    }
+  },
+  "theme": {
+    "title": "Theme Control (Dark/Light)",
+    "subtitle": "The <code>theme</code> section in <code>site-config.ts</code> gives you full control over dark/light mode. You can allow the user to choose or force a specific theme.",
+    "options": {
+      "allowToggle": "If <code>false</code>, the theme button disappears and is locked to <code>defaultMode</code>.",
+      "defaultMode": "Forced theme when <code>allowToggle: false</code>. Ignores system preferences."
+    },
+    "comments": {
+      "allow": "// If false, the user CANNOT change the theme (toggle hidden)\n// and the defaultMode value is forced, ignoring browser preferences",
+      "default": "// 'light' or 'dark' — default and permanent theme if allowToggle is false",
+      "solo": "// Only affects initial load"
+    },
+    "examples": {
+      "title": "Usage Examples",
+      "light": "Forced to light theme (no toggle):",
+      "toggle": "Toggle enabled (default behavior):"
+    },
+    "migration": "<strong>Migration from enableDarkMode:</strong> The <code>ui.enableDarkMode</code> option was replaced by the <code>theme</code> section. If you had <code>enableDarkMode: false</code>, use <code>allowToggle: false, defaultMode: 'light'</code> instead."
+  },
+  "collections": {
+    "title": "Content Collections",
+    "subtitle": "Your content lives in <code>src/content/</code> as MDX files with frontmatter validated by Zod. If you omit a required field, Astro will fail during build.",
+    "table": {
+      "projects": "Portfolio case studies",
+      "blog": "Articles and reflections",
+      "services": "Service pages / offerings",
+      "testimonials": "Client reviews",
+      "faq": "Accordion frequently asked questions",
+      "changelog": "Version history"
+    },
+    "naming": "<strong>How to name a file?</strong> Use kebab-case: <code>my-project.md</code> → the URL will be <code>/projects/my-project</code>."
+  },
+  "projects": {
+    "title": "Projects",
+    "comments": {
+      "body": "Your project body goes here in Markdown or MDX.\nYou can include images, code, and whatever you need."
+    },
+    "table": {
+      "title": "—",
+      "description": "Short summary for the card.",
+      "technologies": "Must be <code>[\"A\", \"B\"]</code>, not a string.",
+      "date": "Format <code>YYYY-MM-DD</code>. Order from newest to oldest.",
+      "repo": "If it exists, shows the GitHub icon.",
+      "live": "If it exists, shows the \"Live Demo\" link.",
+      "image": "Points to <code>/src/assets/</code> for automatic compression."
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "comments": {
+      "draft": "# true = will not be published",
+      "body": "# Post title\n\nWrite your content here..."
+    },
+    "warn": "<strong><code>summary</code> is mandatory and serves a dual purpose:</strong> 1) SEO Meta description. 2) Article header when reading. Do not omit it.",
+    "tip": "<strong>Draft mode:</strong> Set <code>draft: true</code> in the frontmatter and the post will disappear from the build. Ideal for works in progress."
+  },
+  "services": {
+    "title": "Services",
+    "comments": {
+      "icon": "# The ph: prefix is mandatory!",
+      "order": "# Controls the order in the grid"
+    },
+    "danger": "<strong>Icon must start with <code>ph:</code>.</strong> Search at <a href=\"https://icon-sets.iconify.design/ph/\" target=\"_blank\">Phosphor Icons</a> and use the exact name. E.g.: <code>ph:desktop</code>, <code>ph:palette</code>."
+  },
+  "testimonials": {
+    "title": "Testimonials"
+  },
+  "faq": {
+    "title": "FAQ"
+  },
+  "hardcoded": {
+    "title": "Hardcoded Components",
+    "subtitle": "Not everything is in site-config. These texts are directly in the components and require editing the .astro file.",
+    "table": {
+      "hero": {
+        "what": "Hero Title",
+        "how": "The h1 \"I Design and Program...\" and button texts."
+      },
+      "stack": {
+        "what": "Tech Stack",
+        "how": "The <code>techStack</code> array with the technologies you master."
+      },
+      "experience": {
+        "what": "Work Experience",
+        "how": "The <code>experiences</code> array with company, role, period, and description."
+      },
+      "error": {
+        "what": "404 Page",
+        "how": "Title, description, and texts for the error page."
+      },
+      "legal": {
+        "what": "Legal",
+        "how": "Privacy and terms texts."
+      }
+    }
+  },
+  "images": {
+    "title": "Images",
+    "subtitle": "Two locations with different purposes.",
+    "public": {
+      "title": "/public/images/",
+      "desc": "Assets served as-is. Avatars, logos. <strong>Not optimized.</strong>"
+    },
+    "src": {
+      "title": "/src/assets/images/",
+      "desc": "Images Astro processes and optimizes automatically (webp, responsive, sizes). <strong>Use these for hero and projects.</strong>"
+    },
+    "tip": "<strong>Recommended format:</strong> WebP for photos, SVG for logos and icons. Maximum OG image size: 1200×630px."
+  },
+  "fonts": {
+    "title": "Typography",
+    "desc": "Two local fonts are used (no Google Fonts, no tracking):",
+    "inter": "<strong>Inter</strong> — Main sans-serif. Imported from <code>@fontsource-variable/inter</code>.",
+    "roboto": "<strong>Roboto Mono</strong> — Monospace for code and labels. Imported from <code>@fontsource-variable/roboto-mono</code>.",
+    "footer": "Both are imported in <code>src/layouts/BaseLayout.astro</code> and configured in <code>tailwind.config.mjs</code>."
+  },
+  "contact": {
+    "title": "Contact Form",
+    "subtitle": "The form sends real data. You only need to configure an endpoint.",
+    "option1": "Option 1: Formspree (Recommended)",
+    "steps": {
+      "1": "Create an account at <a href=\"https://formspree.io\" target=\"_blank\">formspree.io</a>",
+      "2": "Create a new form and copy the URL",
+      "3": "Paste it into <code>site-config.ts → contact.formEndpoint</code>"
+    },
+    "option2": "Option 2: Cloudflare Forms / Custom API",
+    "option2_desc": "Any endpoint that accepts <code>POST</code> with <code>FormData</code>. Set <code>contact.formEndpoint</code> with your URL.",
+    "comments": {
+      "url": "// ← your URL here"
+    },
+    "info": "<strong>Anti-spam included:</strong> The form includes an invisible honeypot field (<code>_gotcha</code>) that blocks bots."
+  },
+  "pagination": {
+    "title": "Pagination",
+    "subtitle": "Configure how many items to show before creating new pages.",
+    "generates": "This automatically generates:",
+    "list": {
+      "1": "<code>/projects</code> — page 1 (6 projects)",
+      "2": "<code>/projects/page/2</code> — page 2 (if there are more than 6)",
+      "3": "<code>/blog</code> — page 1 (4 posts)",
+      "4": "<code>/blog/page/2</code> — page 2 (if there are more than 4)"
+    }
+  },
+  "seo": {
+    "title": "SEO & GEO",
+    "subtitle": "The <code>SEO.astro</code> component generates everything automatically. You just fill out the config.",
+    "auto_title": "What it generates automatically",
+    "list": {
+      "meta": "<strong>Meta tags:</strong> title, description, keywords, author, canonical",
+      "og": "<strong>Open Graph:</strong> og:type, og:title, og:description, og:image (1200×630), og:locale",
+      "twitter": "<strong>Twitter Cards:</strong> summary_large_image with all fields",
+      "jsonld": "<strong>JSON-LD:</strong> Person (home), Article (blog), CreativeWork (projects), FAQPage (faq), Service (services)",
+      "sitemap": "<strong>Sitemap:</strong> <code>sitemap-index.xml</code> generated on every build",
+      "robots": "<strong>Robots.txt:</strong> Dynamic route referencing the sitemap"
+    },
+    "geo_title": "GEO (Generative Engine Optimization)",
+    "geo_desc": "The <code>public/llms.txt</code> file describes your site for AI search engines (Perplexity, ChatGPT Search, Claude). It contains: stack, folder structure, content collections, and quick links."
+  },
+  "a11y": {
+    "title": "Accessibility",
+    "subtitle": "The template complies with WCAG 2.2 AA. These are the active protections:",
+    "cards": {
+      "motion": {
+        "title": "Reduced Motion",
+        "desc": "If the user has <code>prefers-reduced-motion: reduce</code>, all animations (reveal, hover, magnetic, mobile menu) are automatically disabled."
+      },
+      "keyboard": {
+        "title": "Keyboard Navigation",
+        "desc": "The mobile menu closes with Escape. All buttons have <code>aria-label</code> and social icons have <code>sr-only</code> text."
+      },
+      "contrast": {
+        "title": "AA Contrast",
+        "desc": "HSL tokens are calibrated to meet WCAG AA in both modes (light and dark)."
+      },
+      "alt": {
+        "title": "Descriptive Alt Texts",
+        "desc": "Hero images include name, role, and context. Projects use the title as an alt fallback."
+      }
+    }
+  },
+  "pwa": {
+    "title": "PWA",
+    "subtitle": "Progressive Web App with an auto-update service worker.",
+    "includes": "What it includes",
+    "list": {
+      "1": "<code>site.webmanifest</code> in <code>/public/</code>",
+      "2": "Service worker with cache strategy for <code>.js, .css, .html, .ico, .png, .svg, .webp, .avif</code>",
+      "3": "Automatic registration with <code>autoUpdate</code>"
+    },
+    "generate": {
+      "title": "Generate PNG Icons",
+      "comment1": "# Generates icon-192x192.png, icon-512x512.png and apple-touch-icon.png",
+      "comment2": "# from public/favicon.svg using Sharp"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "The template comes <strong>without tracking by default</strong>. These are the supported providers:",
+    "table": {
+      "cloudflare": {
+        "type": "Zero-JS, server-side",
+        "setup": "Enable it in the Cloudflare Dashboard. No code needed."
+      },
+      "plausible": {
+        "type": "Privacy-friendly",
+        "setup": "Add the script tag in the <code>BaseLayout.astro</code> head."
+      },
+      "umami": {
+        "type": "Self-hosted",
+        "setup": "Same as Plausible, using your instance URL."
+      },
+      "google": {
+        "type": "Via Partytown (sandboxed)",
+        "setup": "Configured in <code>astro.config.mjs</code>. Just set <code>PUBLIC_GA_MEASUREMENT_ID</code>."
+      }
+    },
+    "tip": "<strong>Recommendation:</strong> Cloudflare Web Analytics is the simplest option — zero additional JavaScript. Go to Cloudflare Dashboard > Analytics > Web Analytics."
+  },
+  "deploy": {
+    "title": "Deploy on Cloudflare Pages",
+    "subtitle": "The recommended option. Astro + Cloudflare = global edge deployment.",
+    "github_title": "From GitHub (recommended)",
+    "step1": {
+      "title": "Step 1: Upload Your Code",
+      "desc": "Commit and push to your repository: <code>git push origin main</code>"
+    },
+    "step2": {
+      "title": "Step 2: Connect to Cloudflare",
+      "desc": "Go to <a href=\"https://dash.cloudflare.com\" target=\"_blank\">dash.cloudflare.com</a> → Workers & Pages → Create → Connect to Git → select your repo."
+    },
+    "step3": {
+      "title": "Step 3: Configure Build",
+      "desc": "Use the <strong>Astro</strong> preset or configure manually:",
+      "list1": "<strong>Build command:</strong> <code>pnpm build</code>",
+      "list2": "<strong>Build output directory:</strong> <code>dist</code>",
+      "list3": "<strong>Node version:</strong> <code>22</code>"
+    },
+    "warn": "<strong>Node 22 is mandatory.</strong> In Cloudflare Pages, add the environment variable <code>NODE_VERSION = 22</code> in Settings > Environment Variables.",
+    "domain": {
+      "title": "Custom Domain",
+      "desc": "In Cloudflare Pages → your project → Custom domains → add your domain. Cloudflare handles SSL automatically."
+    }
+  },
+  "env": {
+    "title": "Environment Variables",
+    "subtitle": "Copy <code>.env.example</code> to <code>.env</code> and configure as needed.",
+    "comments": {
+      "form": "# Contact form backend",
+      "analytics": "# Analytics (choose one)"
+    },
+    "danger": "<strong>Never commit <code>.env</code>.</strong> The file is in <code>.gitignore</code>. Use <code>.env.example</code> as a reference for the team."
+  },
+  "troubleshoot": {
+    "title": "Troubleshooting",
+    "subtitle": "Common errors and their solutions.",
+    "cards": {
+      "cloudflare": {
+        "title": "\"Dev server crashes with Cloudflare worker error\"",
+        "desc": "Corrupt Vite/Astro cache. Run:"
+      },
+      "commonjs": {
+        "title": "\"CommonJS dependency breaks the build\"",
+        "desc": "Add the dependency to <code>ssr.noExternal</code> in <code>astro.config.mjs</code>:"
+      },
+      "zod": {
+        "title": "\"Zod validation error in content\"",
+        "desc": "Check the frontmatter of the MDX file mentioned in the error. A required field is missing or has the wrong type."
+      },
+      "form": {
+        "title": "\"Contact form does not send\"",
+        "desc": "Verify that <code>contact.formEndpoint</code> in <code>site-config.ts</code> has a valid URL. If empty, the form displays a configuration warning."
+      },
+      "pwa": {
+        "title": "\"PWA does not work in production\"",
+        "desc": "Ensure the <code>manifest</code> in <code>astro.config.mjs</code> has the correct URL. Run <code>node scripts/generate-pwa-icons.mjs</code> to generate the necessary PNGs."
+      },
+      "config": {
+        "title": "\"Changes in site-config.ts are not reflected\"",
+        "desc": "The Astro dev server sometimes caches the config. Restart the server: <code>Ctrl+C</code> → <code>pnpm dev</code>."
+      }
+    }
+  }
+}

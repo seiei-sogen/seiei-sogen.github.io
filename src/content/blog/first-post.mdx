@@ -1,0 +1,34 @@
+---
+title: "Construyendo con Astro 6 y Cloudflare"
+date: "2026-03-29"
+summary: "Una guía rápida sobre cómo configurar Astro 6 para un despliegue optimizado en Cloudflare Pages."
+draft: false
+---
+
+# El Futuro de la Web con Astro 6
+
+Astro 6 ha llegado con cambios significativos, especialmente en cómo interactúa con los adaptadores de despliegue.
+
+## ¿Qué hay de nuevo?
+
+1.  **Vite 7**: Un motor de compilación más rápido y eficiente.
+2.  **Content Layer**: Una forma unificada de gestionar el contenido desde cualquier fuente.
+3.  **Mejor Soporte de Cloudflare**: Ahora podemos usar `workerd` en desarrollo.
+
+### Configuración del Adaptador
+
+Para usar el adaptador de Cloudflare en modo directorio (recomendado), solo necesitas:
+
+```javascript
+import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
+
+export default defineConfig({
+  output: 'server',
+  adapter: cloudflare({
+    mode: 'directory'
+  })
+});
+```
+
+Este portafolio es un ejemplo perfecto de cómo estas tecnologías se pueden combinar para crear una experiencia premium.

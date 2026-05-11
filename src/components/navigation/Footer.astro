@@ -1,0 +1,59 @@
+---
+import { siteConfig } from '@/site-config';
+import { t, type TranslationKey } from '@/i18n';
+import { Icon } from 'astro-icon/components';
+import Newsletter from '@/components/ui/Newsletter.astro';
+---
+
+<footer class="border-t border-border/40 py-24 reveal">
+  <div class="container px-4 sm:px-8 max-w-6xl mx-auto flex flex-col gap-24">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      <div class="flex flex-col gap-6">
+        <a href="/" class="inline-flex items-center hover:opacity-70 transition-opacity">
+          {siteConfig.footer.logoType === 'svg' && siteConfig.footer.logoSvg ? (
+            <img src={siteConfig.footer.logoSvg} alt={siteConfig.footer.logoAlt} class="h-8 w-auto" />
+          ) : siteConfig.footer.logoType === 'image' && siteConfig.footer.logoImage ? (
+            <img src={siteConfig.footer.logoImage} alt={siteConfig.footer.logoAlt} class="h-8 w-auto" />
+          ) : (
+            <span class="font-mono font-medium text-lg tracking-tighter">
+              {siteConfig.site.name.split('.')[0]}<span class="text-primary/50">.</span>{siteConfig.site.name.split('.')[1]}
+            </span>
+          )}
+        </a>
+        <p class="text-muted-foreground text-sm max-w-xs leading-relaxed">
+          {siteConfig.profile.headline}
+        </p>
+        <div class="flex items-center gap-6 mt-2">
+          {siteConfig.socials.map((social) => (
+            <a href={social.href} target="_blank" rel="noopener noreferrer" class="text-muted-foreground hover:text-primary transition-colors">
+              <span class="sr-only">{social.name}</span>
+              <Icon name={social.icon} class="w-6 h-6" />
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <Newsletter />
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-12 border-t border-border/40">
+      <p class="text-xs text-muted-foreground font-mono">
+        &copy; {new Date().getFullYear()} {siteConfig.site.name}. {siteConfig.footer.text}
+        — Template by <a href="https://zutra.agency" target="_blank" class="hover:text-primary transition-colors underline decoration-primary/20">Zutra</a>
+      </p>
+      <div class="flex items-center gap-8 flex-wrap justify-center sm:justify-end">
+        {siteConfig.navigation.map((item) => (
+          <a href={item.href} class="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            {t(item.name as TranslationKey)}
+          </a>
+        ))}
+        <div class="h-3 w-px bg-border/40 mx-2 hidden sm:block"></div>
+        {siteConfig.legal.map((item) => (
+          <a href={item.href} class="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            {t(item.name as TranslationKey)}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</footer>

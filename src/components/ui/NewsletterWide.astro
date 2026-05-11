@@ -1,0 +1,45 @@
+---
+import { t } from '@/i18n';
+import Button from './Button.astro';
+import { siteConfig } from '@/site-config';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = t('newsletter_wide.title'),
+  description = t('newsletter_wide.description'),
+} = Astro.props;
+
+const socials = siteConfig.socials;
+---
+
+<div class="bg-muted/30 rounded-[2.5rem] border border-border/40 p-8 md:p-16 flex flex-col gap-10 items-center text-center reveal">
+  <div class="flex flex-col gap-5 max-w-xl">
+    <h3 class="text-3xl font-extrabold tracking-tighter leading-none">{title}</h3>
+    <p class="text-lg text-muted-foreground leading-relaxed font-medium">
+      {description}
+    </p>
+  </div>
+
+  <div class="flex flex-wrap items-center justify-center gap-8">
+    {socials.map((social) => (
+      <a 
+        href={social.href} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-all hover:underline underline-offset-8 decoration-primary/30"
+      >
+        {social.name}
+      </a>
+    ))}
+  </div>
+
+  <div class="w-full max-w-md pt-8 border-t border-border/20">
+    <Button href="/contact" variant="primary" class="w-full h-14 text-sm font-bold tracking-widest uppercase">
+      {t('newsletter_wide.cta')} <span>&rarr;</span>
+    </Button>
+  </div>
+</div>

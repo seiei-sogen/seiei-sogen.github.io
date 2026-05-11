@@ -1,0 +1,301 @@
+---
+import { t } from '@/i18n';
+import { Icon } from 'astro-icon/components';
+
+const palettes = [
+  { name: 'Emerald',    light: '152 70% 38%', dark: '152 70% 58%', foreground: '0 0% 100%' },
+  { name: 'Indigo',     light: '230 70% 52%', dark: '230 75% 68%', foreground: '0 0% 100%' },
+  { name: 'Terracotta', light: '16 65% 48%',  dark: '16 70% 62%',  foreground: '0 0% 100%' },
+  { name: 'Plum',       light: '308 50% 40%', dark: '308 55% 62%', foreground: '0 0% 100%' },
+  { name: 'Teal',       light: '178 60% 38%', dark: '178 60% 58%', foreground: '0 0% 100%' },
+  { name: 'Mustard',    light: '44 85% 50%',  dark: '44 85% 62%',  foreground: '0 0% 10%'  },
+  { name: 'Brick',      light: '8 65% 48%',   dark: '8 70% 62%',   foreground: '0 0% 100%' },
+  { name: 'Pine',       light: '162 55% 30%', dark: '162 55% 50%', foreground: '0 0% 100%' },
+  { name: 'Denim',      light: '214 55% 52%', dark: '214 60% 66%', foreground: '0 0% 100%' },
+  { name: 'Coral',      light: '4 70% 58%',   dark: '4 75% 68%',   foreground: '0 0% 100%' },
+];
+---
+
+<div class="fixed bottom-6 right-6 z-[100]">
+  <!-- PANEL -->
+  <div
+    id="theme-panel"
+    data-state="closed"
+    role="dialog"
+    aria-label={t('theme.selector_label')}
+    class="absolute bottom-16 right-0 w-[260px] p-4 rounded-2xl 
+           bg-background/80 backdrop-blur-xl 
+           border border-border/50 shadow-2xl
+           transition-all duration-300 ease-out
+           origin-bottom-right
+           data-[state=closed]:opacity-0 
+           data-[state=closed]:translate-y-3 
+           data-[state=closed]:scale-95 
+           data-[state=closed]:pointer-events-none"
+  >
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-3 border-b border-border/10 pb-2">
+      <div class="flex gap-2">
+        <button 
+          id="reset-theme"
+          aria-label={t('theme.reset')}
+          title={t('theme.reset')}
+          class="opacity-60 hover:opacity-100 transition p-1 hover:bg-muted/50 rounded"
+        >
+          <Icon name="ph:arrow-counter-clockwise" class="w-4 h-4" />
+        </button>
+        <button 
+          id="copy-theme"
+          aria-label={t('theme.copy')}
+          title={t('theme.copy_hint')}
+          data-label-copied={t('theme.copied')}
+          class="opacity-60 hover:opacity-100 transition p-1 hover:bg-muted/50 rounded"
+        >
+          <Icon name="ph:copy" class="w-4 h-4" />
+        </button>
+      </div>
+
+      <button id="close-panel" aria-label={t('theme.close')} class="opacity-60 hover:opacity-100 transition p-1 hover:bg-muted/50 rounded">
+        <Icon name="ph:x" class="w-4 h-4" />
+      </button>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid grid-cols-5 gap-3">
+      {palettes.map((p) => (
+        <button
+          class="theme-option group relative"
+          data-primary-light={p.light}
+          data-primary-dark={p.dark}
+          data-foreground={p.foreground}
+          data-name={p.name}
+          aria-label={`${t('theme.select_prefix')} ${p.name}`}
+        >
+          <div
+            class="w-10 h-10 rounded-full transition-all duration-300 
+                   border border-border/40 
+                   group-hover:scale-110 
+                   group-active:scale-95
+                   relative overflow-hidden"
+            style={`background-color: hsl(${p.light})`}
+          >
+            <!-- Glow activo -->
+            <div class="active-ring absolute inset-0 rounded-full"></div>
+
+            <!-- Check -->
+            <div class="check absolute inset-0 flex items-center justify-center opacity-0 scale-75 transition-all">
+              <Icon name="ph:check-bold" class="w-4 h-4 text-white drop-shadow" />
+            </div>
+          </div>
+        </button>
+      ))}
+    </div>
+
+    <!-- Label activo -->
+    <div class="mt-4 text-center">
+      <span id="active-theme-label" class="text-xs text-muted-foreground" data-label-default={t('theme.default')}>
+        {t('theme.default')}
+      </span>
+    </div>
+  </div>
+
+  <!-- TRIGGER -->
+  <button
+    id="picker-trigger"
+    aria-label={t('theme.open')}
+    aria-expanded="false"
+    aria-controls="theme-panel"
+    aria-haspopup="dialog"
+    class="w-12 h-12 rounded-full flex items-center justify-center
+           bg-primary text-primary-foreground
+           shadow-lg shadow-primary/20
+           border border-primary/20
+           transition-all duration-300
+           hover:scale-110 active:scale-95"
+  >
+    <Icon name="ph:palette-duotone" class="w-6 h-6" />
+  </button>
+</div>
+
+<style>
+  .active .active-ring {
+    box-shadow: 0 0 0 2px hsl(var(--background)),
+                0 0 0 4px hsl(var(--primary));
+  }
+
+  .active .check {
+    opacity: 1;
+    transform: scale(1);
+  }
+</style>
+
+<script>
+  function initThemePicker() {
+    const trigger = document.getElementById('picker-trigger');
+    const panel = document.getElementById('theme-panel');
+    const options = document.querySelectorAll('.theme-option');
+    const closeBtn = document.getElementById('close-panel');
+    const label = document.getElementById('active-theme-label');
+
+    if (!trigger || !panel) return;
+
+    let isOpen = false;
+
+    const applyTheme = (light: string, dark: string, foreground: string, name: string) => {
+      const root = document.documentElement;
+      root.style.setProperty('--brand-primary-light', light);
+      root.style.setProperty('--brand-foreground-light', foreground);
+      root.style.setProperty('--brand-primary-dark', dark);
+      root.style.setProperty('--brand-foreground-dark', foreground);
+
+      localStorage.setItem('user-primary-color-light', light);
+      localStorage.setItem('user-primary-foreground-light', foreground);
+      localStorage.setItem('user-primary-color-dark', dark);
+      localStorage.setItem('user-primary-foreground-dark', foreground);
+      localStorage.setItem('user-theme-name', name);
+
+      if (label) label.textContent = name || label.dataset.labelDefault || '';
+    };
+
+    const loadTheme = () => {
+      const lightPrimary = localStorage.getItem('user-primary-color-light');
+      const lightForeground = localStorage.getItem('user-primary-foreground-light');
+      const darkPrimary = localStorage.getItem('user-primary-color-dark');
+      const darkForeground = localStorage.getItem('user-primary-foreground-dark');
+      const name = localStorage.getItem('user-theme-name');
+
+      if (lightPrimary && lightForeground && darkPrimary && darkForeground) {
+        const root = document.documentElement;
+        root.style.setProperty('--brand-primary-light', lightPrimary);
+        root.style.setProperty('--brand-foreground-light', lightForeground);
+        root.style.setProperty('--brand-primary-dark', darkPrimary);
+        root.style.setProperty('--brand-foreground-dark', darkForeground);
+      }
+
+      if (name && label) label.textContent = name;
+    };
+
+    const updateActive = () => {
+      const current = localStorage.getItem('user-primary-color-light');
+
+      options.forEach(opt => {
+        if (opt instanceof HTMLElement) {
+          const isActive = opt.dataset.primaryLight === current;
+          opt.classList.toggle('active', isActive);
+        }
+      });
+    };
+
+    const open = () => {
+      if (panel instanceof HTMLElement && trigger instanceof HTMLElement) {
+        panel.dataset.state = 'open';
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+      isOpen = true;
+      updateActive();
+    };
+
+    const close = () => {
+      if (panel instanceof HTMLElement && trigger instanceof HTMLElement) {
+        panel.dataset.state = 'closed';
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      isOpen = false;
+    };
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isOpen ? close() : open();
+    });
+
+    closeBtn?.addEventListener('click', close);
+
+    // Reset Theme
+    document.getElementById('reset-theme')?.addEventListener('click', () => {
+      localStorage.removeItem('user-primary-color-light');
+      localStorage.removeItem('user-primary-foreground-light');
+      localStorage.removeItem('user-primary-color-dark');
+      localStorage.removeItem('user-primary-foreground-dark');
+      localStorage.removeItem('user-theme-name');
+      location.reload();
+    });
+
+    // Copy Theme
+    document.getElementById('copy-theme')?.addEventListener('click', async () => {
+      const root = document.documentElement;
+      const l = root.style.getPropertyValue('--brand-primary-light').trim();
+      const lf = root.style.getPropertyValue('--brand-foreground-light').trim();
+      const d = root.style.getPropertyValue('--brand-primary-dark').trim();
+      const df = root.style.getPropertyValue('--brand-foreground-dark').trim();
+      const name = localStorage.getItem('user-theme-name') || 'Custom';
+
+      const configEntry = `brandColor: {
+  light: { primary: "${l}", foreground: "${lf}" },
+  dark: { primary: "${d}", foreground: "${df}" }
+} // Palette: ${name}`;
+      
+      try {
+        await navigator.clipboard.writeText(configEntry);
+        
+        if (label) {
+          const prevLabel = label.textContent;
+          const copyBtn = document.getElementById('copy-theme');
+          label.textContent = copyBtn?.dataset.labelCopied ?? '✓';
+          label.classList.add('text-primary', 'font-bold');
+          
+          setTimeout(() => {
+            label.textContent = prevLabel;
+            label.classList.remove('text-primary', 'font-bold');
+          }, 2000);
+        }
+      } catch (err) {
+        console.error('Error al copiar:', err);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (isOpen && !panel.contains(e.target as Node) && e.target !== trigger) {
+        close();
+      }
+    });
+
+    // Close with Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        close();
+        trigger.focus();
+      }
+    });
+
+    options.forEach(opt => {
+      if (opt instanceof HTMLElement) {
+        opt.addEventListener('mouseenter', () => {
+          if (label) label.textContent = opt.dataset.name || label.dataset.labelDefault || '';
+        });
+
+        opt.addEventListener('mouseleave', () => {
+          if (label) {
+            const currentName = localStorage.getItem('user-theme-name');
+            label.textContent = currentName || label.dataset.labelDefault || '';
+          }
+        });
+
+        opt.addEventListener('click', () => {
+          applyTheme(
+            opt.dataset.primaryLight || '',
+            opt.dataset.primaryDark || '',
+            opt.dataset.foreground || '',
+            opt.dataset.name || ''
+          );
+          updateActive();
+        });
+      }
+    });
+
+    loadTheme();
+    updateActive();
+  }
+
+  initThemePicker();
+  document.addEventListener('astro:after-swap', initThemePicker);
+</script>

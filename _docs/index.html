@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zutra Portfolio | Documentation Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="./styles/index.css">
+</head>
+
+<body>
+
+  <div class="lang-switcher">
+    <button class="lang-btn" onclick="setLang('es')">ES</button>
+    <button class="lang-btn active" onclick="setLang('en')">EN</button>
+  </div>
+
+  <div class="container">
+    <a href="https://zutra.agency" target="_blank" class="logo">
+      <i class="ph-fill ph-check-badge"></i> Zutra Agency
+    </a>
+
+    <h1 data-i18n="title">Documentation <span>Portal</span> <span class="version-badge">v2.9.0</span></h1>
+    <p class="subtitle" data-i18n="subtitle">Choose the guide that best fits your needs right now.</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">23</div>
+        <div class="stat-label">Pages Built</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">100</div>
+        <div class="stat-label">Lighthouse Score</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">0</div>
+        <div class="stat-label">JS by Default</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">2.9</div>
+        <div class="stat-label">Current Version</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <a href="guide.html" class="card">
+        <i class="ph ph-book-open-text"></i>
+        <h2 data-i18n="card.guide.title">The Guide</h2>
+        <p data-i18n="card.guide.desc">Complete documentation. Quick Start, configuration, content, customization,
+          features, deploy and troubleshooting.</p>
+        <i class="ph ph-arrow-right arrow"></i>
+      </a>
+
+      <a href="ttfb-guide.html" class="card">
+        <i class="ph ph-gauge"></i>
+        <h2 data-i18n="card.ttfb.title">TTFB Optimization</h2>
+        <p data-i18n="card.ttfb.desc">Practical guide to reduce Time to First Byte from 2.0s to &lt; 0.8s on Cloudflare
+          Pages.</p>
+        <i class="ph ph-arrow-right arrow"></i>
+      </a>
+
+      <a href="../CHANGELOG.md" class="card">
+        <i class="ph ph-git-diff"></i>
+        <h2 data-i18n="card.changelog.title">Changelog</h2>
+        <p data-i18n="card.changelog.desc">Complete version history. Every feature, fix and improvement documented since
+          v1.0.0.</p>
+        <i class="ph ph-arrow-right arrow"></i>
+      </a>
+
+      <a href="../public/llms.txt" class="card">
+        <i class="ph ph-robot"></i>
+        <h2 data-i18n="card.ai.title">AI / GEO</h2>
+        <p data-i18n="card.ai.desc">File for AI search engines. Stack, structure and content collections.</p>
+        <i class="ph ph-arrow-right arrow"></i>
+      </a>
+    </div>
+
+    <footer data-i18n="footer">
+      Need custom development? Reach out to <a href="https://zutra.agency" target="_blank">zutra.agency</a>
+    </footer>
+  </div>
+
+  <script>
+    let docsI18n = {};
+
+    // Load translations from JSON files
+    async function loadTranslations(lang) {
+      try {
+        const response = await fetch(`./i18n/index-${lang}.json`);
+        const translations = await response.json();
+        docsI18n[lang] = translations;
+        return translations;
+      } catch (error) {
+        console.error(`Failed to load ${lang} translations:`, error);
+        return null;
+      }
+    }
+
+    // Get nested property from string path like 'card.guide.title'
+    function getNestedValue(obj, path) {
+      return path.split('.').reduce((current, key) => current && current[key], obj);
+    }
+
+    // Update all elements with data-i18n
+    function updateElements(lang) {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const value = getNestedValue(docsI18n[lang], key);
+        if (value) {
+          el.innerHTML = value;
+        }
+      });
+
+      // Update stat labels
+      const statLabels = document.querySelectorAll('.stat-label');
+      if (statLabels.length >= 4) {
+        statLabels[0].textContent = docsI18n[lang]['stat.built'];
+        statLabels[1].textContent = docsI18n[lang]['stat.lighthouse'];
+        statLabels[2].textContent = docsI18n[lang]['stat.js'];
+        statLabels[3].textContent = docsI18n[lang]['stat.version'];
+      }
+    }
+
+    async function setLang(lang) {
+      localStorage.setItem('docsLang', lang);
+      document.documentElement.lang = lang;
+
+      // Update buttons
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === lang);
+      });
+
+      // Load translations if not already loaded
+      if (!docsI18n[lang]) {
+        await loadTranslations(lang);
+      }
+
+      // Update all elements
+      updateElements(lang);
+    }
+
+    // Initialize
+    async function init() {
+      const savedLang = localStorage.getItem('docsLang') || 'en';
+      await loadTranslations('en'); // Load default language
+      await loadTranslations('es'); // Load Spanish for quick switching
+      await setLang(savedLang);
+    }
+
+    // Start the application
+    init();
+  </script>
+
+</body>
+
+</html>

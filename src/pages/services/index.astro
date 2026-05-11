@@ -1,0 +1,58 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { t } from '@/i18n';
+import ContentHeader from '@/components/ui/ContentHeader.astro';
+import ServiceCard from '@/components/cards/ServiceCard.astro';
+import Button from '@/components/ui/Button.astro';
+
+const allServices = await getCollection('services');
+const expertises = allServices.sort((a, b) => a.data.order - b.data.order);
+---
+
+<BaseLayout 
+  title="Servicios | Especialidades Digitales" 
+  description="Enfoque integral para construir productos digitales que destacan por su simplicidad y potencia. Diseño UI/UX, Frontend Engineering y Estrategia Digital."
+>
+  <div class="max-w-6xl mx-auto py-12 md:py-24 flex flex-col gap-24 px-4 sm:px-8">
+    
+    <ContentHeader
+      title={t('services.title')}
+      description={t('services.description')}
+      backUrl="/"
+      backText={t('common.back_home')}
+      centered={true}
+    />
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {expertises.map((item) => (
+        <ServiceCard 
+          id={item.id}
+          title={item.data.title}
+          summary={item.data.summary}
+          icon={item.data.icon}
+        />
+      ))}
+    </div>
+
+    {/* Final Conversion CTA */}
+    <div class="bg-primary/10 rounded-[3rem] border border-primary/20 p-8 md:p-20 flex flex-col items-center text-center gap-10 reveal">
+      <div class="flex flex-col gap-5 max-w-2xl">
+        <h2 class="text-4xl md:text-5xl font-black tracking-tighter leading-tight">¿Tienes un proyecto en mente?</h2>
+        <p class="text-lg text-muted-foreground font-medium">
+          Ya sea una nueva plataforma desde cero o la optimización de un producto existente, puedo ayudarte a transformar tu visión en una experiencia digital excepcional.
+        </p>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+        <Button href="/contact" variant="primary" class="h-16 px-10 text-sm font-bold tracking-widest uppercase">
+          Trabajemos Juntos <span>&rarr;</span>
+        </Button>
+        <Button href="/projects" variant="secondary" class="h-16 px-10 text-sm font-bold tracking-widest uppercase">
+          Ver Proyectos
+        </Button>
+      </div>
+    </div>
+
+  </div>
+</BaseLayout>

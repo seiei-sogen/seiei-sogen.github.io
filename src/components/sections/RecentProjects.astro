@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+import { t } from '@/i18n';
+import ProjectCard from '@/components/cards/ProjectCard.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import { Icon } from 'astro-icon/components';
+
+const allProjects = await getCollection('projects');
+const recentProjects = allProjects
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+---
+<section class="py-24 border-t border-border/40 reveal">
+  <div class="flex flex-col gap-12">
+    <SectionHeader
+      title={t('projects.recent_title')}
+      subtitle={t('projects.recent_subtitle')}
+    />
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {recentProjects.length > 0 ? (
+        recentProjects.map((project) => (
+          <ProjectCard project={project} />
+        ))
+      ) : (
+        <div class="col-span-full py-24 text-center border border-dashed border-border rounded-3xl flex flex-col items-center gap-4">
+          <Icon name="ph:hammer-duotone" class="w-8 h-8 text-muted-foreground/40 animate-pulse" />
+          <p class="text-muted-foreground font-mono text-xs italic">{t('projects.working_on_it')}</p>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,79 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  title: string;
+  description: string;
+  backUrl: string;
+  backText: string;
+  id?: string; // For View Transitions name
+  type?: 'blog' | 'project' | 'service';
+  icon?: string; // Optional for services
+  centered?: boolean;
+}
+
+const { 
+  title, 
+  description, 
+  backUrl, 
+  backText, 
+  id, 
+  type = 'blog',
+  icon,
+  centered = false 
+} = Astro.props;
+
+const transitionName = id ? (type === 'service' ? `service-title-${id}` : `title-${id}`) : undefined;
+const iconTransitionName = id && type === 'service' ? `service-icon-${id}` : undefined;
+
+const titleTransitionAttr = transitionName ? { 'transition:name': transitionName } : {};
+const iconTransitionAttr = iconTransitionName ? { 'transition:name': iconTransitionName } : {};
+---
+
+<header class:list={[
+  "flex flex-col gap-10 reveal",
+  centered ? "items-center text-center" : "items-start text-left"
+]}>
+  <div class:list={[
+    "flex flex-col gap-6",
+    centered ? "items-center" : "items-start"
+  ]}>
+    {/* Back Link */}
+    <a 
+      href={backUrl} 
+      class="group inline-flex items-center gap-2 text-[10px] font-mono text-muted-foreground hover:text-primary transition-all font-black uppercase tracking-[0.2em]"
+    >
+      <span class="transition-transform group-hover:-translate-x-1">&larr;</span> 
+      {backText}
+    </a>
+
+    {/* Optional Icon (Services) */}
+    {icon && (
+      <div 
+        class="h-20 w-20 md:h-24 md:w-24 rounded-[2rem] bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-2xl shadow-primary/5 mb-2"
+        {...iconTransitionAttr}
+      >
+        <Icon name={icon} class="w-10 h-10 md:w-12 md:h-12" />
+      </div>
+    )}
+
+    {/* Title */}
+    <h1 
+      class:list={[
+        "text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter leading-[0.9] text-balance",
+        centered ? "max-w-4xl" : "max-w-none"
+      ]}
+      {...titleTransitionAttr}
+    >
+      {title}
+    </h1>
+
+    {/* Description / Summary */}
+    <p class:list={[
+      "text-lg md:text-xl lg:text-2xl text-muted-foreground leading-relaxed font-medium text-balance",
+      centered ? "max-w-2xl" : "max-w-3xl border-l-4 border-primary/20 pl-8 py-2"
+    ]}>
+      {description}
+    </p>
+  </div>
+</header>

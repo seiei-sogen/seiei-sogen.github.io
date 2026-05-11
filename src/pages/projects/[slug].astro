@@ -1,0 +1,170 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { t } from '@/i18n';
+import { Image } from 'astro:assets';
+import Badge from '@/components/ui/Badge.astro';
+import Button from '@/components/ui/Button.astro';
+import { Icon } from 'astro-icon/components';
+import { getProjectSchema } from '@/utils/seo-schemas';
+import { siteConfig } from '@/site-config';
+import ContentHeader from '@/components/ui/ContentHeader.astro';
+import ContentPagination from '@/components/navigation/ContentPagination.astro';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const projects = await getCollection('projects');
+const sortedProjects = projects.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const { project } = Astro.props;
+const currentIndex = sortedProjects.findIndex((p) => p.id === project.id);
+const prevProject = currentIndex > 0 ? sortedProjects[currentIndex - 1] : null;
+const nextProject =
+  currentIndex < sortedProjects.length - 1 ? sortedProjects[currentIndex + 1] : null;
+
+const { Content } = await render(project);
+const { title, description, technologies, image, repo, live, date } = project.data;
+const projectSchema = getProjectSchema(project);
+---
+
+<BaseLayout
+  title={`${title} | ${t('nav.projects')}`}
+  description={description}
+  image={image?.src}
+  extraJsonLd={projectSchema}
+>
+  <article
+    class="animate-in fade-in mx-auto flex max-w-6xl flex-col gap-16 py-12 duration-1000 md:py-24"
+  >
+    <!-- Header Strategy -->
+    <header class="flex flex-col gap-8 md:gap-12">
+      <ContentHeader
+        title={title}
+        description={description}
+        backUrl="/projects"
+        backText={t('common.back_projects')}
+        id={project.id}
+        type="project"
+      />
+
+      <div
+        class="grid grid-cols-1 gap-8 border-y border-border/60 py-10 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        <div class="flex flex-col gap-2">
+          <span
+            class="font-mono text-[10px] font-extrabold uppercase tracking-widest text-foreground/60"
+            >{t('projects.launch')}</span
+          >
+          <time datetime={date.toISOString()} class="text-sm font-bold">
+            {date.toLocaleDateString(siteConfig.site.locale, { year: 'numeric', month: 'long' })}
+          </time>
+        </div>
+        <div class="col-span-2 flex flex-col gap-2">
+          <span
+            class="font-mono text-[10px] font-extrabold uppercase tracking-widest text-foreground/60"
+            >{t('projects.technologies')}</span
+          >
+          <div class="flex flex-wrap gap-2">
+            {technologies.map((tech) => <Badge>{tech}</Badge>)}
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <span
+            class="font-mono text-[10px] font-extrabold uppercase tracking-widest text-foreground/60"
+            >{t('projects.links')}</span
+          >
+          <div class="flex items-center gap-4">
+            {
+              live && (
+                <a
+                  href={live}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-foreground transition-colors hover:text-primary"
+                >
+                  <Icon name="ph:arrow-square-out" class="h-6 w-6" />
+                </a>
+              )
+            }
+            {
+              repo && (
+                <a
+                  href={repo}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-foreground transition-colors hover:text-primary"
+                >
+                  <Icon name="ph:github-logo" class="h-6 w-6" />
+                </a>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Project Presentation -->
+    {
+      image && (
+        <div
+          class="group relative aspect-[16/9] overflow-hidden rounded-3xl border border-border/60 shadow-2xl md:rounded-[2.5rem]"
+          transition:name={`image-${project.id}`}
+        >
+          <Image
+            src={image}
+            alt={title}
+            width={1280}
+            height={720}
+            format="avif"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            densities={[1, 2]}
+            class="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-1000 group-hover:scale-105"
+          />
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        </div>
+      )
+    }
+
+    <!-- MDX Content -->
+    <div
+      class="prose prose-stone max-w-none dark:prose-invert prose-headings:font-extrabold prose-headings:tracking-tighter prose-headings:text-foreground prose-p:text-lg prose-p:leading-relaxed prose-p:text-foreground/90 prose-a:font-bold prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-3xl prose-img:border prose-img:border-border/60"
+    >
+      <Content />
+    </div>
+
+    {/* Project Footer CTA */}
+    <footer class="mt-12 flex flex-col gap-12">
+      <ContentPagination prev={prevProject} next={nextProject} collection="projects" />
+
+      <div
+        class="reveal flex flex-col items-center gap-10 rounded-[3rem] border border-primary/10 bg-primary/5 px-8 py-16 text-center md:py-24"
+      >
+        <div class="flex max-w-xl flex-col gap-4">
+          <h3 class="text-4xl font-extrabold leading-tight tracking-tighter md:text-5xl">
+            {t('projects.cta_title')}
+          </h3>
+          <p class="text-lg font-medium text-muted-foreground">
+            {t('projects.cta_desc')}
+          </p>
+        </div>
+        <Button
+          href="/contact"
+          variant="primary"
+          class="h-16 px-10 text-sm font-bold uppercase tracking-widest"
+        >
+          {t('projects.cta_btn')} <span>&rarr;</span>
+        </Button>
+      </div>
+    </footer>
+  </article>
+</BaseLayout>

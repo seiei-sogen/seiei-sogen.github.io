@@ -1,0 +1,40 @@
+---
+import { t } from '@/i18n';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import ExperienceItem from '@/components/ui/ExperienceItem.astro';
+
+const experiences = [
+  {
+    company: "Studio Digital V1",
+    role: "Senior Frontend Developer",
+    period: `2023 - ${t('experience.present')}`,
+    description: t('experience.item1_desc'),
+  },
+  {
+    company: "Creative Labs",
+    role: "UI Engineer",
+    period: "2021 - 2023",
+    description: t('experience.item2_desc'),
+  },
+  {
+    company: "Freelance",
+    role: "Fullstack Designer",
+    period: "2019 - 2021",
+    description: t('experience.item3_desc'),
+  },
+];
+---
+<section class="py-24 border-t border-border/40">
+  <div class="flex flex-col gap-12">
+    <SectionHeader
+      title={t('experience.title')}
+      subtitle={t('experience.subtitle')}
+    />
+
+    <div class="flex flex-col gap-0 border-l border-border/60 ml-4 md:ml-0">
+      {experiences.map((exp) => (
+        <ExperienceItem {...exp} />
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,71 @@
+---
+import { siteConfig } from '@/site-config';
+import { t } from '@/i18n';
+
+interface Props {
+  date?: Date;
+  readTime?: string;
+}
+
+const { date, readTime = '~5 min' } = Astro.props;
+const { name, avatar } = siteConfig.profile;
+
+// Get initials for fallback
+const initials = name
+  .split(' ')
+  .map((n) => n[0])
+  .join('')
+  .toUpperCase();
+---
+
+<div class="reveal flex items-center justify-between border-y border-border/60 py-8">
+  <div class="flex items-center gap-4">
+    <!-- Avatar with image fallback to initials -->
+    <div class="relative h-12 w-12">
+      {
+        avatar && (
+          <img
+            src={avatar}
+            alt={name}
+            width="48" height="48" loading="lazy" decoding="async" class="h-12 w-12 rounded-full border border-primary/20 object-cover p-0.5"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+          />
+        )
+      }
+      <div
+        class:list={[
+          'flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-lg font-bold text-primary',
+          avatar ? 'absolute inset-0 hidden' : '',
+        ]}
+        aria-hidden="true"
+      >
+        {initials}
+      </div>
+    </div>
+
+    <div class="flex flex-col">
+      <span class="text-base font-bold tracking-tight text-foreground">{name}</span>
+      {
+        date && (
+          <time datetime={date.toISOString()} class="text-xs font-medium text-muted-foreground">
+            {date.toLocaleDateString(siteConfig.site.locale, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </time>
+        )
+      }
+    </div>
+  </div>
+
+  {
+    readTime && (
+      <div class="hidden items-center gap-2 text-muted-foreground/60 sm:flex">
+        <span class="font-mono text-[10px] font-extrabold uppercase tracking-widest">
+          {readTime} {t('post.reading_suffix')}
+        </span>
+      </div>
+    )
+  }
+</div>

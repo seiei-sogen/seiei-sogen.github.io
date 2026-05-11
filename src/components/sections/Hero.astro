@@ -1,0 +1,57 @@
+---
+import { siteConfig } from '@/site-config';
+import { t } from '@/i18n';
+import Button from '@/components/ui/Button.astro';
+import { Icon } from 'astro-icon/components';
+import { Image } from 'astro:assets';
+
+const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/images/*.{jpeg,jpg,png,gif,webp}');
+const heroImagePath = siteConfig.profile.heroImage;
+const heroImage = heroImagePath && images[heroImagePath] ? (await images[heroImagePath]()).default : null;
+---
+<section class="flex flex-col lg:flex-row items-center gap-12 lg:gap-16 py-12 md:py-24 animate-in fade-in slide-in-from-bottom-5 duration-700 max-w-6xl mx-auto">
+  <div class="flex flex-col gap-8 lg:gap-10 flex-1 items-center text-center lg:items-start lg:text-left w-full">
+    <div class="flex flex-col gap-4 max-w-2xl items-center lg:items-start">
+      <span class="font-mono text-xs md:text-sm tracking-[0.2em] text-primary/80 uppercase flex items-center gap-3">
+        <Icon name="ph:hand-waving-duotone" class="w-5 h-5 animate-bounce text-primary" />
+        {t('hero.greeting')} {siteConfig.profile.name.split(' ')[0]}
+      </span>
+      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-balance text-foreground leading-[1.05]">
+        {t('hero.title')} <br class="hidden sm:block" />
+        <span class="text-muted-foreground">{t('hero.title_highlight')}</span>
+      </h1>
+      <p class="text-lg md:text-xl text-muted-foreground leading-relaxed text-balance">
+        {siteConfig.profile.bio}
+      </p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+      <Button href="/projects" size="lg" class="gap-2 w-full sm:w-auto justify-center">
+        {t('hero.cta.projects')}
+        <Icon name="ph:arrow-right-bold" class="w-4 h-4" />
+      </Button>
+      <Button href="/contact" variant="outline" size="lg" class="w-full sm:w-auto justify-center">
+        {t('hero.cta.contact')}
+      </Button>
+    </div>
+  </div>
+
+  {heroImage && (
+    <div class="flex-1 w-full relative group perspective-1000 flex items-end justify-center mt-8 lg:mt-0">
+      <div class="relative w-full max-w-[16rem] sm:max-w-sm md:max-w-md transition-transform duration-700 group-hover:-translate-y-2">
+        <Image
+          src={heroImage}
+          alt={`${siteConfig.profile.name} — ${siteConfig.profile.role}, ${t('hero.image_alt')}`}
+          width={800}
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+          densities={[1, 2]}
+          class="w-full h-auto object-contain grayscale contrast-125 transition-all duration-1000 group-hover:grayscale-0 group-hover:contrast-100 group-hover:scale-105 drop-shadow-2xl"
+        />
+      </div>
+      <!-- Decorative blurry glow (centrado detrás de la persona) -->
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 md:w-80 md:h-80 bg-primary/20 blur-[100px] md:blur-[120px] rounded-full -z-10 transition-opacity duration-700 opacity-50 group-hover:opacity-100"></div>
+    </div>
+  )}
+</section>

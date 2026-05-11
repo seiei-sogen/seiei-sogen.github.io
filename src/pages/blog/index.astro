@@ -1,0 +1,56 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { t } from '@/i18n';
+import PostCard from '@/components/cards/PostCard.astro';
+import { Icon } from 'astro-icon/components';
+import { siteConfig } from '@/site-config';
+import ContentPagination from '@/components/navigation/ContentPagination.astro';
+
+const allPosts = await getCollection('blog');
+const sortedPosts = allPosts
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const perPage = siteConfig.content.postsPerPage;
+const totalPages = Math.ceil(sortedPosts.length / perPage);
+const currentPage = 1;
+const paginatedPosts = sortedPosts.slice(0, perPage);
+---
+
+<BaseLayout title="Blog | Reflexiones y Aprendizajes">
+  <div class="mx-auto flex max-w-6xl flex-col gap-12 py-12">
+    <div class="flex max-w-2xl flex-col gap-4">
+      <h1 class="text-4xl font-bold tracking-tight text-foreground">
+        {t('blog.title_main')} <span class="text-muted-foreground">{t('blog.title_highlight')}</span>
+      </h1>
+      <p class="text-lg text-muted-foreground">
+        {t('blog.description')}
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-12">
+      {
+        paginatedPosts.length > 0 ? (
+          paginatedPosts.map((post) => <PostCard post={post} />)
+        ) : (
+          <div class="flex flex-col items-center gap-4 rounded-[2rem] border border-dashed border-border py-24 text-center">
+            <Icon
+              name="ph:pencil-line-duotone"
+              class="h-8 w-8 animate-pulse text-muted-foreground/40"
+            />
+            <p class="font-mono text-sm uppercase tracking-widest text-muted-foreground">
+              {t('blog.no_posts')}
+            </p>
+          </div>
+        )
+      }
+    </div>
+
+    {
+      totalPages > 1 && (
+        <ContentPagination currentPage={currentPage} totalPages={totalPages} collection="blog" />
+      )
+    }
+  </div>
+</BaseLayout>

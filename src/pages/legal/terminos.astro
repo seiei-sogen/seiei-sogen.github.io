@@ -1,0 +1,40 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { siteConfig } from '@/site-config';
+
+const lastUpdated = "Marzo 2026";
+---
+<BaseLayout title={`Términos de Servicio - ${siteConfig.site.name}`}>
+  <article class="max-w-3xl mx-auto py-12 md:py-24 prose prose-neutral dark:prose-invert">
+    <h1>Términos de Servicio</h1>
+    <p class="text-sm text-foreground/70">Última actualización: {lastUpdated}</p>
+    
+    <p>¡Bienvenido a <strong>{siteConfig.site.name}</strong>!</p>
+    <p>Al visitar o utilizar nuestro sitio web {siteConfig.site.url}, usted acepta regirse por los siguientes Términos de Servicio y cualquier política aplicable aquí mencionada.</p>
+
+    <h2>1. Aceptación de los Términos</h2>
+    <p>Estos Términos de Servicio ("Términos") constituyen un acuerdo legal vinculante entre usted y {siteConfig.site.name}. Al acceder al sitio web, usted confirma su acuerdo a estar sujeto a estos términos en su totalidad, así que léalos detenidamente antes de utilizar nuestro servicio. Si no está de acuerdo con alguno de los términos, no acceda al sitio ni a sus servicios.</p>
+
+    <h2>2. Derechos de Propiedad Intelectual</h2>
+    <p>Salvo que se indique lo contrario, {siteConfig.site.name} y/o sus licenciantes poseen los derechos de propiedad intelectual de todo el material en el sitio web. Todos los derechos de propiedad intelectual están reservados. Puede acceder a esto desde {siteConfig.site.url} para su propio uso personal sujeto a las restricciones establecidas en estos términos y condiciones.</p>
+
+    <h2>3. Restricciones del Usuario</h2>
+    <p>Usted tiene expresamente restringido todo lo siguiente:</p>
+    <ul>
+      <li>Publicar cualquier material de este sitio web en cualquier otro medio de comunicación.</li>
+      <li>Vender, sublicenciar y/o comercializar cualquier material del sitio.</li>
+      <li>Desempeñar públicamente y/o mostrar cualquier material del sitio web.</li>
+      <li>Usar este sitio de cualquier manera que sea o pueda ser perjudicial para este sitio o sus usuarios.</li>
+      <li>Implicarse en cualquier minería de datos, recolección de datos, extracción de datos u otra actividad similar.</li>
+    </ul>
+
+    <h2>4. Sin garantías</h2>
+    <p>Este sitio web se proporciona "tal cual", con todas sus fallas, y {siteConfig.site.name} no expresa representaciones o garantías de ningún tipo relacionadas con este sitio web o los materiales contenidos en él. Además, nada de lo contenido en este sitio debe interpretarse como asesoramiento.</p>
+
+    <h2>5. Limitación de Responsabilidad</h2>
+    <p>En ningún caso {siteConfig.site.name}, ni ninguno de sus oficiales, directores y empleados, será responsable ante usted por cualquier motivo que surja de o de cualquier manera conectado con su uso del sitio web, independientemente de si dicha responsabilidad es bajo contrato, agravio o de otra manera.</p>
+    
+    <h2>6. Contacto</h2>
+    <p>Si tiene alguna pregunta sobre estos Términos, comuníquese con nosotros a <strong>{siteConfig.contact.email}</strong>.</p>
+  </article>
+</BaseLayout>

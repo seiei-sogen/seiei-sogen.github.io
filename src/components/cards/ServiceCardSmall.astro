@@ -1,0 +1,28 @@
+---
+import { t } from '@/i18n';
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  title: string;
+  summary: string;
+  icon: string;
+  id: string;
+}
+
+const { title, summary, icon, id } = Astro.props;
+---
+
+<a href={`/services/${id}`} class="group p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 hover:border-primary/30 transition-all flex flex-col gap-5 reveal">
+  <div class="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground border border-primary/10 shadow-lg shadow-primary/5 group-hover:shadow-primary/20">
+    <Icon name={icon} class="w-6 h-6" />
+  </div>
+  <div class="flex flex-col gap-2">
+    <h4 class="font-extrabold tracking-tight text-lg group-hover:text-primary transition-colors">{title}</h4>
+    <p class="text-xs text-foreground/60 line-clamp-2 leading-relaxed font-medium">
+      {summary}
+    </p>
+  </div>
+  <div class="mt-auto pt-4 flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+    {t('card.service_details_short')} <span>&rarr;</span>
+  </div>
+</a>

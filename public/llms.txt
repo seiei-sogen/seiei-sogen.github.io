@@ -1,0 +1,81 @@
+# llms.txt
+
+> Minimalist Portfolio — A professional, production-ready portfolio template built with Astro 6, Tailwind CSS, and Cloudflare Pages.
+
+## What is this?
+
+This is a high-performance portfolio template designed for developers and designers. It ships as a static site generator (SSG) with optional SSR capabilities via the Cloudflare adapter.
+
+## Tech Stack
+
+- **Framework**: Astro 6.1+ (View Transitions, Islands Architecture, Content Layer API)
+- **Styling**: Tailwind CSS 3.x with adaptive HSL color tokens
+- **Deployment**: Cloudflare Pages (via `@astrojs/cloudflare`)
+- **Content**: MDX collections (projects, blog, services, testimonials, FAQ)
+- **SEO**: JSON-LD structured data (FAQPage, Person, Article, Service, CreativeWork), Open Graph, Twitter Cards, Sitemap
+- **PWA**: `@vite-pwa/astro` with auto-update service worker
+- **Icons**: `astro-icon` with Phosphor Icons
+- **Typography**: Inter + Roboto Mono (local-hosted via Fontsource)
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── sections/     # Page-level sections (Hero, FAQ, Testimonials...)
+│   ├── cards/        # Data-driven cards (ProjectCard, PostCard...)
+│   ├── navigation/   # Header, Footer, ThemePicker, Cursor...
+│   └── ui/           # Reusable primitives (Button, Card, Input, SEO...)
+├── content/          # MDX content collections
+├── layouts/          # BaseLayout.astro (wraps all pages)
+├── pages/            # File-based routing (index, blog, projects, services...)
+├── styles/           # Global CSS variables and animations
+├── utils/            # SEO schema generators, helpers
+└── site-config.ts    # Single-file configuration
+```
+
+## Configuration
+
+All customization lives in `src/site-config.ts`:
+- Site metadata & SEO
+- Profile info & social links
+- Navigation structure
+- Brand colors (light/dark adaptive)
+- UI toggles (dark mode, custom cursor, view transitions)
+
+## Content Collections
+
+| Collection | Path | Schema |
+|---|---|---|
+| Projects | `src/content/projects/*.mdx` | title, description, technologies, image, date, repo, live |
+| Blog | `src/content/blog/*.mdx` | title, date, summary, draft |
+| Services | `src/content/services/*.mdx` | title, summary, description, icon, order |
+| Testimonials | `src/content/testimonials/*.md` | author, role, content, avatar, company |
+| FAQ | `src/content/faq/*.md` | question, answer, order |
+| Changelog | `src/content/changelog/history.md` | title (optional), markdown body |
+
+## Key Features
+
+- **Zero JS by default**: Astro strips all JavaScript unless explicitly opted in via `client:*` directives
+- **Adaptive Color System**: Separate HSL tokens for light and dark modes, configurable in one place
+- **Reveal Animations**: Intersection Observer-based scroll animations (`.reveal` class)
+- **ThemePicker Pro**: Real-time color customization with 12+ palettes (dev mode only)
+- **PWA Ready**: Manifest, service worker, offline support
+- **WCAG AA**: ARIA labels, focus management, semantic HTML
+- **Cloudflare Hardened**: CSP, HSTS, X-Frame-Options, Permissions-Policy via `_headers`
+
+## Quick Start
+
+```bash
+pnpm install
+pnpm dev          # Start dev server at localhost:4321
+pnpm build        # Production build
+pnpm preview      # Preview production build
+```
+
+## Links
+
+- **Live Demo**: https://buyportfolio.zutra.agency
+- **Documentation**: `/_docs/index.html` (open in browser after install)
+- **Changelog**: `/changelog` on deployed site or `CHANGELOG.md` in repo
+- **Source**: https://zutra.agency

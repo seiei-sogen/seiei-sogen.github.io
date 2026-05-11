@@ -1,0 +1,98 @@
+---
+import { t } from '@/i18n';
+import Button from './Button.astro';
+import Input from './Input.astro';
+---
+
+<div
+  class="group relative flex flex-col gap-6 overflow-hidden rounded-3xl border border-primary/10 bg-primary/5 p-8 md:p-12"
+>
+  <div
+    class="absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/5 blur-3xl transition-all duration-1000 group-hover:bg-primary/10"
+  >
+  </div>
+
+  <div class="relative z-10 flex flex-col gap-3">
+    <h3 class="text-2xl font-bold tracking-tighter">{t('footer.newsletter')}</h3>
+    <p class="max-w-sm text-sm text-muted-foreground">
+      {t('footer.newsletter_desc')}
+    </p>
+  </div>
+
+  <form class="relative z-10 flex flex-col items-start gap-3 sm:flex-row" id="newsletter-form">
+    <div class="w-full flex-1">
+      <Input
+        type="email"
+        placeholder={t('footer.newsletter_placeholder')}
+        required
+        class="h-12 rounded-2xl bg-background px-6"
+      />
+    </div>
+    <Button type="submit" variant="primary" size="lg" class="mt-0 h-12 w-full sm:w-auto">
+      {t('footer.subscribe')}
+    </Button>
+  </form>
+
+  <div
+    id="newsletter-success"
+    class="animate-in fade-in absolute inset-0 z-20 hidden items-center justify-center bg-primary font-bold text-primary-foreground duration-500"
+  >
+    <div class="flex items-center gap-2">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+          clip-rule="evenodd"></path>
+      </svg>
+      {t('footer.subscribed')}
+    </div>
+  </div>
+</div>
+
+<script>
+  function setupNewsletter() {
+    const form = document.querySelector('#newsletter-form') as HTMLFormElement;
+    const success = document.querySelector('#newsletter-success');
+    const input = form?.querySelector('input[type="email"]') as HTMLInputElement;
+
+    if (!form || !success || !input) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      // Validate email format
+      if (!emailRegex.test(input.value.trim())) {
+        input.focus();
+        input.classList.add('ring-2', 'ring-destructive/30', 'border-destructive');
+        setTimeout(
+          () => input.classList.remove('ring-2', 'ring-destructive/30', 'border-destructive'),
+          2000
+        );
+        return;
+      }
+
+      success?.classList.replace('hidden', 'flex');
+
+      // Reset after some time
+      setTimeout(() => {
+        success?.classList.replace('flex', 'hidden');
+        form.reset();
+      }, 3000);
+    });
+
+    // Clear error on input
+    input.addEventListener('input', () => {
+      input.classList.remove('ring-2', 'ring-destructive/30', 'border-destructive');
+    });
+  }
+
+  // Initial setup and on each navigation
+  document.addEventListener('astro:page-load', setupNewsletter);
+</script>

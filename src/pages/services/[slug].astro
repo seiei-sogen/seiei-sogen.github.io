@@ -1,0 +1,83 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { t } from '@/i18n';
+import ContentHeader from '@/components/ui/ContentHeader.astro';
+import ServiceSidebar from '@/components/ui/ServiceSidebar.astro';
+import ServiceCardSmall from '@/components/cards/ServiceCardSmall.astro';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const services = await getCollection('services');
+  return services.map((service) => ({
+    params: { slug: service.id },
+    props: { service },
+  }));
+}
+
+const { service } = Astro.props;
+const { Content } = await render(service);
+const { title, description, icon, summary } = service.data;
+
+const allServices = await getCollection('services');
+const otherServices = allServices
+  .filter((s) => s.id !== service.id)
+  .sort(() => Math.random() - 0.5)
+  .slice(0, 3);
+import { getServiceSchema } from '@/utils/seo-schemas';
+
+const serviceSchema = getServiceSchema(service);
+---
+
+<BaseLayout title={`${title} | Servicios`} description={summary} extraJsonLd={serviceSchema}>
+  <article class="flex flex-col gap-16 max-w-6xl mx-auto py-12 md:py-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <!-- Service Hero -->
+    <ContentHeader 
+      title={title}
+      description={description}
+      backUrl="/#services"
+      backText={t('common.back_services')}
+      id={service.id}
+      type="service"
+      icon={icon}
+      centered={true}
+    />
+
+    <div class="w-full h-px bg-gradient-to-r from-transparent via-border/60 to-transparent"></div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12">
+      <div class="md:col-span-8 prose dark:prose-invert prose-stone max-w-none 
+        prose-headings:tracking-tighter prose-headings:font-extrabold prose-headings:text-foreground
+        prose-p:text-lg prose-p:leading-relaxed prose-p:text-foreground/80
+        prose-blockquote:border-primary prose-blockquote:bg-primary/10 prose-blockquote:rounded-2xl
+      ">
+        <Content />
+      </div>
+
+      <!-- Quick Contact Sidebar -->
+      <ServiceSidebar />
+    </div>
+    </div>
+
+    <!-- Cross-navigation for other services -->
+    <footer class="mt-24 pt-24 border-t border-border/60 flex flex-col gap-12">
+      <div class="flex items-end justify-between">
+        <h2 class="text-3xl font-bold tracking-tighter">{t('services.other')}</h2>
+        <a href="/#services" class="text-sm font-mono text-muted-foreground hover:text-primary transition-colors font-bold">{t('common.back_home')} &rarr;</a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {otherServices.map((s) => (
+          <ServiceCardSmall 
+            id={s.id}
+            title={s.data.title}
+            summary={s.data.summary}
+            icon={s.data.icon}
+          />
+        ))}
+      </div>
+    </footer>
+  </article>
+</BaseLayout>

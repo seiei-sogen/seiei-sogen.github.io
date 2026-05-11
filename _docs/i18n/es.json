@@ -1,0 +1,571 @@
+{
+  "copy": {
+    "button": "Copiar",
+    "success": "Copiado"
+  },
+  "common": {
+    "table": {
+      "field": "Campo",
+      "type": "Tipo",
+      "desc": "Descripción",
+      "what": "Qué hace",
+      "example": "Ejemplo",
+      "required": "Requerido",
+      "notes": "Notas",
+      "default": "Default",
+      "collection": "Colección",
+      "folder": "Ruta",
+      "format": "Formato",
+      "purpose": "Para qué"
+    },
+    "optional": "opcional"
+  },
+  "sidebar": {
+    "brand": "Portfolio Docs",
+    "nav": {
+      "intro": {
+        "label": "Inicio",
+        "welcome": "Bienvenida",
+        "quickstart": "Quick Start",
+        "structure": "Estructura"
+      },
+      "config": {
+        "label": "Configuración",
+        "siteconfig": "site-config.ts",
+        "colors": "Colores & Temas",
+        "i18n": "i18n (Idiomas)",
+        "header": "Header & Logo",
+        "footer": "Footer & Logo",
+        "toggles": "Toggles UI",
+        "theme": "Control de Tema"
+      },
+      "content": {
+        "label": "Contenido",
+        "collections": "Colecciones",
+        "projects": "Proyectos",
+        "blog": "Blog",
+        "services": "Servicios",
+        "testimonials": "Testimonios",
+        "faq": "FAQ"
+      },
+      "customize": {
+        "label": "Personalización",
+        "components": "Componentes",
+        "images": "Imágenes",
+        "typography": "Tipografía"
+      },
+      "features": {
+        "label": "Features",
+        "contact": "Form Contacto",
+        "pagination": "Paginación",
+        "seo": "SEO & GEO",
+        "a11y": "Accesibilidad",
+        "pwa": "PWA",
+        "analytics": "Analytics"
+      },
+      "deploy": {
+        "label": "Deploy",
+        "cloudflare": "Cloudflare",
+        "vars": "Variables",
+        "troubleshooting": "Troubleshooting"
+      }
+    },
+    "footer": {
+      "changelog": "Changelog",
+      "agency": "Zutra.agency"
+    }
+  },
+  "intro": {
+    "tagline": "DOCUMENTACIÓN — v2.9.0",
+    "title": "Tu Portfolio.<br><span>Documentado.</span>",
+    "desc": "La guía completa para configurar, personalizar y desplegar tu portfolio minimalista. Desde el primer comando hasta producción en Cloudflare.",
+    "card1": {
+      "title": "5 min setup",
+      "desc": "Ten el sitio corriendo local con <code>pnpm dev</code> y edita tu nombre."
+    },
+    "card2": {
+      "title": "1 archivo config",
+      "desc": "Casi todo se personaliza desde <code>src/site-config.ts</code>."
+    },
+    "card3": {
+      "title": "Cero dependencia externa",
+      "desc": "Fuentes locales, sin CDNs de tracking, sin Google Fonts."
+    },
+    "card4": {
+      "title": "Astro 6.1",
+      "desc": "View Transitions, Content Layer API, Islands Architecture."
+    }
+  },
+  "qs": {
+    "title": "Quick Start",
+    "subtitle": "De cero a tu portfolio corriendo en menos de 5 minutos.",
+    "reqs": {
+      "title": "Requisitos",
+      "node": "Node.js 22+",
+      "node.desc": "verifica con <code>node -v</code>",
+      "pnpm": "pnpm 9+",
+      "pnpm.desc": "instala con <code>npm i -g pnpm</code>",
+      "vscode": "VS Code",
+      "vscode.desc": "con la extensión oficial de Astro"
+    },
+    "prereq": {
+      "title": "Prerequisites:",
+      "text": "This template uses <code>pnpm</code> instead of <code>npm</code>. Install it first:",
+      "link": "other install methods"
+    },
+    "install": {
+      "title": "Instalación"
+    },
+    "comment": {
+      "install": "# 1. Install dependencies",
+      "dev": "# 2. Start dev server",
+      "browser": "# 3. Open http://localhost:4321 in your browser"
+    },
+    "tip": {
+      "title": "¿Error en el dev server?",
+      "text": "Ejecuta <code>rm -rf .astro node_modules/.vite && pnpm dev</code> para limpiar cachés de Vite y Astro."
+    },
+    "steps": {
+      "title": "Primeros pasos",
+      "1": "Edita <code>src/site-config.ts</code> — pon tu nombre, email y redes sociales",
+      "2": "Reemplaza <code>public/favicon.svg</code> con tu logo",
+      "3": "Reemplaza <code>public/og-image.jpg</code> con tu imagen social (1200×630px)",
+      "4": "Edita el contenido en <code>src/content/</code> — agrega tus proyectos reales"
+    }
+  },
+  "ps": {
+    "title": "Estructura del Proyecto",
+    "subtitle": "Cada directorio tiene una responsabilidad única. Si sabes dónde mirar, editas en segundos.",
+    "tree": {
+      "docs": "Esta documentación",
+      "public": "Assets estáticos (favicon, og-image, llms.txt)",
+      "assets": "Imágenes optimizadas por Astro (hero, proyectos)",
+      "sections": "Bloques de página (Hero, FAQ, Stack...)",
+      "ui": "Primitivas (Button, Card, SEO, Input...)",
+      "cards": "Componentes de datos (ProjectCard, PostCard...)",
+      "navigation": "Header, Footer, ThemeToggle, Cursor...",
+      "content": "MDX: tu base de datos de contenido",
+      "layouts": "BaseLayout.astro (el shell global de cada página)",
+      "pages": "Rutas (file-based routing)",
+      "styles": "global.css (variables CSS, animaciones)",
+      "utils": "Helpers (seo-schemas.ts, debug-mock.js)",
+      "i18n": "Traducciones (ES/EN)",
+      "siteconfig": "⭐ TU PANEL DE CONTROL"
+    }
+  },
+  "sc": {
+    "title": "site-config.ts",
+    "subtitle": "El único archivo que necesitas editar para personalizar el 80% del sitio. Cada campo documentado abajo.",
+    "core": {
+      "title": "<code>site</code> — Core",
+      "url": "Tu dominio. Sin barra final. <strong>Crítico</strong> para SEO y sitemaps.",
+      "lang": "Atributo <code>lang</code> del HTML.",
+      "locale": "Formato de fechas.",
+      "name": "Nombre comercial. Logo + copyright.",
+      "favicon": "Ruta del favicon en <code>/public</code>."
+    },
+    "profile": {
+      "title": "<code>profile</code> — Tu identidad",
+      "name": "Tu nombre completo. SEO author + JSON-LD.",
+      "role": "Tu cargo. JSON-LD jobTitle.",
+      "headline": "Propuesta de valor corta. Se muestra en el Footer.",
+      "bio": "Tu biografía. <strong>Se renderiza como párrafo del Hero.</strong>",
+      "avatar": "Tu foto. Se guarda en <code>/public</code>. Si no existe, muestra iniciales.",
+      "heroImage": "Foto principal del Hero. Va en <code>/src/assets/</code> para compresión automática."
+    },
+    "seo": {
+      "title": "<code>seo</code> — Metadatos",
+      "titleSuffix": "Se añade a cada título de página.",
+      "defaultDescription": "Meta description fallback.",
+      "ogImage": "Imagen para Open Graph / Twitter Cards. 1200×630px.",
+      "twitterHandle": "Tu usuario de X/Twitter.",
+      "themeColor": "Colores para mobile browsers (dark/light)."
+    },
+    "contact": {
+      "title": "<code>contact</code> — Contacto",
+      "email": "Tu email. Se usa en la página de contacto, formulario y legales.",
+      "calCom": "Enlace a Cal.com para agendar llamadas.",
+      "formEndpoint": "<strong>Backend del formulario.</strong> Pon la URL de Formspree o Cloudflare Forms. Si está vacío, el formulario muestra una pista de configuración."
+    },
+    "url": {
+      "warn": "<strong>URL sin barra final.</strong> El campo <code>site.url</code> no debe terminar en <code>/</code>. <code>\"https://miportfolio.dev\"</code> ✅ <code>\"https://miportfolio.dev/\"</code> ❌"
+    }
+  },
+  "colors": {
+    "title": "Colores & Temas",
+    "subtitle": "El portfolio usa colores HSL en formato string. El color primario se aplica a botones, links y acentos.",
+    "howto": {
+      "title": "Cómo cambiar tu color de marca",
+      "1": "Inicia <code>pnpm dev</code>",
+      "2": "Haz clic en el ícono de paleta flotante (esquina inferior derecha)",
+      "3": "Elige una paleta o usa el selector de color",
+      "4": "Haz clic en <strong>\"Copy\"</strong> en el panel",
+      "5": "Pega el objeto en <code>site-config.ts → ui.brandColor</code>"
+    },
+    "vars": {
+      "title": "Variables CSS disponibles",
+      "desc": "En <code>src/styles/global.css</code> se definen todos los tokens: <code>--background</code>, <code>--foreground</code>, <code>--primary</code>, etc. Cada uno tiene valores distintos para <code>:root</code> (light) y <code>.dark</code>."
+    }
+  },
+  "i18n": {
+    "title": "i18n (Idiomas)",
+    "subtitle": "Sistema de internacionalización integrado. El idioma se controla desde <code>site.lang</code> en <code>site-config.ts</code>.",
+    "idiomas": {
+      "title": "Idiomas soportados"
+    },
+    "table": {
+      "code": "Código",
+      "idioma": "Idioma",
+      "locale": "Locale (fechas)",
+      "es": "Spanish (Español)",
+      "en": "English",
+      "pl": "Polish (Polski)"
+    },
+    "change": {
+      "title": "Cómo cambiar el idioma",
+      "comments": "// 'es' | 'en' | 'pl'\n// Formatos de fecha"
+    },
+    "note": "<strong>Nota:</strong> El sitio usa un solo idioma global. Para activar el idioma polaco, cambia ambos valores.",
+    "add": {
+      "title": "Agregar un nuevo idioma",
+      "1": "Abre <code>src/i18n.ts</code>",
+      "2": "Agrega un nuevo objeto en <code>translations</code> (ej: <code>fr: { ... }</code> para Francés)",
+      "3": "Copia todas las claves de <code>en</code> y traduce los valores",
+      "4": "Actualiza <code>SupportedLocale</code> para incluir el nuevo código",
+      "5": "Usa <code>site.lang: 'fr'</code> en <code>site-config.ts</code>"
+    }
+  },
+  "header": {
+    "title": "Header & Logo",
+    "subtitle": "Personaliza el logo en el header. Puedes usar texto (por defecto), un logo SVG, o una imagen.",
+    "options": {
+      "title": "Opciones de header.logoType",
+      "logoType": "Tipo de logo a mostrar en el header.",
+      "logoSvg": "Ruta al archivo SVG en <code>public/</code> (ej: <code>'/logo.svg'</code>). Solo para <code>logoType: 'svg'</code>.",
+      "logoImage": "Ruta a la imagen (ej: <code>'/images/logo.png'</code>). Solo para <code>logoType: 'image'</code>.",
+      "logoAlt": "Texto alternativo para accesibilidad (atributo <code>alt</code>)."
+    },
+    "examples": {
+      "title": "Ejemplos",
+      "svg": "Logo SVG:",
+      "image": "Logo imagen (PNG/WebP):",
+      "text": "Texto (por defecto):",
+      "comment_text": "// Usa site.name para generar el logo"
+    },
+    "tip": "<strong>Tip:</strong> Coloca tus archivos de logo en la carpeta <code>public/</code> para que sean servidos estáticamente. SVG es preferible por ser escalable y ligero."
+  },
+  "footer_logo": {
+    "title": "Footer & Logo",
+    "subtitle": "Personaliza el logo en el footer. Funciona igual que el header: texto, SVG o imagen. El campo <code>text</code> controla el texto de versión/copyright.",
+    "options": {
+      "title": "Opciones de footer",
+      "logoType": "Tipo de logo a mostrar en el footer.",
+      "logoSvg": "Ruta al archivo SVG en <code>public/</code>. Solo para <code>logoType: 'svg'</code>.",
+      "logoImage": "Ruta a la imagen. Solo para <code>logoType: 'image'</code>.",
+      "logoAlt": "Texto alternativo para accesibilidad.",
+      "text": "Texto de versión/copyright que aparece en la barra inferior del footer."
+    },
+    "examples": {
+      "title": "Ejemplos",
+      "svg": "Logo SVG en footer:",
+      "image": "Logo imagen en footer:",
+      "text": "Texto (por defecto):",
+      "comment_text": "// Usa site.name para generar el logo"
+    },
+    "tip": "<strong>Tip:</strong> Puedes usar el mismo archivo SVG tanto en el header como en el footer. Si tu marca tiene versiones distintas, usa rutas diferentes en cada sección."
+  },
+  "toggles": {
+    "title": "Toggles de Interfaz",
+    "subtitle": "Activa o desactiva features desde <code>site-config.ts → ui</code>. Ponlo en <code>false</code> para desactivarlo.",
+    "table": {
+      "transitions": "Transiciones SPA entre páginas (sin recarga).",
+      "theme": "Panel flotante de colores. <strong>Desactívalo en producción.</strong>",
+      "banner": "Banner \"Comprar Plantilla\". <strong>Desactívalo para el cliente final.</strong>",
+      "cursor": "Cursor interactivo premium con efecto magnético.",
+      "pattern": "Patrón de puntos (dot grid) en el fondo. <code>false</code> para fondo limpio.",
+      "orbs": "Orbes de color/aurora en el fondo. Combina con <code>showBackgroundPattern: false</code> para fondo blanco."
+    }
+  },
+  "theme": {
+    "title": "Control de Tema (Dark/Light)",
+    "subtitle": "La sección <code>theme</code> en <code>site-config.ts</code> te da control total sobre el modo oscuro/claro. Puedes permitir que el usuario elija o forzar un tema específico.",
+    "options": {
+      "allowToggle": "Si es <code>false</code>, el botón de tema desaparece y se bloquea en <code>defaultMode</code>.",
+      "defaultMode": "Tema forzado cuando <code>allowToggle: false</code>. Ignora preferencias del sistema."
+    },
+    "comments": {
+      "allow": "// Si es false, el usuario NO puede cambiar el tema (toggle oculto)\n// y se fuerza el valor de defaultMode ignorando preferencias del navegador",
+      "default": "// 'light' o 'dark' — tema por defecto y permanente si allowToggle es false",
+      "solo": "// Solo afecta carga inicial"
+    },
+    "examples": {
+      "title": "Ejemplos de uso",
+      "light": "Tema forzado a light (sin toggle):",
+      "toggle": "Toggle habilitado (comportamiento por defecto):"
+    },
+    "migration": "<strong>Migración desde enableDarkMode:</strong> La opción <code>ui.enableDarkMode</code> fue reemplazada por la sección <code>theme</code>. Si tenías <code>enableDarkMode: false</code>, usa <code>allowToggle: false, defaultMode: 'light'</code> en su lugar."
+  },
+  "collections": {
+    "title": "Colecciones de Contenido",
+    "subtitle": "Tu contenido vive en <code>src/content/</code> como archivos MDX con frontmatter validado por Zod. Si omites un campo obligatorio, Astro fallará en el build.",
+    "table": {
+      "projects": "Casos de estudio del portfolio",
+      "blog": "Artículos y reflexiones",
+      "services": "Páginas de servicios / ofertas",
+      "testimonials": "Reseñas de clientes",
+      "faq": "Preguntas frecuentes del accordion",
+      "changelog": "Historial de versiones"
+    },
+    "naming": "<strong>¿Cómo se nombra un archivo?</strong> Usa kebab-case: <code>mi-proyecto.md</code> → la URL será <code>/projects/mi-proyecto</code>."
+  },
+  "projects": {
+    "title": "Proyectos",
+    "comments": {
+      "body": "Aquí va el cuerpo del proyecto en Markdown o MDX.\nPuedes incluir imágenes, código y lo que necesites."
+    },
+    "table": {
+      "title": "—",
+      "description": "Resumen corto para la tarjeta.",
+      "technologies": "Debe ser <code>[\"A\", \"B\"]</code>, no un string.",
+      "date": "Formato <code>YYYY-MM-DD</code>. Ordena del más nuevo al más viejo.",
+      "repo": "Si existe, muestra ícono GitHub.",
+      "live": "Si existe, muestra enlace \"Ver en vivo\".",
+      "image": "Apunta a <code>/src/assets/</code> para compresión automática."
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "comments": {
+      "draft": "# true = no se publica",
+      "body": "# Título del post\n\nAquí escribes el contenido..."
+    },
+    "warn": "<strong><code>summary</code> es obligatorio y tiene doble función:</strong> 1) Meta description SEO. 2) Cabecera del artículo al leerlo. No lo omitas.",
+    "tip": "<strong>Modo borrador:</strong> Pon <code>draft: true</code> en el frontmatter y el post desaparece del build. Ideal para artículos en progreso."
+  },
+  "services": {
+    "title": "Servicios",
+    "comments": {
+      "icon": "# ¡El prefijo ph: es obligatorio!",
+      "order": "# Controla el orden en el grid"
+    },
+    "danger": "<strong>El ícono debe empezar con <code>ph:</code>.</strong> Busca en <a href=\"https://icon-sets.iconify.design/ph/\" target=\"_blank\">Phosphor Icons</a> y usa el nombre exacto. Ej: <code>ph:desktop</code>, <code>ph:palette</code>."
+  },
+  "testimonials": {
+    "title": "Testimonios"
+  },
+  "faq": {
+    "title": "FAQ"
+  },
+  "hardcoded": {
+    "title": "Componentes Hardcodeados",
+    "subtitle": "No todo está en site-config. Estos textos están directamente en los componentes y requieren editar el archivo .astro.",
+    "table": {
+      "hero": {
+        "what": "Título del Hero",
+        "how": "El h1 \"Diseño y Programo...\" y los textos de botones."
+      },
+      "stack": {
+        "what": "Stack de tecnologías",
+        "how": "El array <code>techStack</code> con las tecnologías que dominas."
+      },
+      "experience": {
+        "what": "Experiencia laboral",
+        "how": "El array <code>experiences</code> con empresa, rol, período y descripción."
+      },
+      "error": {
+        "what": "Página 404",
+        "how": "Título, descripción y textos de la página de error."
+      },
+      "legal": {
+        "what": "Legales",
+        "how": "Textos de privacidad y términos."
+      }
+    }
+  },
+  "images": {
+    "title": "Imágenes",
+    "subtitle": "Dos ubicaciones con propósitos distintos.",
+    "public": {
+      "title": "/public/images/",
+      "desc": "Assets que se sirven tal cual. Avatares, logos. <strong>No se optimizan.</strong>"
+    },
+    "src": {
+      "title": "/src/assets/images/",
+      "desc": "Imágenes que Astro procesa y optimiza automáticamente (webp, responsive, tamaños). <strong>Úsalas para hero y proyectos.</strong>"
+    },
+    "tip": "<strong>Formato recomendado:</strong> WebP para fotos, SVG para logos e íconos. Tamaño máximo de OG image: 1200×630px."
+  },
+  "fonts": {
+    "title": "Tipografía",
+    "desc": "Se usan dos fuentes locales (sin Google Fonts, sin tracking):",
+    "inter": "<strong>Inter</strong> — Sans-serif principal. Importada desde <code>@fontsource-variable/inter</code>.",
+    "roboto": "<strong>Roboto Mono</strong> — Monospace para código y etiquetas. Importada desde <code>@fontsource-variable/roboto-mono</code>.",
+    "footer": "Ambas se importan en <code>src/layouts/BaseLayout.astro</code> y se configuran en <code>tailwind.config.mjs</code>."
+  },
+  "contact": {
+    "title": "Formulario de Contacto",
+    "subtitle": "El formulario envía datos reales. Solo necesitas configurar un endpoint.",
+    "option1": "Opción 1: Formspree (Recomendado)",
+    "steps": {
+      "1": "Crea cuenta en <a href=\"https://formspree.io\" target=\"_blank\">formspree.io</a>",
+      "2": "Crea un formulario nuevo y copia la URL",
+      "3": "Pégala en <code>site-config.ts → contact.formEndpoint</code>"
+    },
+    "option2": "Opción 2: Cloudflare Forms / Custom API",
+    "option2_desc": "Cualquier endpoint que acepte <code>POST</code> con <code>FormData</code>. Configura <code>contact.formEndpoint</code> con tu URL.",
+    "comments": {
+      "url": "// ← tu URL aquí"
+    },
+    "info": "<strong>Anti-spam incluido:</strong> El formulario incluye un campo honeypot invisible (<code>_gotcha</code>) que bloquea bots."
+  },
+  "pagination": {
+    "title": "Paginación",
+    "subtitle": "Configura cuántos items mostrar antes de crear nuevas páginas.",
+    "generates": "Esto genera automáticamente:",
+    "list": {
+      "1": "<code>/projects</code> — página 1 (6 proyectos)",
+      "2": "<code>/projects/page/2</code> — página 2 (si hay más de 6)",
+      "3": "<code>/blog</code> — página 1 (4 posts)",
+      "4": "<code>/blog/page/2</code> — página 2 (si hay más de 4)"
+    }
+  },
+  "seo": {
+    "title": "SEO & GEO",
+    "subtitle": "El componente <code>SEO.astro</code> genera todo automáticamente. Tú solo llenas el config.",
+    "auto_title": "Qué genera automáticamente",
+    "list": {
+      "meta": "<strong>Meta tags:</strong> title, description, keywords, author, canonical",
+      "og": "<strong>Open Graph:</strong> og:type, og:title, og:description, og:image (1200×630), og:locale",
+      "twitter": "<strong>Twitter Cards:</strong> summary_large_image con todos los campos",
+      "jsonld": "<strong>JSON-LD:</strong> Person (home), Article (blog), CreativeWork (projects), FAQPage (faq), Service (services)",
+      "sitemap": "<strong>Sitemap:</strong> <code>sitemap-index.xml</code> generado en cada build",
+      "robots": "<strong>Robots.txt:</strong> Ruta dinámica que referencia el sitemap"
+    },
+    "geo_title": "GEO (Generative Engine Optimization)",
+    "geo_desc": "El archivo <code>public/llms.txt</code> describe tu sitio para motores de búsqueda con IA (Perplexity, ChatGPT Search, Claude). Contiene: stack, estructura de carpetas, colecciones de contenido y enlaces rápidos."
+  },
+  "a11y": {
+    "title": "Accesibilidad",
+    "subtitle": "El template cumple con WCAG 2.2 AA. Estas son las protecciones activas:",
+    "cards": {
+      "motion": {
+        "title": "Reduced Motion",
+        "desc": "Si el usuario tiene <code>prefers-reduced-motion: reduce</code>, todas las animaciones (reveal, hover, magnetic, mobile menu) se desactivan automáticamente."
+      },
+      "keyboard": {
+        "title": "Navegación por teclado",
+        "desc": "El mobile menu se cierra con Escape. Todos los botones tienen <code>aria-label</code> y los iconos sociales tienen <code>sr-only</code> text."
+      },
+      "contrast": {
+        "title": "Contraste AA",
+        "desc": "Los tokens HSL están calibrados para cumplir WCAG AA en ambos modos (light y dark)."
+      },
+      "alt": {
+        "title": "Alt texts descriptivos",
+        "desc": "Las imágenes del Hero incluyen nombre, rol y contexto. Los proyectos usan el título como alt fallback."
+      }
+    }
+  },
+  "pwa": {
+    "title": "PWA",
+    "subtitle": "Progressive Web App con service worker auto-update.",
+    "includes": "Qué incluye",
+    "list": {
+      "1": "<code>site.webmanifest</code> en <code>/public/</code>",
+      "2": "Service worker con estrategia de caché para <code>.js, .css, .html, .ico, .png, .svg, .webp, .avif</code>",
+      "3": "Registro automático con <code>autoUpdate</code>"
+    },
+    "generate": {
+      "title": "Generar íconos PNG",
+      "comment1": "# Genera icon-192x192.png, icon-512x512.png y apple-touch-icon.png",
+      "comment2": "# desde public/favicon.svg usando Sharp"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "El template viene <strong>sin tracking por defecto</strong>. Estos son los proveedores soportados:",
+    "table": {
+      "cloudflare": {
+        "type": "Zero-JS, server-side",
+        "setup": "Actívalo en Cloudflare Dashboard. Sin código."
+      },
+      "plausible": {
+        "type": "Privacy-friendly",
+        "setup": "Agrega el script tag en <code>BaseLayout.astro</code> head."
+      },
+      "umami": {
+        "type": "Self-hosted",
+        "setup": "Igual que Plausible, con tu URL de instancia."
+      },
+      "google": {
+        "type": "Via Partytown (sandboxed)",
+        "setup": "Configurado en <code>astro.config.mjs</code>. Solo setea <code>PUBLIC_GA_MEASUREMENT_ID</code>."
+      }
+    },
+    "tip": "<strong>Recomendación:</strong> Cloudflare Web Analytics es la opción más simple — cero JavaScript adicional. Ve a Cloudflare Dashboard > Analytics > Web Analytics."
+  },
+  "deploy": {
+    "title": "Deploy en Cloudflare Pages",
+    "subtitle": "La opción recomendada. Astro + Cloudflare = edge deployment global.",
+    "github_title": "Desde GitHub (recomendado)",
+    "step1": {
+      "title": "Paso 1: Sube tu código",
+      "desc": "Haz commit y push a tu repositorio: <code>git push origin main</code>"
+    },
+    "step2": {
+      "title": "Paso 2: Conecta en Cloudflare",
+      "desc": "Ve a <a href=\"https://dash.cloudflare.com\" target=\"_blank\">dash.cloudflare.com</a> → Workers & Pages → Create → Connect to Git → selecciona tu repo."
+    },
+    "step3": {
+      "title": "Paso 3: Configura el build",
+      "desc": "Usa el preset <strong>Astro</strong> o configúralo manualmente:",
+      "list1": "<strong>Build command:</strong> <code>pnpm build</code>",
+      "list2": "<strong>Build output directory:</strong> <code>dist</code>",
+      "list3": "<strong>Node version:</strong> <code>22</code>"
+    },
+    "warn": "<strong>Node 22 es obligatorio.</strong> En Cloudflare Pages, agrega la variable de entorno <code>NODE_VERSION = 22</code> en Settings > Environment Variables.",
+    "domain": {
+      "title": "Dominio personalizado",
+      "desc": "En Cloudflare Pages → tu proyecto → Custom domains → agrega tu dominio. Cloudflare maneja SSL automáticamente."
+    }
+  },
+  "env": {
+    "title": "Variables de Entorno",
+    "subtitle": "Copia <code>.env.example</code> a <code>.env</code> y configura según necesites.",
+    "comments": {
+      "form": "# Contact form backend",
+      "analytics": "# Analytics (elige uno)"
+    },
+    "danger": "<strong>Nunca comitees <code>.env</code>.</strong> El archivo está en <code>.gitignore</code>. Usa <code>.env.example</code> como referencia para el equipo."
+  },
+  "troubleshoot": {
+    "title": "Troubleshooting",
+    "subtitle": "Errores comunes y sus soluciones.",
+    "cards": {
+      "cloudflare": {
+        "title": "\"Dev server crashes with Cloudflare worker error\"",
+        "desc": "Caché corrupto de Vite/Astro. Ejecuta:"
+      },
+      "commonjs": {
+        "title": "\"CommonJS dependency breaks the build\"",
+        "desc": "Agrega la dependencia a <code>ssr.noExternal</code> en <code>astro.config.mjs</code>:"
+      },
+      "zod": {
+        "title": "\"Zod validation error en content\"",
+        "desc": "Revisa el frontmatter del archivo MDX que el error menciona. Un campo obligatorio está faltando o tiene el tipo incorrecto."
+      },
+      "form": {
+        "title": "\"El formulario de contacto no envía\"",
+        "desc": "Verifica que <code>contact.formEndpoint</code> en <code>site-config.ts</code> tenga una URL válida. Si está vacío, el formulario muestra un aviso de configuración."
+      },
+      "pwa": {
+        "title": "\"PWA no funciona en producción\"",
+        "desc": "Asegúrate de que el <code>manifest</code> en <code>astro.config.mjs</code> tenga la URL correcta. Ejecuta <code>node scripts/generate-pwa-icons.mjs</code> para generar los PNGs necesarios."
+      },
+      "config": {
+        "title": "\"Cambios en site-config.ts no se reflejan\"",
+        "desc": "El dev server de Astro a veces cachea el config. Reinicia el servidor: <code>Ctrl+C</code> → <code>pnpm dev</code>."
+      }
+    }
+  }
+}

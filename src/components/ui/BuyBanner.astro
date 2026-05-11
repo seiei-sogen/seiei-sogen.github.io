@@ -1,0 +1,39 @@
+---
+import { Icon } from "astro-icon/components";
+
+/**
+ * BuyBanner component - Top fixed banner for the demonstration version
+ */
+---
+
+<div class="fixed top-0 left-0 w-full z-[100] h-10 border-b border-white/10 bg-[#ff0055] backdrop-blur-xl">
+  <div class="container h-full px-4 sm:px-6 md:px-8 max-w-6xl mx-auto flex items-center justify-between gap-4">
+    <div class="flex items-center gap-2 text-xs font-mono text-black">
+      <span class="flex h-1.5 w-1.5 rounded-full bg-[var(--primary)] animate-pulse"></span>
+      DEMO MODE
+    </div>
+    
+    <a
+      href="https://zutra.gumroad.com/l/astro-minimalist-portfolio"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="group flex items-center gap-2"
+    >
+      <span class="text-[10px] sm:text-xs font-bold text-black uppercase tracking-wider group-hover:text-[var(--primary)] transition-colors">
+        Get Template <span class="hidden sm:inline-block ml-1 opacity-50">— $49</span>
+      </span>
+      <div class="p-1 rounded-full bg-black/10 group-hover:bg-[var(--primary)] text-black transition-all duration-300">
+        <Icon 
+          name="ph:arrow-right" 
+          class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" 
+        />
+      </div>
+    </a>
+  </div>
+</div>
+
+<style>
+  div {
+    box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.5);
+  }
+</style>
