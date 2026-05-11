@@ -25,7 +25,7 @@ export const siteConfig = {
 
   // 3. SEO and Metadata
   seo: {
-    titleSuffix: ' | Minimalist Portfolio',
+    titleSuffix: ' | seiei-sogen.github.io',
     defaultDescription: 'Minimalist portfolio built with Astro 6 and Tailwind CSS.',
     ogImage: '/og-image.jpg', // Ideally 1200x630px
     twitterHandle: '@seiei_sogen',
@@ -113,12 +113,12 @@ export const siteConfig = {
       icon: 'ph:github-logo-duotone',
       showInHeader: true,
     },
-    {
-      name: 'LinkedIn',
-      href: 'https://linkedin.com/in/yourusername',
-      icon: 'ph:linkedin-logo-duotone',
-      showInHeader: true,
-    },
+    // {
+    //   name: 'LinkedIn',
+    //   href: 'https://linkedin.com/in/yourusername',
+    //   icon: 'ph:linkedin-logo-duotone',
+    //   showInHeader: true,
+    // },
     {
       name: 'Twitter / X',
       href: 'https://twitter.com/seiei_sogen',

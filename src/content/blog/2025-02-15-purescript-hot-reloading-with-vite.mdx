@@ -1,0 +1,193 @@
+---
+title: 'PureScriptをViteでホットリローディング(purescript-jellyサンプルあり)'
+date: '2025-02-15'
+summary: 'PureScript で purescript-jelly のような UI ライブラリを使い、Vite で Hot Module Replacement しながら開発する手順とサンプル構成の紹介。'
+draft: true
+---
+
+## 概要
+
+PureScript で purescript-jelly みたいな UI ライブラリを使おうとする。
+で、そういうときにサーバーを立てて、hot reloading——まあ、正確には Hot Module Replacement ——しながら開発する例って、あまり見当たらない。
+
+それで、謝辞にも書いた @himanoa さんや @amderbar さんの記事を見つけた。基本的なアイディアはそこからもらいつつ、自分でも Hot Module Replacement のサンプルを作ってみた。
+
+この記事では、それを紹介する。
+
+## 謝辞
+
+以下の記事を参考にした。
+
+- [blog.himanoa.net/92](https://blog.himanoa.net/92/)
+- [qiita.com/amderbar/items/7eb6ca03ea41f236fcd5](https://qiita.com/amderbar/items/7eb6ca03ea41f236fcd5)
+
+## ディレクトリ構成
+
+以下のような形のディレクトリ構成になる。
+
+`public/index.html` がブラウザに表示する、HTML だ。
+`public/index.html` から、`public/index.js`を読み込むようにする。
+`public/index.js` は、PureScript ファイル`src/Main.purs` をトランスパイルしたものだ。
+
+```
+.
+├── output
+│   ├── cache-db.json
+│   ├── 以下略
+│
+│
+├── package.json
+├── package-lock.json
+├── packages.dhall
+├── public
+│   ├── index.html
+│   ├── index.js
+│   └── vite.svg
+├── spago.dhall
+├── src
+│   └── Main.purs
+├── test
+│   └── Main.purs
+└── vite.config.js
+```
+
+## バージョン情報
+
+Node.js v23.8.0
+
+## 手順
+
+以下の二段階がある。
+
+- npm パッケージのインストール。
+- PureScript のパッケージマネージャー spago でのインストール
+
+### npm パッケージのインストール
+
+```bash
+npm init
+```
+
+今日、2025 年 2 月現在は、`spago@next`をインストールするとのこと。
+
+```bash
+npm install --save-exact esbuild purescript spago@next
+npm install --save-exact --save-dev vite chokidar
+```
+
+```bash
+sudo pacman -S watchexec
+```
+
+[github.com/paulmillr/chokidar](https://github.com/paulmillr/chokidar)
+
+### spago パッケージのインストール
+
+PureScript Jelly をつかうため、以下をインストール。
+
+```bash
+npx spago init
+npx spago run
+```
+
+```bash
+npx spago install jelly
+npx spago install aff
+npx spago install jelly-signal
+npx spago install foldable-traversable
+```
+
+## package.json の設定
+
+```json
+"scripts": {
+  "dev:vite": "vite",
+  "watch:spago": "spago bundle-app --watch --to ./public/index.js",
+  "dev": "npm run dev:vite & npm run watch:spago",
+  "build:spago": "spago bundle-app --to ./public/index.js",
+  "preview": "vite preview"
+},
+```
+
+`"watch:spago": "spago bundle-app --watch --to ./public/index.js"`
+
+これで、spago 側で、PureScript のファイルを watch し、変更があれば、
+`./public/index.js`にバンドルする。
+
+そして、その変化を検知した、vite が画面をリロードする。
+という流れにしたい。
+そのために、vite と同時に、spago の監視を以下のように実行する。
+
+`"dev": "npm run dev:vite & npm run watch:spago",`
+
+## `vite.config.mjs` の 設定
+
+```js
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  root: "./public",
+  server: {
+    watch: {
+      ignored: ["!./public/index.js"],
+    },
+  },
+});
+```
+
+ディレクトリ構成で述べたように、`public/index.html` をブラウザに表示する、HTML にしたい。
+したがって、`root: "./public",`を設定。
+また、PureScript のバンドル結果の`./public/index.js`を vite の watch 対象にする。
+
+## `public/index.html` の設定
+
+`./index.js`を読み込むようにする。
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./index.js"></script>
+  </body>
+</html>
+```
+
+## `src/Main.purs` の設定
+
+これは、公式にあるものをそのままコピペする。
+
+[jelly.yukikurage.net/docs/hello-world](https://jelly.yukikurage.net/docs/hello-world)
+
+```haskell
+module Main where
+
+import Prelude
+
+import Data.Foldable (traverse_)
+import Effect (Effect)
+import Effect.Aff (launchAff_)
+import Effect.Class (liftEffect)
+import Jelly.Aff (awaitBody)
+import Jelly.Component (Component, text)
+import Jelly.Hooks (runHooks_)
+import Jelly.Hydrate (mount)
+
+main :: Effect Unit
+main = launchAff_ do
+  appMaybe <- awaitBody
+  liftEffect $ runHooks_ $ traverse_ (mount component) appMaybe
+
+component :: forall m. Component m
+component = text "Hello World!"
+```
+
+## 動作確認
+
+`npm run dev` を実行してみる。

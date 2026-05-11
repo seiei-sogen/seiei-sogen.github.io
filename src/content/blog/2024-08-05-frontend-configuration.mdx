@@ -1,0 +1,502 @@
+---
+title: '【2024年】フロントエンド設定集（ESLint、Prettier、EditorConfig、tsconfig.json……）'
+date: '2024-08-05'
+summary: '個人開発で使用するフロントエンドの設定ファイル集。ESLint, Prettier, EditorConfig, tsconfig, Biome を、Remix チュートリアル写経時の設定をベースに、厳しめのルールで質を担保する構成として紹介する。'
+draft: false
+---
+
+> 'You gave me hyacinths first a year ago;
+> 'They called me the hyacinth girl.'
+>
+> *The Waste Land By T. S. Eliot*
+
+個人開発するときに、ESLint の設定など、毎回、見直しているので、結構時間がかかっている。
+時間短縮のために、最近、Remix のチュートリアルを写経したときに使った設定を Zenn の記事にメモしておこうと思う。
+
+設定は、厳しめにしている。
+理由は、個人で作っていても、一定の質を担保するため。
+
+## ESLint
+
+<details>
+<summary>.eslintrc.cjs</summary>
+
+```js
+/** @type {import('eslint').Linter.Config} */
+module.exports = {
+  root: true,
+  parserOptions: {
+    ecmaVersion: "latest",
+    sourceType: "module",
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
+  env: {
+    browser: true,
+    commonjs: true,
+    es6: true,
+  },
+  ignorePatterns: ["!**/.server", "!**/.client"],
+
+  // Base config
+  extends: ["eslint:recommended", "prettier"],
+
+  overrides: [
+    // React
+    {
+      files: ["**/*.{js,jsx,ts,tsx}"],
+      plugins: ["react", "jsx-a11y"],
+      extends: [
+        "plugin:react/recommended",
+        "plugin:react/jsx-runtime",
+        "plugin:react-hooks/recommended",
+        "plugin:jsx-a11y/recommended",
+      ],
+      settings: {
+        react: {
+          version: "detect",
+        },
+        formComponents: ["Form"],
+        linkComponents: [
+          { name: "Link", linkAttribute: "to" },
+          { name: "NavLink", linkAttribute: "to" },
+        ],
+        "import/resolver": {
+          typescript: {},
+        },
+      },
+    },
+
+    // Typescript
+    {
+      files: ["*.cts", "*.ctsx", "*.mts", "*.mtsx", "*.ts", "*.tsx"],
+
+      extends: [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/strict-type-checked",
+        "plugin:@typescript-eslint/stylistic-type-checked",
+        "plugin:import/typescript",
+        "prettier",
+      ],
+
+      parser: "@typescript-eslint/parser",
+      settings: {
+        "import/internal-regex": "^~/",
+        "import/resolver": {
+          node: {
+            extensions: [".ts", ".tsx"],
+          },
+          typescript: {
+            alwaysTryTypes: true,
+          },
+        },
+      },
+      parserOptions: {
+        project: ["./tsconfig.json"],
+      },
+      plugins: ["@typescript-eslint", "import"],
+      rules: {
+        // ESlint core
+        curly: "error",
+        "default-case-last": "error",
+        eqeqeq: "error",
+        "no-console": "error",
+        "no-else-return": ["error", { allowElseIf: false }],
+        "no-lonely-if": "error",
+        "no-multi-assign": "error",
+        "no-negated-condition": "error",
+        "no-new": "error",
+        "no-new-object": "error",
+        "no-new-wrappers": "error",
+        "no-param-reassign": "error",
+        "no-return-assign": "error",
+        "no-self-compare": "error",
+        "no-sequences": ["error", { allowInParentheses: false }],
+        "no-unmodified-loop-condition": "error",
+        "no-unneeded-ternary": "error",
+        "no-useless-backreference": "error",
+        "no-useless-concat": "error",
+        "no-useless-rename": "error",
+        "no-useless-return": "error",
+        "object-shorthand": "error",
+        "one-var": ["error", "never"],
+        "prefer-object-spread": "error",
+        "sort-imports": [
+          "error",
+          {
+            ignoreCase: true,
+            ignoreDeclarationSort: true,
+          },
+        ],
+
+        // @typescript-eslint
+        "@typescript-eslint/array-type": ["error", { default: "array-simple" }],
+        "@typescript-eslint/class-literal-property-style": "off",
+        "@typescript-eslint/consistent-indexed-object-style": "off",
+        "@typescript-eslint/consistent-type-assertions": [
+          "error",
+          {
+            assertionStyle: "as",
+            objectLiteralTypeAssertions: "never",
+          },
+        ],
+        "@typescript-eslint/consistent-type-definitions": "off",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/explicit-member-accessibility": "error",
+        "@typescript-eslint/naming-convention": [
+          "error",
+          { selector: "accessor", format: ["camelCase"] },
+          { selector: "enumMember", format: ["PascalCase"] },
+          { selector: "function", format: ["camelCase", "PascalCase"] },
+          {
+            selector: "method",
+            format: ["camelCase", "PascalCase"],
+            filter: { regex: "^__resolveType$", match: false },
+          },
+          { selector: "objectLiteralMethod", format: null },
+          { selector: "objectLiteralProperty", format: null },
+          {
+            selector: "parameter",
+            format: ["camelCase", "PascalCase"],
+            leadingUnderscore: "allow",
+          },
+          {
+            selector: "parameter",
+            modifiers: ["destructured"],
+            format: null,
+          },
+          { selector: "parameterProperty", format: ["camelCase"] },
+          { selector: "typeLike", format: ["PascalCase"] },
+          {
+            selector: "variable",
+            format: ["camelCase", "PascalCase", "UPPER_CASE"],
+            filter: { regex: "^_$", match: false },
+          },
+          {
+            selector: "variable",
+            modifiers: ["destructured"],
+            format: null,
+          },
+        ],
+        "@typescript-eslint/no-confusing-void-expression": "error",
+        "@typescript-eslint/no-empty-interface": [
+          "error",
+          { allowSingleExtends: true },
+        ],
+        "@typescript-eslint/no-floating-promises": [
+          "error",
+          { ignoreVoid: true },
+        ],
+        "@typescript-eslint/no-invalid-void-type": [
+          "error",
+          { allowAsThisParameter: true },
+        ],
+        "@typescript-eslint/no-misused-promises": [
+          "error",
+          { checksVoidReturn: false },
+        ],
+        "@typescript-eslint/no-namespace": [
+          "error",
+          { allowDeclarations: true },
+        ],
+        "@typescript-eslint/no-require-imports": "error",
+        "@typescript-eslint/no-throw-literal": "error",
+        "@typescript-eslint/no-unnecessary-boolean-literal-compare": "error",
+        "@typescript-eslint/no-unnecessary-condition": [
+          "error",
+          { allowConstantLoopConditions: true },
+        ],
+        "@typescript-eslint/no-unused-expressions": [
+          "error",
+          { enforceForJSX: true },
+        ],
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/no-use-before-define": [
+          "error",
+          { functions: false },
+        ],
+        "@typescript-eslint/no-useless-constructor": "error",
+        "@typescript-eslint/prefer-includes": "error",
+        "@typescript-eslint/prefer-readonly": "error",
+        "@typescript-eslint/require-array-sort-compare": "error",
+        "@typescript-eslint/require-await": "off",
+        "@typescript-eslint/restrict-template-expressions": [
+          "error",
+          { allowNumber: true },
+        ],
+        "@typescript-eslint/return-await": ["error", "always"],
+        "@typescript-eslint/promise-function-async": "error",
+        "@typescript-eslint/strict-boolean-expressions": "error",
+        "@typescript-eslint/unbound-method": ["error", { ignoreStatic: true }],
+
+        // import
+        "import/first": "error",
+        "import/no-absolute-path": "error",
+        "import/no-default-export": "error",
+        "import/no-deprecated": "error",
+        "import/no-duplicates": "error",
+        "import/no-extraneous-dependencies": "error",
+        "import/no-mutable-exports": "error",
+        "import/no-relative-packages": "error",
+        "import/no-unassigned-import": "error",
+        "import/no-useless-path-segments": ["error"],
+        "import/order": [
+          "error",
+          {
+            alphabetize: { caseInsensitive: true, order: "asc" },
+            groups: [["builtin", "external"], "parent", ["sibling", "index"]],
+            "newlines-between": "always",
+          },
+        ],
+
+        // Preview 202407
+        "@typescript-eslint/consistent-type-exports": [
+          "warn",
+          { fixMixedExportsWithInlineTypeSpecifier: false },
+        ],
+        "@typescript-eslint/consistent-type-imports": [
+          "warn",
+          { fixStyle: "separate-type-imports", prefer: "type-imports" },
+        ],
+        "@typescript-eslint/no-array-delete": "warn",
+        "@typescript-eslint/no-dynamic-delete": "warn",
+        "@typescript-eslint/no-extraneous-class": "warn",
+        "@typescript-eslint/no-meaningless-void-operator": "warn",
+        "@typescript-eslint/no-mixed-enums": "warn",
+        "@typescript-eslint/no-non-null-asserted-nullish-coalescing": "warn",
+        "@typescript-eslint/no-unnecessary-template-expression": "warn",
+        "import/consistent-type-specifier-style": ["warn", "prefer-top-level"],
+      },
+    },
+
+    // Node
+    {
+      files: [".eslintrc.js"],
+      env: { node: true },
+    },
+  ],
+};
+```
+
+</details>
+
+Remix のテンプレートで、自動で出力された、`.eslintrc.cjs` がベース。
+TypeScript の設定は、`@herp-inc/eslint-config` の設定を足して、カスタマイズして使っている。
+作成した当時（2024 年 7 月）、`plugin:import/typescript` が、ESLint の flat config に未対応だったため `.cjs` でクラシックな ESLint の記法で書いている。
+
+[herp-inc/eslint-config](https://github.com/herp-inc/eslint-config)
+
+## Prettier
+
+```yaml
+# .prettierrc.yml
+printWidth: 80
+tabWidth: 2
+singleQuote: false
+trailingComma: "all"
+semi: true
+useTabs: false
+```
+
+## .editorconfig
+
+```ini
+# .editorconfig
+[*.{ts,tsx,json,js,mjs,cjs}]
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = space
+indent_size = 2
+```
+
+主に、VS Code の拡張機能の indent-rainbow を正常に動作させるために、設定している。
+
+## tsconfig.json(remix 用)
+
+<details>
+<summary>tsconfig.json</summary>
+
+```json
+{
+  "extends": "@tsconfig/strictest/tsconfig.json",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/.server/**/*.ts",
+    "**/.server/**/*.tsx",
+    "**/.client/**/*.ts",
+    "**/.client/**/*.tsx"
+  ],
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["@remix-run/node", "vite/client"],
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "target": "ES2022",
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./app/*"]
+    },
+
+    "noEmit": true
+  }
+}
+```
+
+</details>
+
+`@tsconfig/strictest` 使用。
+
+[tsconfig/bases - strictest.json](https://github.com/tsconfig/bases/blob/main/bases/strictest.json)
+
+## package.json
+
+<details>
+<summary>package.json</summary>
+
+```json
+{
+  "name": "remix-tutorial",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "build": "remix vite:build",
+    "dev": "remix vite:dev",
+    "lint": "eslint --fix --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "lint:format": "eslint --fix --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "start": "remix-serve build/server/index.js",
+    "typecheck": "tsc",
+    "biome": "biome format --write .",
+    "prettier": "prettier . --write",
+    "format": "bun run lint:format && bun run prettier"
+  },
+  "dependencies": {
+    "@remix-run/node": "^2.10.3",
+    "@remix-run/react": "^2.10.3",
+    "@remix-run/serve": "^2.10.3",
+    "eslint-config-prettier": "^9.1.0",
+    "isbot": "^4.1.0",
+    "match-sorter": "^6.3.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sort-by": "^1.2.0",
+    "tiny-invariant": "^1.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.8.3",
+    "@remix-run/dev": "^2.10.3",
+    "@tsconfig/strictest": "2.0.5",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^7.17.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.47.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "3.3.3",
+    "typescript": "^5.1.6",
+    "vite": "^5.1.4",
+    "vite-tsconfig-paths": "^4.3.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+```
+
+</details>
+
+Lint 関連のライブラリをまとめてインストールするコマンド（bun）:
+
+```shell
+bun add --development --exact \
+@tsconfig/strictest \
+@typescript-eslint/eslint-plugin \
+@typescript-eslint/parser \
+eslint \
+eslint-import-resolver-typescript \
+eslint-plugin-import \
+eslint-plugin-jsx-a11y \
+eslint-plugin-react \
+eslint-plugin-react-hooks \
+prettier
+```
+
+[bun.sh/docs/cli/add](https://bun.sh/docs/cli/add)
+
+## .gitignore(Remix 用)
+
+```text
+node_modules
+
+/.cache
+/build
+.env
+```
+
+## Biome
+
+結局 Biome は使っていない。
+しかし、いろいろ調べて設定したので、メモしてしておく。
+
+<details>
+<summary>biome.json</summary>
+
+```json
+{
+  "files": {
+    "ignore": ["tsconfig.json"]
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80,
+    "attributePosition": "auto"
+  },
+  "organizeImports": { "enabled": true },
+  "linter": { "enabled": true, "rules": { "recommended": true } },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": true,
+      "quoteStyle": "double",
+      "attributePosition": "auto"
+    }
+  },
+  "overrides": [
+    {
+      "include": ["*.json"],
+      "formatter": { "indentWidth": 2 }
+    }
+  ]
+}
+```
+
+</details>

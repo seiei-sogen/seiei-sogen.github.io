@@ -1,0 +1,16 @@
+---
+title: 'ESLint Flat Config ワンポイントアドバイス。'
+date: '2024-11-25'
+summary: 'ESLint Flat Config を 200 行ほど書いた経験から得た、シンプルに書くためのコツ。typescript-eslint の config 関数の extends を使うのがポイント。'
+draft: true
+---
+
+最近、仕事で、ESLint の Flat Config で 200 行くらいの設定を書いた。
+その中で、「Flat Config は、難しいイメージがあったが、こう書いたらシンプルに書けるのではないか」というコツのようなものを発見したので、忘備録がてら書きたいと思う。
+結論から言うと、それは、
+
+- typescript-eslint の config 関数の extends を使う。
+
+である。
+
+公式ドキュメント: [typescript-eslint flat config extends](https://typescript-eslint.io/packages/typescript-eslint#flat-config-extends)
