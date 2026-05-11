@@ -44,7 +44,8 @@ body {
   color: var(--text);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
-  line-height: 1.65;
+  /* line-height: 1.65; */
+  line-height: 2;
   letter-spacing: -0.01em;
   display: flex;
   min-height: 100vh;
@@ -232,7 +233,8 @@ a:hover {
   font-size: 42px;
   font-weight: 900;
   letter-spacing: -0.04em;
-  line-height: 1.1;
+  /* line-height: 1.1; */
+  line-height: 2;
   color: #fff;
   margin-bottom: 16px;
 }
@@ -245,7 +247,8 @@ a:hover {
   font-size: 17px;
   color: var(--text-muted);
   max-width: 560px;
-  line-height: 1.6;
+  /* line-height: 1.6; */
+  line-height: 2;
 }
 
 .doc-hero .tagline {
@@ -374,7 +377,8 @@ code {
   overflow-x: auto;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  line-height: 1.7;
+  /* line-height: 1.7;  */
+  line-height: 2;
   color: #c4c4c8;
   margin: 0;
 }
@@ -412,7 +416,8 @@ code {
   border-radius: var(--radius);
   margin: 24px 0;
   font-size: 14px;
-  line-height: 1.6;
+  /* line-height: 1.6; */
+  line-height: 2;
 }
 
 .callout i {
