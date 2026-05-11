@@ -1,5 +1,5 @@
 ---
-question: "¿Cuánto tiempo toma completar un proyecto?"
-answer: "Depende de la complejidad. Un sitio web de aterrizaje (landing page) suele tomar de 1 a 2 semanas, mientras que una aplicación completa o un sistema de diseño institucional puede llevar de 4 a 8 semanas."
+question: "プロジェクトの完了までどれくらいかかりますか？"
+answer: "規模次第です。ランディングページなら 1〜2 週間、アプリケーションや企業向けのデザインシステムは 4〜8 週間ほどが目安です。"
 order: 2
 ---

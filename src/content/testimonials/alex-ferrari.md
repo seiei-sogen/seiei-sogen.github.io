@@ -1,6 +1,6 @@
 ---
 author: "Alex Ferrari"
-role: "CEO en TechFlow"
-content: "Transformó nuestra visión en una experiencia digital impecable. El enfoque minimalista realmente resalta nuestro producto."
+role: "TechFlow CEO"
+content: "私たちのビジョンを、文句のつけようがないデジタル体験に変えてくれました。ミニマルなアプローチが、私たちのプロダクトを本当に引き立てています。"
 company: "TechFlow"
 ---

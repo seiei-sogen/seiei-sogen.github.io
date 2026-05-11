@@ -1,6 +1,6 @@
 ---
 author: "Sarah Chen"
-role: "Product Manager"
-content: "La capacidad de simplificar problemas complejos es inaudita. No solo diseñó el sitio, sino que mejoró nuestro flujo de usuario."
+role: "プロダクトマネージャー"
+content: "複雑な課題をシンプルにする能力は他に類を見ません。サイトをデザインしてくれただけでなく、ユーザーフローまで改善してくれました。"
 company: "Studio Indigo"
 ---

@@ -1,5 +1,5 @@
 ---
-question: "¿Ofreces soporte post-lanzamiento?"
-answer: "Sí, todos mis proyectos incluyen 15 días de soporte técnico gratuito para errores o ajustes menores. También ofrezco planes de mantenimiento mensual para actualizaciones y mejoras continuas."
+question: "リリース後のサポートは提供していますか？"
+answer: "はい。すべてのプロジェクトに 15 日間の無償サポート（バグ修正・軽微な調整）が付属します。また、継続的な更新・改善のための月額メンテナンスプランも提供しています。"
 order: 3
 ---

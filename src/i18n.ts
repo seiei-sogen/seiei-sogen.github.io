@@ -14,7 +14,7 @@
 import { siteConfig } from './site-config';
 
 export type TranslationKey = keyof typeof translations.es;
-export type SupportedLocale = 'es' | 'en' | 'pl';
+export type SupportedLocale = 'es' | 'en' | 'pl' | 'jp';
 
 export function t(key: TranslationKey): string {
   // Reads language from site-config.ts (site.lang)
@@ -537,5 +537,177 @@ export const translations = {
     '500.description': 'Coś nieoczekiwanego wydarzyło się podczas przetwarzania żądania. Spróbuj ponownie za chwilę.',
     '500.back': 'Wróć do strony głównej',
     '500.report': 'Zgłoś problem',
+  },
+
+  jp: {
+    // Navigation
+    'nav.home': 'ホーム',
+    'nav.projects': 'プロジェクト',
+    'nav.services': 'サービス',
+    'nav.blog': 'ブログ',
+    'nav.contact': 'お問い合わせ',
+    'nav.menu_open': 'メニューを開く',
+    'nav.menu_close': 'メニューを閉じる',
+    'nav.mobile_menu': 'ナビゲーションメニュー',
+
+    // Hero
+    'hero.greeting': 'こんにちは、',
+    'hero.title': 'デザインと実装で',
+    'hero.title_highlight': 'ミニマルなプロダクトを',
+    'hero.image_alt': 'デスクで作業中',
+    'hero.cta.projects': 'プロジェクトを見る',
+    'hero.cta.contact': 'ご連絡ください',
+
+    // CTA Section
+    'cta.title': '進行中のプロジェクトはありますか？',
+    'cta.description': 'あなたのアイデアを、洗練された、高速で、機能的なデジタルプロダクトに変える方法についてお話しましょう。',
+    'cta.start': 'プロジェクトを始める',
+    'cta.schedule': '相談予約',
+
+    // Stack Section
+    'stack.title': '技術スタック',
+    'stack.subtitle': 'プロダクトに命を吹き込むために使っているツール群。',
+
+    // Experience Section
+    'experience.title': '経歴',
+    'experience.subtitle': 'デジタルプロダクトを作ってきた道のり。',
+    'experience.present': '現在',
+    'experience.item1_desc': 'Astro ベースのプロジェクトの技術リードと、Cloudflare 上でのパフォーマンス最適化を担当。',
+    'experience.item2_desc': 'SaaS プラットフォーム向けのデザインシステム構築と、リアクティブなコンポーネントの開発。',
+    'experience.item3_desc': 'スタートアップ向けのブランドアイデンティティ設計と、Web サイト開発。',
+
+    // Expertise Section
+    'expertise.title': '専門領域',
+    'expertise.subtitle': 'シンプルさと力強さで際立つデジタルプロダクトを作るための、総合的なアプローチ。',
+
+    // Recent Projects Section
+    'projects.recent_title': '最近のプロジェクト',
+    'projects.recent_subtitle': '最近関わった仕事のセレクション。',
+    'projects.working_on_it': '何かすごいものを作っているところです...',
+
+    // Projects index page
+    'projects.title_main': 'プロジェクト',
+    'projects.title_highlight': ' & 作品',
+    'projects.description': 'シンプルさとパフォーマンスを重視して作った、実験、UI、アプリケーションのコレクション。',
+    'projects.no_page': 'このページにはプロジェクトがありません...',
+
+    // Project detail page
+    'projects.launch': '公開',
+    'projects.technologies': '使用技術',
+    'projects.links': 'リンク',
+    'projects.cta_title': '次のレベルへアイデアを引き上げる準備はできていますか？',
+    'projects.cta_desc': '一緒に素晴らしいものを作る方法についてお話しましょう。',
+    'projects.cta_btn': 'プロジェクトを始める',
+
+    // Testimonials
+    'testimonials.prev': '前の推薦文',
+    'testimonials.next': '次の推薦文',
+    'testimonials.goto': '推薦文へ移動',
+
+    // Newsletter Wide
+    'newsletter_wide.title': 'このコンテンツは役に立ちましたか？',
+    'newsletter_wide.description': 'ミニマルなデザインとモダンな開発について書いています。最新情報を見逃さないよう、ぜひ参加してください。',
+    'newsletter_wide.cta': 'プロジェクトについて話す',
+
+    // Service Sidebar
+    'sidebar.title': 'この専門領域を依頼する',
+    'sidebar.description': 'この専門領域にマッチするプロジェクトはありますか？目標達成のお手伝いができる方法についてお話しましょう。',
+    'sidebar.cta': 'プロジェクトを始める',
+    'sidebar.guarantees_title': '納品の保証',
+    'sidebar.guarantee_1': '反復的な改善',
+    'sidebar.guarantee_2': '納品後サポート',
+    'sidebar.guarantee_3': 'クリーンでスケーラブルなコード',
+
+    // Blog index page
+    'blog.title_main': '開発',
+    'blog.title_highlight': 'ログ',
+    'blog.description': '技術、デザイン、デジタルプロダクトを作るプロセスについての考察。',
+    'blog.no_posts': 'まだ記事はありません...',
+
+    // Pagination
+    'pagination.prev': '前へ',
+    'pagination.next': '次へ',
+    'pagination.label': 'ページネーション',
+    'pagination.page': 'ページ',
+    'pagination.of': '/',
+
+    // Cards
+    'card.post_label': '記事',
+    'card.read_article': '記事を読む',
+    'card.service_details': 'サービスの詳細を見る',
+    'card.service_details_short': '詳細を見る',
+
+    // Post reading time
+    'post.reading_suffix': '読了',
+
+    // Theme Picker
+    'theme.selector_label': 'テーマ選択',
+    'theme.open': 'テーマ選択を開く',
+    'theme.close': 'テーマパネルを閉じる',
+    'theme.reset': '初期色に戻す',
+    'theme.copy': 'カラー設定をコピー',
+    'theme.copy_hint': 'site-config.ts 用の設定をコピー',
+    'theme.select_prefix': 'テーマを選択',
+    'theme.default': 'デフォルト',
+    'theme.copied': 'コピーしました！',
+
+    // Common back links
+    'common.back_home': 'ホームへ戻る',
+    'common.back_projects': 'プロジェクト一覧へ戻る',
+    'common.back_blog': 'ブログ一覧へ戻る',
+    'common.back_services': 'サービス一覧へ戻る',
+    'common.read_more': '続きを読む',
+    'common.view_all': 'すべて見る',
+
+    // Contact form
+    'contact.title': 'アイデアはありますか？',
+    'contact.description': 'プロジェクトや課題、ちょっとした挨拶でも構いません。新しいコラボレーションやクリエイティブな機会はいつでも歓迎です。',
+    'contact.form.name': 'お名前',
+    'contact.form.name_placeholder': '山田 太郎',
+    'contact.form.subject': '件名',
+    'contact.form.subject_placeholder': 'どのようなお手伝いができますか？',
+    'contact.form.message': 'メッセージ',
+    'contact.form.message_placeholder': 'プロジェクトの内容を教えてください...',
+    'contact.send': 'メッセージを送る',
+    'contact.sending': '送信中...',
+    'contact.sent': 'メッセージを受け取りました！',
+    'contact.sent_desc': 'ご連絡ありがとうございます。できるだけ早く（通常 24 時間以内に）お返事します。',
+    'contact.reset': 'もう一通送る',
+    'contact.error': '送信に失敗しました',
+    'contact.error_desc': '何か問題が発生しました。もう一度試すか、直接ご連絡ください: ',
+    'contact.retry': 'もう一度試す',
+
+    // Footer / Newsletter
+    'footer.newsletter': '最新情報を受け取る',
+    'footer.newsletter_desc': 'デザイン、開発、ミニマリズムに関する記事を受信箱でお届けします。',
+    'footer.newsletter_placeholder': 'you@email.com',
+    'footer.subscribe': '登録する',
+    'footer.subscribed': 'ご登録ありがとうございます！',
+
+    // Legal links
+    'legal.privacy': 'プライバシー',
+    'legal.terms': '利用規約',
+    'legal.changelog': '変更履歴',
+
+    // Services page
+    'services.title': '専門領域',
+    'services.description': 'UI のコンセプト設計から、複雑なシステムのデプロイまで、オーダーメイドのデジタルソリューションを提供します。ミニマルな美学と高パフォーマンスのエンジニアリングを両立するアプローチです。',
+    'services.other': 'その他の専門領域',
+
+    // FAQ
+    'faq.title': 'よくある質問',
+    'faq.subtitle': '一緒に仕事を始める前に知っておきたいことのすべて。',
+
+    // 404
+    '404.title': 'ミニマリズムに迷い込みました',
+    '404.description': 'お探しのページは、削ぎ落とされて消えたか、もしくは最初から存在しません。',
+    '404.back': 'ホームへ戻る',
+    '404.contact': 'サポートに問い合わせる',
+
+    // 500
+    '500.title': 'サーバーで問題が発生しました',
+    '500.description': 'リクエストの処理中に予期しない問題が発生しました。少し待ってからもう一度お試しください。',
+    '500.back': 'ホームへ戻る',
+    '500.report': '問題を報告する',
   },
 } as const;

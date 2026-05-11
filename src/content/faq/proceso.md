@@ -1,5 +1,5 @@
 ---
-question: "¿Cómo es tu proceso de trabajo?"
-answer: "Mi proceso se divide en tres fases: Estrategia (definición del problema), Diseño (prototipado de alta fidelidad) y Desarrollo (implementación técnica optimizada). Mantengo una comunicación constante para asegurar que el resultado final supere las expectativas."
+question: "どのような進め方で仕事をしていますか？"
+answer: "進め方は 3 つのフェーズに分かれます。戦略（課題の定義）、デザイン（高精細プロトタイプ）、開発（最適化された技術実装）です。期待を上回る成果になるよう、密にコミュニケーションを取りながら進めます。"
 order: 1
 ---

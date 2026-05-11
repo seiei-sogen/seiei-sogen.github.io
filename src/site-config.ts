@@ -16,9 +16,9 @@ export const siteConfig = {
   // 2. Brand and Profile Information (Change this and the entire site updates)
   profile: {
     name: 'seiei-sogen',
-    role: 'Frontend Developer & UI Designer',
-    headline: 'Building the future of the web with a minimalist approach.',
-    bio: 'Specialized in creating ultra-fast digital experiences with Astro and Tailwind. Passionate about clean design and extreme performance.',
+    role: 'フロントエンドデベロッパー & UI デザイナー',
+    headline: 'ミニマルなアプローチで Web の未来を作る。',
+    bio: 'Astro と Tailwind を使った、超高速なデジタル体験の構築を得意としています。クリーンなデザインと徹底したパフォーマンスにこだわります。',
     avatar: '/images/avatar.webp', // Path from public/
     heroImage: '/src/assets/images/handsome-young-man-with-laptop-check-his-timetable-white.webp',
   },

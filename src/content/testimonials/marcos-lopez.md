@@ -1,6 +1,6 @@
 ---
 author: "Marcos López"
-role: "Technical Lead"
-content: "Pocos desarrolladores entienden la performance como él. Nuestro tiempo de carga bajó un 60% después de la intervención."
+role: "テクニカルリード"
+content: "パフォーマンスをここまで理解しているエンジニアはなかなかいません。改修後、読み込み時間が 60% 短縮されました。"
 company: "DataNode"
 ---
