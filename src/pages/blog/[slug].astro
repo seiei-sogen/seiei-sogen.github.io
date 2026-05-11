@@ -50,10 +50,12 @@ const { title, date, summary } = post.data;
   </header>
 
     <!-- MDX Content -->
-    <div class="prose dark:prose-invert prose-stone max-w-3xl
+    <!-- スマホの時のブログ本文のfont-sizeとline-height -->
+    <!-- text-[13px] leading-loose -->
+    <div class="prose dark:prose-invert prose-stone max-w-3xl text-[13px] md:text-base
       prose-headings:tracking-tighter prose-headings:font-extrabold prose-headings:text-foreground
-      prose-p:leading-loose prose-p:text-foreground/80
-      prose-li:leading-loose
+      prose-p:text-[13px] md:prose-p:text-base prose-p:leading-loose prose-p:text-foreground/80
+      prose-li:text-[13px] md:prose-li:text-base prose-li:leading-loose
       prose-a:text-primary prose-a:font-bold prose-a:no-underline hover:prose-a:underline
       prose-blockquote:border-primary prose-blockquote:bg-primary/10 prose-blockquote:py-1 prose-blockquote:px-6 prose-blockquote:rounded-r-xl
       transition-all">
