@@ -7,8 +7,8 @@ export const siteConfig = {
   // 1. Core Configuration (Essential for Astro, Sitemaps, and RSS)
   site: {
     url: 'https://seiei-sogen.github.io/', // ⭐ Replace with your real domain before publishing
-    lang: 'jp', // HTML lang attribute and i18n: 'es' | 'en' | 'pl' (Spanish, English, Polish)
-    locale: 'jp-JP', // Date format (e.g., es-CL, en-US, pl-PL)
+    lang: 'ja', // HTML lang attribute and i18n: 'es' | 'en' | 'pl' (Spanish, English, Polish)
+    locale: 'ja_JP', // Date format (e.g., es-CL, en-US, pl-PL)
     name: 'seiei-sogen.dev', // Brand name (appears in logo and copyright)
     favicon: '/favicon.svg', // Browser logo (in public/)
   },
