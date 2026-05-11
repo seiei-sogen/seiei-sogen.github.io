@@ -14,7 +14,7 @@
 import { siteConfig } from './site-config';
 
 export type TranslationKey = keyof typeof translations.es;
-export type SupportedLocale = 'es' | 'en' | 'pl' | 'jp';
+export type SupportedLocale = 'es' | 'en' | 'pl' | 'ja';
 
 export function t(key: TranslationKey): string {
   // Reads language from site-config.ts (site.lang)
@@ -539,12 +539,12 @@ export const translations = {
     '500.report': 'Zgłoś problem',
   },
 
-  jp: {
+  ja: {
     // Navigation
-    'nav.home': 'ホーム',
+    'nav.home': 'Home',
     'nav.projects': 'プロジェクト',
     'nav.services': 'サービス',
-    'nav.blog': 'ブログ',
+    'nav.blog': 'Blog',
     'nav.contact': 'お問い合わせ',
     'nav.menu_open': 'メニューを開く',
     'nav.menu_close': 'メニューを閉じる',
