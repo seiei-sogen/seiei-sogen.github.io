@@ -552,8 +552,8 @@ export const translations = {
 
     // Hero
     'hero.greeting': 'こんにちは、',
-    'hero.title': 'デザインと実装で',
-    'hero.title_highlight': 'ミニマルなプロダクトを',
+    'hero.title': '聖永宗玄',
+    'hero.title_highlight': 'Software Engineer',
     'hero.image_alt': 'デスクで作業中',
     'hero.cta.projects': 'プロジェクトを見る',
     'hero.cta.contact': 'ご連絡ください',
