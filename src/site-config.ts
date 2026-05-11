@@ -50,8 +50,8 @@ export const siteConfig = {
     showBackgroundPattern: true, // ⭐ Shows dot pattern in background (false = clean background)
     showBackgroundOrbs: true, // ⭐ Shows colored orbs in background (false = no aurora/blobs)
     brandColor: {
-      light: { primary: '152 70% 38%', foreground: '0 0% 100%' },
-      dark: { primary: '152 70% 58%', foreground: '0 0% 100%' },
+      light: { primary: '230 70% 52%', foreground: '0 0% 100%' },
+      dark: { primary: '230 75% 68%', foreground: '0 0% 100%' },
     },
   },
 
