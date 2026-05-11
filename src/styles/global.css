@@ -66,6 +66,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    line-height: 2;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;

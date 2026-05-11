@@ -8,7 +8,7 @@ export const siteConfig = {
   site: {
     url: 'https://seiei-sogen.github.io/', // ⭐ Replace with your real domain before publishing
     lang: 'ja', // HTML lang attribute and i18n: 'es' | 'en' | 'pl' (Spanish, English, Polish)
-    locale: 'ja_JP', // Date format (e.g., es-CL, en-US, pl-PL)
+    locale: 'ja-JP', // Date format (e.g., es-CL, en-US, pl-PL)
     name: 'seiei-sogen.dev', // Brand name (appears in logo and copyright)
     favicon: '/favicon.svg', // Browser logo (in public/)
   },
@@ -46,7 +46,7 @@ export const siteConfig = {
     enableViewTransitions: true, // Allows disabling if client doesn't want them
     showThemePicker: true, // ⭐ Shows floating color picker (useful for testing)
     showBuyBanner: false, // ⭐ Shows 'Buy Template' banner (hide for final client)
-    enableCustomCursor: true, // ⭐ Activates premium interactive cursor
+    enableCustomCursor: false, // ⭐ Activates premium interactive cursor
     showBackgroundPattern: true, // ⭐ Shows dot pattern in background (false = clean background)
     showBackgroundOrbs: true, // ⭐ Shows colored orbs in background (false = no aurora/blobs)
     brandColor: {
