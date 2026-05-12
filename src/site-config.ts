@@ -18,7 +18,7 @@ export const siteConfig = {
     name: 'seiei-sogen',
     role: 'フロントエンドデベロッパー & UI デザイナー',
     headline: 'ミニマルなアプローチで Web の未来を作る。',
-    bio: 'Astro と Tailwind を使った、超高速なデジタル体験の構築を得意としています。クリーンなデザインと徹底したパフォーマンスにこだわります。',
+    bio: '約 11 年の Web 開発経験を持つフリーランスエンジニアです。Next.js / React / TypeScript を中心としたフロントエンドを軸に、Rust や Hono などバックエンドにも領域を広げ、要件の整理から設計・実装・改善までを一貫して推進します。「価値のあるソフトウェアを早く継続的に提供する」というアジャイル原則を行動指針に、お客様に持続的に価値を届けることを大事にしています。',
     avatar: '/images/avatar.webp', // Path from public/
     heroImage: '/src/assets/images/handsome-young-man-with-laptop-check-his-timetable-white.webp',
   },
