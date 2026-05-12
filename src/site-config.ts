@@ -95,6 +95,7 @@ export const siteConfig = {
     // { name: 'nav.projects', href: '/projects' },
     // { name: 'nav.services', href: '/services' },
     { name: 'nav.blog', href: '/blog' },
+    { name: 'nav.zenn', href: 'https://zenn.dev/purenium' },
     // { name: 'nav.contact', href: '/contact' },
   ],
 
