@@ -31,3 +31,6 @@ reset: clean dev
 
 pwa-icons:
     node scripts/generate-pwa-icons.mjs
+
+search QUERY:
+    ccc search {{QUERY}}

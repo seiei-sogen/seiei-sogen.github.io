@@ -16,6 +16,7 @@ All commands go through `just` (see `justfile`). Package manager is **pnpm** (No
 - `just clean` — remove `.astro` and `node_modules/.vite`
 - `just reset` — clean + dev (recovery when the dev server crashes after dependency / config changes)
 - `just pwa-icons` — regenerate PWA icons via `scripts/generate-pwa-icons.mjs`
+- `just search <query>` — semantic codebase search via [`cocoindex-code`](https://github.com/cocoindex-io/cocoindex-code) (`ccc search`); index lives in `.cocoindex_code/`. Prefer this over `grep` for concept-level lookups.
 
 There is no test framework wired up. `playwright` and `lighthouse` are devDependencies but no recipes invoke them.
 
