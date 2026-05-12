@@ -2,11 +2,11 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Hero from '@/components/sections/Hero.astro';
 import Expertise from '@/components/sections/Expertise.astro';
-import RecentProjects from '@/components/sections/RecentProjects.astro';
+// import RecentProjects from '@/components/sections/RecentProjects.astro';
 import Stack from '@/components/sections/Stack.astro';
 import Experience from '@/components/sections/Experience.astro';
-import Testimonials from '@/components/sections/Testimonials.astro';
-import FAQ from '@/components/sections/FAQ.astro';
+// import Testimonials from '@/components/sections/Testimonials.astro';
+// import FAQ from '@/components/sections/FAQ.astro';
 import ContactCTA from '@/components/sections/ContactCTA.astro';
 import { getCollection } from 'astro:content';
 import { getFaqSchema } from '@/utils/seo-schemas';
@@ -19,11 +19,11 @@ const faqSchema = getFaqSchema(faqCollection);
   <div class="flex flex-col">
     <Hero />
     <Expertise />
-    <RecentProjects />
+    <!-- <RecentProjects /> -->
     <Stack />
     <Experience />
-    <Testimonials />
-    <FAQ />
+    <!-- <Testimonials /> -->
+    <!-- <FAQ /> -->
     <ContactCTA />
   </div>
 </BaseLayout>
