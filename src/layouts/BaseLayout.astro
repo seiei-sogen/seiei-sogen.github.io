@@ -45,6 +45,13 @@ const {
       {...articleDate ? { articleDate } : {}}
     />
 
+    <link
+      rel="alternate"
+      type="application/atom+xml"
+      title={`${siteConfig.site.name} — Blog`}
+      href="/blog/atom.xml"
+    />
+
     {siteConfig.ui.enableViewTransitions && <ClientRouter />}
 
     <!-- Google Analytics... -->
