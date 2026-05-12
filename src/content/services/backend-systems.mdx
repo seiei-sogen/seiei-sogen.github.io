@@ -1,23 +1,29 @@
 ---
 title: "バックエンド & システム"
-summary: "Edge アーキテクチャ、堅牢な API、最適化されたデータベース。"
-description: "高パフォーマンスなアプリケーションを支える、軽量で高速なデータ基盤を構築します。"
+summary: "Rust / Node.js / Ruby / PHP による、堅牢な API とデータ基盤の構築。"
+description: "実運用に耐える冪等性・排他制御を意識した API・バッチ・DB 設計を提供します。"
 icon: "ph:database-duotone"
 order: 3
 ---
 
-## Sistemas de Datos
+## バックエンド開発の経験
 
-Aunque el frontend es lo que el usuario ve, el backend es el motor que hace que todo funcione sin latencia. Me especializo en soluciones **Serverless** y **Edge**.
+フロントエンドを軸にしつつ、フルスタックでの推進力を強みとしています。Rust / Node.js / Ruby / PHP と、案件に応じて言語を切り替えて API・DB 設計から実装まで担当してきました。
 
-### Servicios Backend:
+### 取り扱う技術
 
-- **APIs con Node.js / Go**: Rápidas y seguras.
-- **Edge Functions**: Cloudflare Workers para cómputo a milisegundos del usuario.
-- **Bases de Datos Supabase / Postgres**: Modelado de datos eficiente y escalable.
+- **Rust**: 直近では actix-web / async-graphql を用いた GraphQL API 開発に従事。UseCase 層でのバリデーションロジック実装、mutation / query の追加・リファクタリングを担当しました。
+- **Node.js / Hono**: 人材派遣業務効率化アプリの案件では、リポジトリをゼロから作り技術選定・内部設計・実装を行い、Amazon DynamoDB と接続する API を構築しました。
+- **Ruby on Rails**: 金融系の Rails 案件で、Ransack による検索機能、CarrierWave による画像保存、SharePoint API を用いた画像取り込みバッチ処理 (約 500 行) を実装。
+- **Laravel / PHP**: 大手航空関連企業向けの保険システムや、サンデーアーツ在籍時に担当したネットワーク機器監視ツールの管理画面で、認証・認可機能や Eloquent を用いた CRUD を構築。
+- **データベース・ORM**: Drizzle ORM によるテーブル設計・マイグレーション、MySQL の `LOCK TABLES` を用いた排他制御まで対応。
 
-### Por qué es importante:
+### 設計品質への配慮
 
-- **Reducción de Latencia**: Datos listos cuando el usuario los necesita.
-- **Seguridad Garantizada**: Implementación de estándares de autenticación y cifrado.
-- **Cero Mantenimiento Innecesario**: Enfoque en infraestructuras gestionadas que no fallan.
+- **冪等性・再実行性の担保**: 学習系新規サービスの月次継続課金バッチ (約 4,200 行) を単独で設計・実装。`status=complete` による状態管理と `LOCK TABLES` で、二重決済・競合を防止する構成を構築しました。
+- **クリーンアーキテクチャ**: 不動産系 SaaS 案件では、ドメイン層・ユースケース層・インフラ層に分離された構成のもとでバックエンド実装を担当。
+- **外部連携**: 外部決済サービス、SendGrid、better-auth、Treasure Data、Auth0、Amazon Cognito など、認証・決済・分析の各種外部 IF と連携した経験があります。
+
+### 提供できる価値
+
+新規リポジトリ立ち上げから既存基盤のリファクタリングまで、フロントエンドと分断せず一貫して進められることが強みです。

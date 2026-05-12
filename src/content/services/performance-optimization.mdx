@@ -1,23 +1,30 @@
 ---
 title: "パフォーマンス最適化"
-summary: "Core Web Vitals の監査と、即時表示を実現する徹底的な最適化。"
-description: "アセットとコンテンツ配信を深く最適化し、最高のユーザー体験を実現します。"
+summary: "アセット配信・CI / テスト速度の双方で定量的な成果を出す最適化。"
+description: "ボトルネック特定から技術選定・導入・数値検証まで一気通貫で進めます。"
 icon: "ph:lightning-duotone"
 order: 4
 ---
 
-## Velocidad de Carga Instantánea
+## 定量的な成果に基づく最適化
 
-Los usuarios se van a los 3 segundos de espera. Mis servicios de optimización garantizan que eso no ocurra.
+ユーザー体験を支えるパフォーマンスと、開発体験を支える CI / テスト速度の両面で、定量的な改善実績があります。
 
-### Resultados Esperados:
+### ランタイム / アセット最適化
 
-- **100/100 en Google PageSpeed**: Tanto en móvil como en desktop.
-- **Reducción masiva de Bundle**: Eliminación de JS y CSS no utilizado.
-- **Lazy Loading Inteligente**: Solo carga lo que el usuario ve.
+- **3D データ配信の改善 (大手電機メーカー R&D 案件)**: Next.js の `public` フォルダに配置されていた 3D データを Amazon S3 に移行し、適切なキャッシュ設定を適用することで、2 回目以降の読み込み速度を大幅に向上させました。
+- **ストリーミング UI の実装**: Vercel AI SDK の `streamObject` を参考に、JavaScript の Stream API を活用したリアルタイム反映 API を開発。外部 AI サービスのストリーミングデータを ChatGPT のように逐次表示できる仕組みを実装しました。
 
-### Metodología:
+### 開発体験 / CI の高速化
 
-1. Auditoría inicial de activos y red.
-2. Implementación de formatos de imagen modernos (WebP/AVIF).
-3. Estrategias de caché y pre-fetch.
+- **静的解析の高速化**: 学習系新規サービス案件で、Oxlint の導入、typescript-go による型チェック高速化、ESLint キャッシュ (`.eslintcache`) の活用を実施。CI / ローカルでの静的解析実行時間を **約 37 秒 → 約 12 秒** に短縮しました。
+- **テスト実行速度の向上**: 大規模グローバル EC サイトの注文導線リポジトリに **SWC + Jest** を導入し、テスト実行速度を **70 倍** 向上させました。
+
+### 状態管理 / リファクタリングによる改善
+
+- **Redux からの脱却**: 大規模グローバル EC 案件で、Redux で管理されていた非同期状態管理を **TanStack Query / XState** へ置き換え、コード量と複雑性を整理しました。
+- **ディレクトリ構成の改善**: 大手電機メーカー R&D 案件で、React のベストプラクティス「bulletproof-react」を提案し、`package by feature` を採用することで保守性を向上させました。
+
+### アプローチ
+
+単に計測するだけでなく、ボトルネックの特定 → 技術選定 → 導入 → 数値による検証までを一気通貫で進めることを大事にしています。
