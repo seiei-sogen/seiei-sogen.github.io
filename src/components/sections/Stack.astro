@@ -1,25 +1,341 @@
 ---
 import { t } from '@/i18n';
 import SectionHeader from '@/components/ui/SectionHeader.astro';
-import Badge from '@/components/ui/Badge.astro';
 
-const techStack = [
-  "Astro", "TypeScript", "React", "Next.js", "Tailwind CSS", "Node.js", "Hono", "Cloudflare", "PostgreSQL"
+const stackTable = [
+  {
+    category: 'フロントエンド',
+    items: [
+      {
+        name: 'TypeScript',
+        period: '2020〜',
+        level: '`@tsconfig/strictest` や `noUncheckedIndexedAccess` を活用した型安全な実装ができる。',
+      },
+      {
+        name: 'JavaScript',
+        period: '2019〜',
+        level: 'トランスパイル環境構築から、スクラッチでコードを書ける。',
+      },
+      {
+        name: 'Next.js',
+        period: '2021〜',
+        level: 'v10〜v16(Pages Router / App Router / Server Components)までの実務経験あり。',
+      },
+      {
+        name: 'React',
+        period: '2020〜',
+        level: '実務での EC サイト・業務システム・新規 SaaS の開発経験あり。',
+      },
+      {
+        name: 'Vue.js',
+        period: '2019〜',
+        level: '単一ファイルコンポーネント・スロット・アニメーションなどの機能を利用できる。',
+      },
+      {
+        name: 'Tailwind CSS',
+        period: '2024〜',
+        level: 'v4 と class-variance-authority(CVA)を組み合わせた設計経験あり。',
+      },
+      {
+        name: 'Sass / CSS',
+        period: '2014〜',
+        level: 'スクラッチでの Web ページ構築。BEM / FLOCSS による CSS 設計の実務経験あり。',
+      },
+      {
+        name: 'HTML',
+        period: '2014〜',
+        level: 'スクラッチ Web ページ構築。HTML メールなどの古い形式も対応可能。',
+      },
+      {
+        name: 'three.js / React Three Fiber',
+        period: '2024〜',
+        level: 'GaussianSplats3D を React に組み込んだページを実装できる。',
+      },
+    ],
+  },
+  {
+    category: '状態管理 / フォーム',
+    items: [
+      {
+        name: 'Redux Toolkit',
+        period: '2020〜',
+        level: 'asyncThunk による非同期処理・エラーハンドリングを実装できる。',
+      },
+      {
+        name: 'TanStack Query',
+        period: '2023〜',
+        level: '導入から商品サジェスト機能の追加まで実務経験あり。',
+      },
+      {
+        name: 'XState',
+        period: '2024〜',
+        level: 'Redux からの状態管理リファクタリングを実務で実施。',
+      },
+      {
+        name: 'Jotai',
+        period: '2024〜',
+        level: 'Read Only Atom で再レンダリングを抑えた状態管理ができる。',
+      },
+      {
+        name: 'SWR',
+        period: '2022〜',
+        level: '他の状態管理ライブラリと組み合わせた検索アプリの実装経験あり。',
+      },
+      {
+        name: 'React Hook Form',
+        period: '2023〜',
+        level: 'Yup / Zod と組み合わせたフォーム実装とバリデーションができる。',
+      },
+      {
+        name: 'TanStack Form',
+        period: '2025〜',
+        level: 'Valibot と組み合わせたフォーム実装の経験あり。',
+      },
+      {
+        name: 'Zod / Valibot / Yup',
+        period: '2023〜',
+        level: 'フォームバリデーション・API スキーマ・型生成での実務利用。',
+      },
+    ],
+  },
+  {
+    category: 'バックエンド / DB',
+    items: [
+      {
+        name: 'Rust(actix-web / async-graphql)',
+        period: '2026〜',
+        level: 'GraphQL API 開発の実務経験あり(UseCase 層実装・mutation / query のリファクタ)。',
+      },
+      {
+        name: 'Node.js / Hono',
+        period: '2025〜',
+        level: 'API をゼロから設計・実装。Bun Test、Zod スキーマでの型安全化を含む。',
+      },
+      {
+        name: 'Ruby / Ruby on Rails',
+        period: '2021〜',
+        level: 'Active Record / Ransack / CarrierWave による CRUD・検索・画像保存を実装できる。',
+      },
+      {
+        name: 'PHP / Laravel',
+        period: '2019〜',
+        level: 'Eloquent による CRUD、マイグレーション、認証認可機能を実装できる。',
+      },
+      {
+        name: 'MySQL',
+        period: '2025〜',
+        level: '`LOCK TABLES` による排他制御を含むバッチ処理の設計経験あり。',
+      },
+      {
+        name: 'Drizzle ORM',
+        period: '2025〜',
+        level: '新規テーブル設計・マイグレーションを実施できる。',
+      },
+      {
+        name: 'Amazon DynamoDB',
+        period: '2025〜',
+        level: 'aws-sdk による接続・操作の実装経験あり。',
+      },
+      {
+        name: 'GraphQL',
+        period: '2025〜',
+        level: 'urql / Apollo + GraphQL Code Generator の実務利用経験あり。',
+      },
+    ],
+  },
+  {
+    category: '認証 / 決済 / 外部連携',
+    items: [
+      {
+        name: 'better-auth',
+        period: '2025〜',
+        level: 'メール認証・OAuth(Google / LINE)・パスワードリセットを新規実装できる。',
+      },
+      {
+        name: 'Auth0 / Amazon Cognito',
+        period: '2024〜',
+        level: 'Auth.js 連携によるログインフロー・セッション管理を実装できる。',
+      },
+      {
+        name: 'SendGrid',
+        period: '2025〜',
+        level: 'メール送信 API 連携を実装できる。',
+      },
+      {
+        name: '外部決済サービス',
+        period: '2025〜',
+        level: 'クレジット / キャリア決済の外部 IF 連携・XML / 文字コード処理を実装できる。',
+      },
+      {
+        name: 'Treasure Data',
+        period: '2025〜',
+        level: '分析基盤への連携処理の実装経験あり。',
+      },
+    ],
+  },
+  {
+    category: 'テスト / 品質 / 開発環境',
+    items: [
+      {
+        name: 'Vitest',
+        period: '2024〜',
+        level: 'ユニットテスト環境の導入・運用経験あり。',
+      },
+      {
+        name: 'Jest',
+        period: '2021〜',
+        level: 'ts-jest で TypeScript ユニットテストを書ける。SWC 導入で実行速度 70 倍向上の実績あり。',
+      },
+      {
+        name: 'React Testing Library',
+        period: '2021〜',
+        level: 'React コンポーネントのイベントテストを書ける。',
+      },
+      {
+        name: 'Cypress',
+        period: '2021〜',
+        level: 'ESLint と共存させた環境構築から E2E テストを書ける。',
+      },
+      {
+        name: 'Bun Test / MSW',
+        period: '2025〜',
+        level: 'API テスト・モック開発を実装できる。',
+      },
+      {
+        name: 'Storybook',
+        period: '2025〜',
+        level: '共通 UI コンポーネントのバリエーション確認を実施できる。',
+      },
+      {
+        name: 'ESLint / Biome / Oxlint',
+        period: '2022〜',
+        level: 'Flat Config 整備・Oxlint 導入で静的解析を約 37 秒 → 約 12 秒に短縮した実績あり。',
+      },
+      {
+        name: 'Vite / Docker / GitHub Actions',
+        period: '2022〜',
+        level: '開発環境・CI / CD パイプライン構築の実務経験あり。',
+      },
+    ],
+  },
+  {
+    category: 'Coding Agent',
+    items: [
+      {
+        name: 'Claude Code',
+        period: '2024〜',
+        level: 'カスタムスキル整備、要件定義〜実装の一貫推進に活用。Coding Agent 全般で通算 約 2 年。',
+      },
+      {
+        name: 'GitHub Copilot',
+        period: '2024〜',
+        level: 'コード生成補助として継続的に利用。',
+      },
+      {
+        name: 'Cursor / Codex / Gemini CLI',
+        period: '2024〜',
+        level: '案件特性に応じて使い分け。',
+      },
+      {
+        name: 'classmethod/tsumiki',
+        period: '2025〜',
+        level: '仕様駆動的な開発フローに組み込んで利用。',
+      },
+    ],
+  },
+  {
+    category: 'ソフト',
+    items: [
+      {
+        name: 'Photoshop / Illustrator',
+        period: '2014〜',
+        level: '画像加工・デザイン資材からのコーディングに利用できる。',
+      },
+      {
+        name: 'XD',
+        period: '2020〜',
+        level: 'デザインからコーディングができる。',
+      },
+      {
+        name: 'Movable Type / WordPress',
+        period: '2017〜',
+        level: 'CMS の新規記事作成・更新・リリースができる。',
+      },
+      {
+        name: 'Excel / Word / PowerPoint',
+        period: '2008〜',
+        level: '設計書・ビジネス文書・資料を作成できる。',
+      },
+      {
+        name: 'DaVinci Resolve',
+        period: '2021〜',
+        level: 'カット・フェードアウトなどの簡単な動画編集ができる。',
+      },
+    ],
+  },
 ];
 ---
-<section class="py-24 border-t border-border/40 overflow-hidden">
-  <div class="flex flex-col gap-8">
-    <SectionHeader
-      title={t('stack.title')}
-      subtitle={t('stack.subtitle')}
-    />
 
-    <div class="flex flex-wrap gap-3 justify-center md:justify-start ring-1 ring-border/20 p-8 rounded-3xl bg-muted/5">
-      {techStack.map((tech) => (
-        <Badge class="h-12 px-6 normal-case text-sm border border-border/40 hover:border-primary/20 hover:bg-secondary transition-all cursor-default">
-          {tech}
-        </Badge>
-      ))}
+<section class="py-24 border-t border-border/40 overflow-hidden">
+  <div class="flex flex-col gap-12">
+    <SectionHeader title={t('stack.title')} subtitle={t('stack.subtitle')} />
+
+    <div class="ring-1 ring-border/20 rounded-3xl bg-muted/5 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[720px]">
+          <thead class="border-b border-border/40 bg-muted/10">
+            <tr>
+              <th
+                class="text-left py-4 px-6 font-mono text-[10px] uppercase tracking-widest text-muted-foreground w-[18%]"
+              >
+                項目
+              </th>
+              <th
+                class="text-left py-4 px-6 font-mono text-[10px] uppercase tracking-widest text-muted-foreground w-[22%]"
+              >
+                名称
+              </th>
+              <th
+                class="text-left py-4 px-6 font-mono text-[10px] uppercase tracking-widest text-muted-foreground w-[10%]"
+              >
+                期間
+              </th>
+              <th
+                class="text-left py-4 px-6 font-mono text-[10px] uppercase tracking-widest text-muted-foreground"
+              >
+                レベル
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              stackTable.map((group) =>
+                group.items.map((item, idx) => (
+                  <tr class="border-t border-border/20 hover:bg-muted/5 transition-colors">
+                    {idx === 0 ? (
+                      <td
+                        rowspan={group.items.length}
+                        class="py-3 px-6 align-top font-mono text-[11px] uppercase tracking-widest text-foreground/80 border-r border-border/20 bg-muted/5"
+                      >
+                        {group.category}
+                      </td>
+                    ) : null}
+                    <td class="py-3 px-6 align-top font-medium text-foreground">
+                      {item.name}
+                    </td>
+                    <td class="py-3 px-6 align-top text-muted-foreground whitespace-nowrap text-xs">
+                      {item.period}
+                    </td>
+                    <td class="py-3 px-6 align-top text-muted-foreground text-xs leading-relaxed">
+                      {item.level}
+                    </td>
+                  </tr>
+                ))
+              )
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </section>
