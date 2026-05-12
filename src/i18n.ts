@@ -660,8 +660,8 @@ export const translations = {
     'common.view_all': 'すべて見る',
 
     // Contact form
-    'contact.title': 'アイデアはありますか？',
-    'contact.description': 'プロジェクトや課題、ちょっとした挨拶でも構いません。新しいコラボレーションやクリエイティブな機会はいつでも歓迎です。',
+    'contact.title': 'ご相談、お待ちしています',
+    'contact.description': '案件のご相談から技術的なご質問まで、どうぞお気軽に。要件が固まっていない段階からでも、整理を含めて一貫してお手伝いします。',
     'contact.form.name': 'お名前',
     'contact.form.name_placeholder': '山田 太郎',
     'contact.form.subject': '件名',

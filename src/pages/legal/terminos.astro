@@ -2,39 +2,72 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { siteConfig } from '@/site-config';
 
-const lastUpdated = "Marzo 2026";
+const lastUpdated = '2026年5月';
 ---
-<BaseLayout title={`Términos de Servicio - ${siteConfig.site.name}`}>
-  <article class="max-w-3xl mx-auto py-12 md:py-24 prose prose-neutral dark:prose-invert">
-    <h1>Términos de Servicio</h1>
-    <p class="text-sm text-foreground/70">Última actualización: {lastUpdated}</p>
-    
-    <p>¡Bienvenido a <strong>{siteConfig.site.name}</strong>!</p>
-    <p>Al visitar o utilizar nuestro sitio web {siteConfig.site.url}, usted acepta regirse por los siguientes Términos de Servicio y cualquier política aplicable aquí mencionada.</p>
 
-    <h2>1. Aceptación de los Términos</h2>
-    <p>Estos Términos de Servicio ("Términos") constituyen un acuerdo legal vinculante entre usted y {siteConfig.site.name}. Al acceder al sitio web, usted confirma su acuerdo a estar sujeto a estos términos en su totalidad, así que léalos detenidamente antes de utilizar nuestro servicio. Si no está de acuerdo con alguno de los términos, no acceda al sitio ni a sus servicios.</p>
+<BaseLayout title={`利用規約 - ${siteConfig.site.name}`}>
+  <article class="prose prose-neutral mx-auto max-w-3xl py-12 dark:prose-invert md:py-24">
+    <h1>利用規約</h1>
+    <p class="text-sm text-foreground/70">最終更新日: {lastUpdated}</p>
 
-    <h2>2. Derechos de Propiedad Intelectual</h2>
-    <p>Salvo que se indique lo contrario, {siteConfig.site.name} y/o sus licenciantes poseen los derechos de propiedad intelectual de todo el material en el sitio web. Todos los derechos de propiedad intelectual están reservados. Puede acceder a esto desde {siteConfig.site.url} para su propio uso personal sujeto a las restricciones establecidas en estos términos y condiciones.</p>
+    <p>
+      本利用規約(以下「本規約」)は、<strong>{siteConfig.site.name}</strong>(以下「当サイト」)の運営者(以下「運営者」)が、{
+        siteConfig.site.url
+      } 上で提供するすべてのコンテンツおよびサービス(以下「本サービス」)の利用条件を定めるものです。当サイトを閲覧・利用した時点で、利用者は本規約に同意したものとみなします。
+    </p>
 
-    <h2>3. Restricciones del Usuario</h2>
-    <p>Usted tiene expresamente restringido todo lo siguiente:</p>
+    <h2>1. 適用</h2>
+    <p>
+      本規約は、本サービスを利用するすべての利用者に対して適用されます。本規約の内容に同意できない場合は、本サービスをご利用にならないでください。
+    </p>
+
+    <h2>2. 著作権・知的財産権</h2>
+    <p>
+      当サイトに掲載されている文章・画像・コード・デザインその他のコンテンツに関する著作権およびその他の知的財産権は、運営者または各権利者に帰属します。利用者は、私的使用の範囲を超えて、運営者または各権利者の許諾なく、これらを複製・転載・再配布・改変・商業利用することはできません。
+    </p>
+
+    <h2>3. 禁止事項</h2>
+    <p>利用者は、本サービスの利用にあたって、以下の行為を行ってはなりません。</p>
     <ul>
-      <li>Publicar cualquier material de este sitio web en cualquier otro medio de comunicación.</li>
-      <li>Vender, sublicenciar y/o comercializar cualquier material del sitio.</li>
-      <li>Desempeñar públicamente y/o mostrar cualquier material del sitio web.</li>
-      <li>Usar este sitio de cualquier manera que sea o pueda ser perjudicial para este sitio o sus usuarios.</li>
-      <li>Implicarse en cualquier minería de datos, recolección de datos, extracción de datos u otra actividad similar.</li>
+      <li>法令または公序良俗に違反する行為</li>
+      <li>運営者または第三者の知的財産権・名誉・プライバシーその他の権利を侵害する行為</li>
+      <li>当サイトの運営を妨害し、または妨害するおそれのある行為</li>
+      <li>
+        当サイトの全部または一部を、自動化された手段(クローラー、スクレイパー等)により過度な負荷を生じさせる態様で取得する行為
+      </li>
+      <li>本サービスを通じて取得した情報を、運営者の許諾なく営利目的で利用する行為</li>
+      <li>その他、運営者が不適切と判断する行為</li>
     </ul>
 
-    <h2>4. Sin garantías</h2>
-    <p>Este sitio web se proporciona "tal cual", con todas sus fallas, y {siteConfig.site.name} no expresa representaciones o garantías de ningún tipo relacionadas con este sitio web o los materiales contenidos en él. Además, nada de lo contenido en este sitio debe interpretarse como asesoramiento.</p>
+    <h2>4. 免責事項</h2>
+    <p>
+      運営者は、当サイトに掲載される情報の正確性・完全性・有用性等について万全を期しておりますが、いかなる保証も行うものではありません。
+    </p>
+    <p>
+      利用者が当サイトの利用または閲覧によって生じた損害について、運営者は、運営者に故意または重大な過失がある場合を除き、責任を負わないものとします。
+    </p>
+    <p>
+      当サイトからリンクされている第三者のサイトに掲載されている情報・サービスについて、運営者は責任を負いません。
+    </p>
 
-    <h2>5. Limitación de Responsabilidad</h2>
-    <p>En ningún caso {siteConfig.site.name}, ni ninguno de sus oficiales, directores y empleados, será responsable ante usted por cualquier motivo que surja de o de cualquier manera conectado con su uso del sitio web, independientemente de si dicha responsabilidad es bajo contrato, agravio o de otra manera.</p>
-    
-    <h2>6. Contacto</h2>
-    <p>Si tiene alguna pregunta sobre estos Términos, comuníquese con nosotros a <strong>{siteConfig.contact.email}</strong>.</p>
+    <h2>5. 本サービスの変更・中断・終了</h2>
+    <p>
+      運営者は、利用者に事前の通知なく、本サービスの内容を変更し、または本サービスの提供を中断・終了することができます。これによって利用者に生じた損害について、運営者は、前条の免責の範囲で責任を負わないものとします。
+    </p>
+
+    <h2>6. 本規約の変更</h2>
+    <p>
+      運営者は、必要と判断した場合、利用者に事前の通知なく本規約を変更することができます。変更後の本規約は、当サイトに掲載された時点で効力を生じるものとします。
+    </p>
+
+    <h2>7. 準拠法および管轄裁判所</h2>
+    <p>
+      本規約の解釈および適用は、日本法に準拠します。本サービスまたは本規約に関連して生じた紛争については、運営者の所在地を管轄する日本の裁判所を、第一審の専属的合意管轄裁判所とします。
+    </p>
+
+    <h2>8. お問い合わせ</h2>
+    <p>
+      本規約に関するお問い合わせは、<strong>lesilluminations0💙gmail.com</strong>(💙を半角アットマークへ)までご連絡ください。
+    </p>
   </article>
 </BaseLayout>

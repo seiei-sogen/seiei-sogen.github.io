@@ -127,7 +127,7 @@ export const siteConfig = {
     },
   ],
   contact: {
-    email: 'hello@yourdomain.com',
+    email: 'lesilluminations0@gmail.com',
     calCom: 'https://cal.com/yourusername', // Very useful for freelancers
     formEndpoint: '', // ⭐ Formspree/Cloudflare Forms URL (e.g., "https://formspree.io/f/xzyabc")
   },
