@@ -126,6 +126,12 @@ export const siteConfig = {
       icon: 'ph:twitter-logo-duotone',
       showInHeader: false, // Will only appear in the footer
     },
+    {
+      name: 'Zenn',
+      href: 'https://zenn.dev/purenium',
+      icon: 'ph:pen-nib-duotone',
+      showInHeader: false,
+    },
   ],
   contact: {
     email: 'lesilluminations0@gmail.com',

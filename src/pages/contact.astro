@@ -7,7 +7,7 @@ import { Icon } from 'astro-icon/components';
 import ContentHeader from '@/components/ui/ContentHeader.astro';
 ---
 
-<BaseLayout title="Contacto | Hablemos de tu Próximo Proyecto">
+<BaseLayout title="お問い合わせ | seiei-sogen">
   <div class="flex flex-col gap-20 py-12 md:py-24 max-w-3xl mx-auto px-6">
     
     <ContentHeader
@@ -19,37 +19,39 @@ import ContentHeader from '@/components/ui/ContentHeader.astro';
     />
 
     <div class="flex flex-col gap-16 items-center">
-      
-      <!-- Contact Links -->
+
+      <!-- 対応しやすい案件 -->
+      <div class="w-full reveal">
+        <h2 class="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground mb-4">対応しやすい案件</h2>
+        <ul class="flex flex-col gap-2 text-sm md:text-base text-foreground/90 leading-relaxed">
+          <li>・Next.js / React / TypeScript を中心としたフロントエンド開発</li>
+          <li>・認証・決済・分析基盤を含むフルスタック開発</li>
+          <li>・既存フロントエンドのリファクタリング・品質改善</li>
+          <li>・Claude Code / Codex など Coding Agent を活用した開発体制整備</li>
+        </ul>
+      </div>
+
+      <!-- Contact Links: メールは obfuscate 表示、SNS は siteConfig.socials を反復 -->
       <div class="flex flex-wrap justify-center gap-x-12 gap-y-6 reveal">
         <a href={`mailto:${siteConfig.contact.email}`} class="group flex items-center gap-3">
           <Icon name="ph:envelope-simple-duotone" class="w-6 h-6 text-primary" />
-          <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">Email</span>
+          <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">
+            {siteConfig.contact.email.replace('@', ' [at] ')}
+          </span>
         </a>
-        
-        {siteConfig.socials.filter(s => s.name === "LinkedIn").map(social => (
+
+        {siteConfig.socials.map(social => (
           <a href={social.href} target="_blank" rel="noopener noreferrer" class="group flex items-center gap-3">
-            <Icon name="ph:linkedin-logo-duotone" class="w-6 h-6 text-primary" />
-            <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">LinkedIn</span>
+            <Icon name={social.icon} class="w-6 h-6 text-primary" />
+            <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">{social.name}</span>
           </a>
         ))}
-
-        {/* {siteConfig.contact.calCom && (
-          <a href={siteConfig.contact.calCom} target="_blank" rel="noopener noreferrer" class="group flex items-center gap-3">
-            <Icon name="ph:calendar-blank-duotone" class="w-6 h-6 text-primary" />
-            <span class="text-sm font-bold tracking-tight border-b border-transparent group-hover:border-primary transition-all">Calendario</span>
-          </a>
-        )} */}
       </div>
-
-      {/* <div class="w-full reveal">
-        <ContactForm />
-      </div> */}
 
       <!-- Simple Location -->
       <div class="pt-12 border-t border-border/10 w-full text-center reveal">
         <p class="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.3em] font-black">
-          Disponible para proyectos remotos a nivel global
+          リモートで全国対応しています
         </p>
       </div>
 
