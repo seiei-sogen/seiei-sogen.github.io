@@ -1,0 +1,21 @@
+---
+title: "Next.js × TypeScript × Recoil で React チュートリアルを書き直す"
+description: "React 公式チュートリアルの三目並べを、Next.js 12 + 関数コンポーネント + Recoil + 厳しめの ESLint Config に書き直し、スケールしても保守できる構成に再設計した記事。Zenn 70 Like / はてブ 41 users を獲得。"
+technologies: ["Next.js", "TypeScript", "React", "Recoil", "ESLint"]
+repo: "https://github.com/mumei-xxxx/nextjs-recoil-tic-tac-toe-0"
+date: 2022-04-01
+---
+
+## 制作したもの
+
+React 公式チュートリアルの三目並べ(マルバツゲーム)を、現代的な構成に書き直したサンプル実装です。
+公式のオリジナルはクラスコンポーネント + 素の JavaScript で、Game コンポーネントに処理が集中していました。
+これを、将来スケールしても保守しやすい構成に作り直しました。
+
+### 主な設計判断
+
+- **関数コンポーネント + Hooks**: クラスコンポーネントから移行し、React の現行ベストプラクティスに合わせる。
+- **Recoil でコンポーネント分割**: 勝敗判定・履歴機能のロジックを別コンポーネントに切り出し、状態は Recoil の Atom 経由で共有。
+- **TypeScript と厳しめの ESLint**: `@herp-inc/eslint-config` を導入し、内部品質を担保。スケールしても理解容易性 / 変更容易性が落ちにくい設計を志向。
+
+詳細な解説は [Zenn 記事](https://zenn.dev/purenium/articles/nextjs-recoil-tic-tac-toe) を参照してください。

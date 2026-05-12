@@ -1,0 +1,20 @@
+---
+title: "Next.js Static Generation + useSWR でデータの強整合性を実現する"
+description: "Bitcoin / 日本円レートを題材に、Next.js の Static Generation と SWR を組み合わせて、SG でも常に最新データを表示する『データの強整合性』を実現したサンプル実装。"
+technologies: ["Next.js", "TypeScript", "SWR"]
+repo: "https://github.com/mumei-xxxx/nextjs-sg-use-swr-strong-consistency-0"
+date: 2022-02-16
+---
+
+## 制作したもの
+
+bitFlyer の HTTP Public API から取得した、1 Bitcoin あたりの日本円売り価格を表示するページです。
+数秒ごとに価格が変動するため、データが更新されている様子が見えやすい題材として選びました。
+
+### コンセプト
+
+- **Static Generation で高パフォーマンス**: SG の高速ロードを活かしつつ、Lighthouse スコアを実用域で維持。
+- **`stale-while-revalidate` で最新性を担保**: SWR がまずキャッシュからデータを返し、その裏で再フェッチを行い、最新値をブラウザに反映する流れを実装。
+- **データの強整合性(Strong Consistency)**: SG されたページが古いデータを表示し続ける問題を、SWR の再検証戦略で解消する考え方をまとめた。
+
+詳細な解説は [Zenn 記事](https://zenn.dev/purenium/articles/nextjs-sg-use-swr-strong-consistency) を参照してください。

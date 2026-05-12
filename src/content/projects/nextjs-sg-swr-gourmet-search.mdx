@@ -1,0 +1,21 @@
+---
+title: "Next.js × SWR × Recoil で API グルメ検索を作る"
+description: "ホットペッパーグルメ API を使い、Next.js の Static Generation と SWR の自動再検証を組み合わせて、常に最新の店舗一覧を表示するサンプル実装。Zenn 160 Like / はてブ 53 users を獲得した記事。"
+technologies: ["Next.js", "TypeScript", "SWR", "Recoil"]
+repo: "https://github.com/mumei-xxxx/nextjs-sg-use-swr-gourmet-search-0"
+date: 2022-03-01
+---
+
+## 制作したもの
+
+ホットペッパーグルメ グルメサーチ API を用いた、グルメ検索ページです。
+ファーストビューでは東京の店舗一覧を表示し、30 秒ごとに最新のデータへ自動更新します。
+キーワードを入力すると、関連する店舗の検索結果に切り替わります。
+
+### 技術的なポイント
+
+- **Static Generation + SWR**: サーバー側で `getStaticProps` がデータを取得し、クライアント側で SWR が `refreshInterval` による定期再検証(stale-while-revalidate)を行う。SG の高パフォーマンスと、最新データの表示を両立。
+- **Recoil による検索状態管理**: ユーザーが入力するキーワードを Recoil の Atom で扱い、検索結果の取得・表示に反映。
+- **Lighthouse 高得点**: SG をベースにすることで、Google Lighthouse の各指標で高スコアを実現。
+
+詳細な解説は [Zenn 記事](https://zenn.dev/purenium/articles/nextjs-sg-use-swr-gourmet-search) を参照してください。
