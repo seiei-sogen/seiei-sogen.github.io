@@ -47,6 +47,49 @@ export const GET: APIRoute = async ({ props }) => {
             style: {
               position: 'absolute',
               top: 0,
+              left: '70px',
+              right: '70px',
+              height: '4px',
+              background: 'linear-gradient(90deg, #7f98ea 0%, #c084fc 50%, #f0abfc 100%)',
+            },
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: {
+              position: 'absolute',
+              top: '-150px',
+              right: '-100px',
+              width: '500px',
+              height: '500px',
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, rgba(127,152,234,0.3) 0%, rgba(127,152,234,0) 70%)',
+            },
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: {
+              position: 'absolute',
+              bottom: '-200px',
+              left: '-100px',
+              width: '500px',
+              height: '500px',
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, rgba(192,132,252,0.2) 0%, rgba(192,132,252,0) 70%)',
+            },
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: {
+              position: 'absolute',
+              top: 0,
               left: 0,
               right: 0,
               bottom: 0,
@@ -110,7 +153,9 @@ export const GET: APIRoute = async ({ props }) => {
                         style: {
                           fontSize: '32px',
                           fontWeight: 'bold',
-                          color: '#ffffff',
+                          background: 'linear-gradient(90deg, #ffffff 0%, #7f98ea 100%)',
+                          backgroundClip: 'text',
+                          color: 'transparent',
                           letterSpacing: '-0.02em',
                         },
                         children: siteConfig.site.name,
@@ -120,11 +165,34 @@ export const GET: APIRoute = async ({ props }) => {
                       type: 'div',
                       props: {
                         style: {
-                          fontSize: '28px',
-                          color: '#a1a1aa',
-                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
                         },
-                        children: year,
+                        children: [
+                          {
+                            type: 'div',
+                            props: {
+                              style: {
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: '#7f98ea',
+                              },
+                            },
+                          },
+                          {
+                            type: 'div',
+                            props: {
+                              style: {
+                                fontSize: '28px',
+                                color: '#a1a1aa',
+                                fontWeight: 'bold',
+                              },
+                              children: year,
+                            },
+                          },
+                        ],
                       },
                     },
                   ],
