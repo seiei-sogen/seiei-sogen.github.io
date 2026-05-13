@@ -39,6 +39,7 @@ pnpm-debug.log*
 # misc
 *.log
 memo
+tumiki
 .dcs
 # CocoIndex Code (ccc)
 /.cocoindex_code/
