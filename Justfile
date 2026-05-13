@@ -24,6 +24,9 @@ sync:
 astro *ARGS:
     pnpm astro {{ARGS}}
 
+add *ARGS:
+    pnpm add {{ARGS}}
+
 clean:
     rm -rf .astro node_modules/.vite
 
