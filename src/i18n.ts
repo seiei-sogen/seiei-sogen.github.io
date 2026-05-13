@@ -558,7 +558,7 @@ export const translations = {
     'hero.greeting': 'こんにちは、',
     'hero.title': '聖永宗玄',
     'hero.title_highlight': 'Software Engineer',
-    'hero.image_alt': 'デスクで作業中',
+    'hero.image_alt': 'ノートPCで作業する様子',
     'hero.cta.projects': 'プロジェクトを見る',
     'hero.cta.contact': 'ご連絡ください',
 
@@ -570,11 +570,11 @@ export const translations = {
 
     // Stack Section
     'stack.title': '技術スタック',
-    'stack.subtitle': 'プロダクトに命を吹き込むために使っているツール群。',
+    'stack.subtitle': '日々の実装で実際に使っている技術スタック。',
 
     // Experience Section
     'experience.title': '経歴',
-    'experience.subtitle': 'デジタルプロダクトを作ってきた道のり。',
+    'experience.subtitle': 'Web コーダーからフリーランスのフルスタックエンジニアまで、これまでの経歴。',
     'experience.present': '現在',
     'experience.item1_desc': 'Astro ベースのプロジェクトの技術リードと、Cloudflare 上でのパフォーマンス最適化を担当。',
     'experience.item2_desc': 'SaaS プラットフォーム向けのデザインシステム構築と、リアクティブなコンポーネントの開発。',
@@ -582,7 +582,7 @@ export const translations = {
 
     // Expertise Section
     'expertise.title': '専門領域',
-    'expertise.subtitle': 'シンプルさと力強さで際立つデジタルプロダクトを作るための、総合的なアプローチ。',
+    'expertise.subtitle': '要件整理からフロントエンド・バックエンドの実装、開発基盤の改善まで、一貫して引き受けられる領域。',
 
     // Recent Projects Section
     'projects.recent_title': '最近のプロジェクト',

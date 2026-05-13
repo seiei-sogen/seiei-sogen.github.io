@@ -20,13 +20,13 @@ export const siteConfig = {
     headline: 'ミニマルなアプローチで Web の未来を作る。',
     bio: '約 11 年の Web 開発経験を持つフリーランスエンジニアです。Next.js / React / TypeScript を中心としたフロントエンドを軸に、Rust や Hono などバックエンドにも領域を広げ、要件の整理から設計・実装・改善までを一貫して推進します。「価値のあるソフトウェアを早く継続的に提供する」というアジャイル原則を行動指針に、お客様に持続的に価値を届けることを大事にしています。',
     avatar: '/images/avatar.webp', // Path from public/
-    heroImage: '/src/assets/images/handsome-young-man-with-laptop-check-his-timetable-white.webp',
+    heroImage: '/src/assets/images/hero-portrait.webp',
   },
 
   // 3. SEO and Metadata
   seo: {
-    titleSuffix: ' | seiei-sogen.github.io',
-    defaultDescription: 'Minimalist portfolio built with Astro 6 and Tailwind CSS.',
+    defaultDescription:
+      '聖永宗玄 / Software Engineer。Next.js / React / TypeScript を中心にフロントエンドを軸足とし、Rust や Hono などバックエンドにも領域を広げて、要件整理から実装・改善までを一貫して推進するフリーランスエンジニアのポートフォリオ。',
     ogImage: '/og-image.png', // Ideally 1200x630px
     twitterHandle: '@seiei_sogen',
     themeColor: {
@@ -101,8 +101,8 @@ export const siteConfig = {
 
   // 7. Legal Links (Footer)
   legal: [
-    { name: 'legal.privacy', href: '/legal/privacidad' },
-    { name: 'legal.terms', href: '/legal/terminos' },
+    { name: 'legal.privacy', href: '/legal/privacy' },
+    { name: 'legal.terms', href: '/legal/terms' },
     { name: 'legal.changelog', href: '/changelog' },
   ],
 

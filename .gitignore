@@ -39,10 +39,12 @@ pnpm-debug.log*
 # misc
 *.log
 memo/*
+.dcs/*
 # CocoIndex Code (ccc)
 /.cocoindex_code/
 memo/CV.md
 memo/prompt.md
 memo/chatgpt_review_2026_05_12.md
-.dcs/20260512120000_refine_portfolio_review/plan.md
-.dcs/20260512120000_refine_portfolio_review/execute_result.md
+.dcs/20260513181210_refine_site_meta_cleanup/execute_result.md
+.dcs/20260513181210_refine_site_meta_cleanup/execute_result.md
+.dcs/20260513181210_refine_site_meta_cleanup/plan.md

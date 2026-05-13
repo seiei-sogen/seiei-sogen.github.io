@@ -41,10 +41,8 @@ const {
 } = Astro.props;
 
 const absoluteImage = image.startsWith('http') ? image : new URL(image, Astro.site ?? siteConfig.site.url).toString();
-// Avoid "Minimalist Portfolio | Minimalist Portfolio" if suffix is already in title
-const fullTitle = title.endsWith(siteConfig.seo.titleSuffix.trim()) || title === siteConfig.seo.titleSuffix.trim()
-  ? title
-  : `${title}${siteConfig.seo.titleSuffix}`;
+const sitePrefix = siteConfig.site.name;
+const fullTitle = !title || title === sitePrefix ? sitePrefix : `${sitePrefix} | ${title}`;
 const isArticle = !!articleDate;
 
 // JSON-LD Structured Data
@@ -113,7 +111,7 @@ const jsonLd = isArticle
 <meta property="og:type" content={isArticle ? 'article' : 'website'} />
 <meta property="og:site_name" content={siteConfig.profile.name} />
 <meta property="og:url" content={canonicalUrl} />
-<meta property="og:title" content={title} />
+<meta property="og:title" content={fullTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={absoluteImage} />
 <meta property="og:image:width" content="1200" />
@@ -131,10 +129,10 @@ const jsonLd = isArticle
 <meta name="twitter:site" content={siteConfig.seo.twitterHandle} />
 <meta name="twitter:creator" content={siteConfig.seo.twitterHandle} />
 <meta name="twitter:url" content={canonicalUrl} />
-<meta name="twitter:title" content={title} />
+<meta name="twitter:title" content={fullTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={absoluteImage} />
-<meta name="twitter:image:alt" content={title} />
+<meta name="twitter:image:alt" content={`${siteConfig.profile.name} / ${siteConfig.profile.role}`} />
 
 <!-- ═══════════════════════════════════ -->
 <!--  Favicon & PWA Icons                -->
