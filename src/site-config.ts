@@ -27,7 +27,7 @@ export const siteConfig = {
   seo: {
     titleSuffix: ' | seiei-sogen.github.io',
     defaultDescription: 'Minimalist portfolio built with Astro 6 and Tailwind CSS.',
-    ogImage: '/og-image.jpg', // Ideally 1200x630px
+    ogImage: '/og-image.png', // Ideally 1200x630px
     twitterHandle: '@seiei_sogen',
     themeColor: {
       dark: '#09090b',

@@ -38,7 +38,7 @@ pnpm-debug.log*
 
 # misc
 *.log
-memo/llm.md
+memo/*
 # CocoIndex Code (ccc)
 /.cocoindex_code/
 memo/CV.md
