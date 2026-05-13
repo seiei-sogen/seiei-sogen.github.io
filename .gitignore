@@ -20,6 +20,9 @@ pnpm-debug.log*
 # macOS-specific files
 .DS_Store
 
+# WSL / Windows downloaded files (alternate data stream marker)
+*:Zone.Identifier
+
 # astro
 .astro/
 
