@@ -27,7 +27,7 @@ export const siteConfig = {
   seo: {
     defaultDescription:
       '聖永宗玄 / Software Engineer。Next.js / React / TypeScript を中心にフロントエンドを軸足とし、Rust や Hono などバックエンドにも領域を広げて、要件整理から実装・改善までを一貫して推進するフリーランスエンジニアのポートフォリオ。',
-    ogImage: '/og-image.jpg?v=2', // Ideally 1200x630px. `?v=N` busts SNS crawler cache when the image changes.
+    ogImage: '/og-image.jpg?v=ogpogpogpogpogpogpogpogp', // Ideally 1200x630px. `?v=N` busts SNS crawler cache when the image changes.
     twitterHandle: '@seiei_sogen',
     themeColor: {
       dark: '#09090b',
