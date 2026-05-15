@@ -32,7 +32,12 @@ const { Content } = await render(post);
 const { title, date, summary } = post.data;
 ---
 
-<BaseLayout title={`${title} | Blog`} description={summary} articleDate={date}>
+<BaseLayout
+  title={`${title} | Blog`}
+  description={summary}
+  image={`/og/blog/${post.id}.jpg`}
+  articleDate={date}
+>
   <ReadingProgress />
 
   <article class="flex flex-col gap-12 max-w-6xl mx-auto py-12 md:py-24">
