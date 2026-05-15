@@ -6,7 +6,7 @@ import RecentProjects from '@/components/sections/RecentProjects.astro';
 import Stack from '@/components/sections/Stack.astro';
 import Experience from '@/components/sections/Experience.astro';
 // import Testimonials from '@/components/sections/Testimonials.astro';
-// import FAQ from '@/components/sections/FAQ.astro';
+import FAQ from '@/components/sections/FAQ.astro';
 // import ContactCTA from '@/components/sections/ContactCTA.astro';
 import { getCollection } from 'astro:content';
 import { getFaqSchema } from '@/utils/seo-schemas';
@@ -23,7 +23,7 @@ const faqSchema = getFaqSchema(faqCollection);
     <Stack />
     <Experience />
     <!-- <Testimonials /> -->
-    <!-- <FAQ /> -->
+    <FAQ />
     <!-- <ContactCTA /> -->
   </div>
 </BaseLayout>
