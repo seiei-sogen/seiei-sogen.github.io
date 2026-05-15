@@ -38,7 +38,7 @@ const projectSchema = getProjectSchema(project);
 <BaseLayout
   title={`${title} | ${t('nav.projects')}`}
   description={description}
-  image={image?.src ?? `/og/projects/${project.id}.jpg`}
+  image={`/og/projects/${project.id}.jpg`}
   extraJsonLd={projectSchema}
 >
   <article
