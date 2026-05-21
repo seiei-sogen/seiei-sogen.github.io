@@ -23,14 +23,16 @@ const palettes = [
     data-state="closed"
     role="dialog"
     aria-label={t('theme.selector_label')}
-    class="absolute bottom-16 right-0 w-[260px] p-4 rounded-2xl 
-           bg-background/80 backdrop-blur-xl 
+    aria-hidden="true"
+    inert
+    class="absolute bottom-16 right-0 w-[260px] p-4 rounded-2xl
+           bg-background/80 backdrop-blur-xl
            border border-border/50 shadow-2xl
            transition-all duration-300 ease-out
            origin-bottom-right
-           data-[state=closed]:opacity-0 
-           data-[state=closed]:translate-y-3 
-           data-[state=closed]:scale-95 
+           data-[state=closed]:opacity-0
+           data-[state=closed]:translate-y-3
+           data-[state=closed]:scale-95
            data-[state=closed]:pointer-events-none"
   >
     <!-- Header -->
@@ -189,6 +191,8 @@ const palettes = [
     const open = () => {
       if (panel instanceof HTMLElement && trigger instanceof HTMLElement) {
         panel.dataset.state = 'open';
+        panel.removeAttribute('aria-hidden');
+        panel.removeAttribute('inert');
         trigger.setAttribute('aria-expanded', 'true');
       }
       isOpen = true;
@@ -198,6 +202,8 @@ const palettes = [
     const close = () => {
       if (panel instanceof HTMLElement && trigger instanceof HTMLElement) {
         panel.dataset.state = 'closed';
+        panel.setAttribute('aria-hidden', 'true');
+        panel.setAttribute('inert', '');
         trigger.setAttribute('aria-expanded', 'false');
       }
       isOpen = false;

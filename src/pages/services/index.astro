@@ -10,9 +10,9 @@ const allServices = await getCollection('services');
 const expertises = allServices.sort((a, b) => a.data.order - b.data.order);
 ---
 
-<BaseLayout 
+<BaseLayout
   title="サービス | 専門領域"
-  description="Enfoque integral para construir productos digitales que destacan por su simplicidad y potencia. Diseño UI/UX, Frontend Engineering y Estrategia Digital."
+  description={t('services.description')}
 >
   <div class="max-w-6xl mx-auto py-12 md:py-24 flex flex-col gap-24 px-4 sm:px-8">
     
@@ -38,18 +38,18 @@ const expertises = allServices.sort((a, b) => a.data.order - b.data.order);
     {/* Final Conversion CTA */}
     <div class="bg-primary/10 rounded-[3rem] border border-primary/20 p-8 md:p-20 flex flex-col items-center text-center gap-10 reveal">
       <div class="flex flex-col gap-5 max-w-2xl">
-        <h2 class="text-4xl md:text-5xl font-black tracking-tighter leading-tight">¿Tienes un proyecto en mente?</h2>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tighter leading-tight">{t('cta.title')}</h2>
         <p class="text-lg text-muted-foreground font-medium">
-          Ya sea una nueva plataforma desde cero o la optimización de un producto existente, puedo ayudarte a transformar tu visión en una experiencia digital excepcional.
+          {t('cta.description')}
         </p>
       </div>
-      
+
       <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
         <Button href="/contact" variant="primary" class="h-16 px-10 text-sm font-bold tracking-widest uppercase">
-          Trabajemos Juntos <span>&rarr;</span>
+          {t('cta.start')} <span>&rarr;</span>
         </Button>
         <Button href="/projects" variant="secondary" class="h-16 px-10 text-sm font-bold tracking-widest uppercase">
-          Ver Proyectos
+          {t('hero.cta.projects')}
         </Button>
       </div>
     </div>

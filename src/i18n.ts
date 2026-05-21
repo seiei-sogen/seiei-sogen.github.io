@@ -172,7 +172,6 @@ export const translations = {
     // Legal links
     'legal.privacy': 'Privacidad',
     'legal.terms': 'Términos',
-    'legal.changelog': 'Changelog',
 
     // Services page
     'services.title': 'Mis Especialidades',
@@ -345,7 +344,6 @@ export const translations = {
     // Legal links
     'legal.privacy': 'Privacy',
     'legal.terms': 'Terms',
-    'legal.changelog': 'Changelog',
 
     // Services page
     'services.title': 'My Specialties',
@@ -518,7 +516,6 @@ export const translations = {
     // Legal links
     'legal.privacy': 'Prywatność',
     'legal.terms': 'Warunki',
-    'legal.changelog': 'Changelog',
 
     // Services page
     'services.title': 'Moje Specjalizacje',
@@ -691,7 +688,6 @@ export const translations = {
     // Legal links
     'legal.privacy': 'プライバシー',
     'legal.terms': '利用規約',
-    'legal.changelog': '変更履歴',
 
     // Services page
     'services.title': '専門領域',

@@ -56,11 +56,4 @@ const faq = defineCollection({
   }),
 });
 
-const changelog = defineCollection({
-  loader: glob({ pattern: '**/history.md', base: './src/content/changelog' }),
-  schema: z.object({
-    title: z.string().optional(),
-  }),
-});
-
-export const collections = { projects, blog, services, testimonials, faq, changelog };
+export const collections = { projects, blog, services, testimonials, faq };

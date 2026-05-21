@@ -103,7 +103,6 @@ export const siteConfig = {
   legal: [
     { name: 'legal.privacy', href: '/legal/privacy' },
     { name: 'legal.terms', href: '/legal/terms' },
-    { name: 'legal.changelog', href: '/changelog' },
   ],
 
   // 7. Social Media and Contact
