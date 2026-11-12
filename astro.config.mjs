@@ -38,6 +38,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,avif}'],
+        // /code-vipassana/ は別アプリ（public/ に同梱）。プリキャッシュせず、
+        // ナビゲーションをこのサイトの index.html にフォールバックさせない
+        globIgnores: ['code-vipassana/**'],
+        navigateFallbackDenylist: [/^\/code-vipassana\//],
       },
       devOptions: {
         enabled: true,
