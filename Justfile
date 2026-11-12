@@ -37,3 +37,9 @@ pwa-icons:
 
 search QUERY:
     ccc search {{QUERY}}
+
+# code-vipassana をビルドして public/code-vipassana/ に取り込む（/code-vipassana/ 配下で配信）
+vipassana DIR="../code-vipassana":
+    cd {{DIR}} && npm ci && BASE_PATH=/code-vipassana/ npm run build
+    rm -rf public/code-vipassana
+    cp -r {{DIR}}/dist/client public/code-vipassana

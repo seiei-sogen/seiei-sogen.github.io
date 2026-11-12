@@ -1,0 +1,1 @@
+var e=[{level:`beginner`,label:`初級`,note:`関数1つ。上から順に読めば答えが出る`},{level:`intermediate`,label:`中級`,note:`状態・クロージャ・非同期のどれかを追う`},{level:`advanced`,label:`上級`,note:`複数の関数の関係や不変条件を掴む`}],t={output:`出力当て`,line:`行特定`,bug:`バグ原因`,intent:`意図当て`};export{e as n,t};
