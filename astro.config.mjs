@@ -15,7 +15,8 @@ export default defineConfig({
       applyBaseStyles: false,
     }),
     mdx(),
-    sitemap(),
+    // public/ files are not crawled by the sitemap integration
+    sitemap({ customPages: [new URL('fukan_zazen_gi/', siteConfig.site.url).href] }),
     icon(),
     astroPwa({
       registerType: 'autoUpdate',
