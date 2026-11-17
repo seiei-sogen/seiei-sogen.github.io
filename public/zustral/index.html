@@ -5,20 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zustral — 業務バッチ処理のための言語</title>
 <meta name="description" content="ZustralはAustralをフォークした、COBOLの代替を目指す業務バッチ処理のためのプログラミング言語。線形型によるメモリ安全と、型で金銭計算のバグを防ぐ10進固定小数点型。">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark">
 <style>
 :root {
-  --bg: #fbfaf7; --fg: #1d1f24; --muted: #5d6270; --line: #e3e0d8;
-  --card: #ffffff; --code-bg: #f2f0ea; --accent: #2f5bd3; --accent-soft: #e6ecfb;
-  --bad: #b3261e; --good: #1c7c4a;
+  --bg: #14161b; --fg: #e6e7ea; --muted: #9aa0ad; --line: #2a2e37;
+  --card: #1a1d23; --code-bg: #1f232b; --accent: #8aa8ff; --accent-soft: #222b44;
+  --bad: #ff8a80; --good: #6fd3a0;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Noto Sans Mono", monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14161b; --fg: #e6e7ea; --muted: #9aa0ad; --line: #2a2e37;
-    --card: #1a1d23; --code-bg: #1f232b; --accent: #8aa8ff; --accent-soft: #222b44;
-    --bad: #ff8a80; --good: #6fd3a0;
-  }
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
