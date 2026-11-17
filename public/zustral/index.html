@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zustral — 業務バッチ処理のための言語</title>
+<meta name="description" content="ZustralはAustralをフォークした、COBOLの代替を目指す業務バッチ処理のためのプログラミング言語。線形型によるメモリ安全と、型で金銭計算のバグを防ぐ10進固定小数点型。">
+<meta name="color-scheme" content="dark">
+<style>
+:root {
+  --bg: #08122a; --fg: #e6ebf5; --muted: #9eadc8; --line: #1e3054;
+  --card: #0d1a36; --code-bg: #050c1e; --accent: #8fb6ff; --accent-soft: #182c58;
+  --bad: #ff8a80; --good: #6fd3a0;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Noto Sans Mono", monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.85 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+a { color: var(--accent); }
+header.top { border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px; }
+.brand { font-weight: 700; letter-spacing: .02em; text-decoration: none; color: var(--fg); }
+.brand span { color: var(--accent); }
+nav a { margin-left: 16px; color: var(--muted); text-decoration: none; font-size: 14px; }
+nav a:hover { color: var(--fg); }
+.hero { padding: 72px 0 48px; }
+.hero h1 { font-size: clamp(30px, 6vw, 46px); line-height: 1.3; margin: 0 0 16px; letter-spacing: -.01em; }
+.hero p.lead { font-size: 18px; color: var(--muted); margin: 0 0 28px; max-width: 40em; }
+.badge { display: inline-block; font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-bottom: 18px; }
+.btn { display: inline-block; padding: 10px 18px; border-radius: 8px; background: var(--accent); color: var(--bg); text-decoration: none; font-weight: 600; margin: 0 8px 8px 0; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+section { padding: 40px 0; border-top: 1px solid var(--line); }
+h2 { font-size: 24px; margin: 0 0 20px; }
+h3 { font-size: 17px; margin: 0 0 6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+.card .no { font-family: var(--mono); color: var(--accent); font-size: 13px; }
+.card.core { border-color: var(--accent); }
+pre, code { font-family: var(--mono); font-size: 14px; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; line-height: 1.6; margin: 0 0 16px; }
+pre code { background: none; padding: 0; }
+.c { color: var(--muted); }
+.ng { color: var(--bad); }
+.ok { color: var(--good); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.table-wrap { overflow-x: auto; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 13px; }
+ul.nots { columns: 2 240px; column-gap: 32px; padding-left: 1.2em; margin: 0; color: var(--muted); }
+ul.nots li { break-inside: avoid; }
+.note { font-size: 14px; color: var(--muted); }
+footer { border-top: 1px solid var(--line); padding: 28px 0 48px; font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./">Z<span>ustral</span></a>
+    <nav>
+      <a href="#decimal">Decimal</a>
+      <a href="#features">機能</a>
+      <a href="#build">ビルド</a>
+      <a href="https://github.com/seiei-sogen/zustral">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="hero">
+    <span class="badge">Austral のフォーク</span>
+    <h1>金銭計算のバグを、<br>型で止める。</h1>
+    <p class="lead">Zustral は、業務の10進計算とバッチ処理のためのプログラミング言語です。COBOL の代わりになる、小さくて明示的な言語を目指しています。</p>
+    <a class="btn" href="https://github.com/seiei-sogen/zustral">GitHub で見る</a>
+    <a class="btn ghost" href="#decimal">Decimal 型を見る</a>
+  </div>
+
+  <section id="concept">
+    <h2>4つの柱</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="no">01</div>
+        <h3>コンパクトな COBOL の代替</h3>
+        <p>汎用言語は目指しません。用途を、金融をはじめとする業務の10進計算とバッチ処理に絞ります。</p>
+      </div>
+      <div class="card">
+        <div class="no">02</div>
+        <h3>メモリ安全</h3>
+        <p>Austral の線形型を受け継ぎ、GC に頼らずにメモリ安全性を保証します。</p>
+      </div>
+      <div class="card">
+        <div class="no">03</div>
+        <h3>明示的であること</h3>
+        <p>書かれていないことは起きません。暗黙の変換、隠れた制御フロー、見えないメモリ確保はありません。</p>
+      </div>
+      <div class="card core">
+        <div class="no">04 — 核</div>
+        <h3>金銭計算のバグを言語で防ぐ</h3>
+        <p>10進計算の誤りを、プログラマの注意力ではなく型システムで、実行前に弾きます。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="decimal">
+    <h2>Decimal[P, S]</h2>
+    <p>組み込みの10進固定小数点型です。P は精度（全体の桁数、1〜38）、S はスケール（小数点以下の桁数）です。値は符号付き128ビット整数の係数で持つので、大きさは16バイト固定で、ヒープは使いません。</p>
+<pre><code><span class="c">-- unit_price: Decimal[9, 0]、quantity: Int32、discount: Decimal[11, 0]</span>
+let gross: Decimal[19, 0] := unit_price * quantity;
+let subtotal: Decimal[19, 0] := gross - widen(discount);
+let tax: Decimal[11, 0] := round(subtotal * 0.10, TowardZero());  <span class="c">-- 円未満切り捨て</span>
+let per_person: Decimal[11, 0] := divide(subtotal, 3, TowardZero());
+let total: Decimal[20, 0] := widen(subtotal) + widen(tax);</code></pre>
+    <div class="grid">
+      <div class="card">
+        <h3>既定の丸めモードはない</h3>
+        <p>桁を落とす演算には、7つある <code>RoundingMode</code> のどれかを必ず書きます。「現在の丸めモード」のような大域の状態もありません。</p>
+      </div>
+      <div class="card">
+        <h3>暗黙の変換はない</h3>
+        <p>P か S が違えば別の型です。桁を広げるのは <code>widen</code>、狭めるのは <code>exact</code> か <code>round</code> で、どれも明示して書きます。</p>
+      </div>
+      <div class="card">
+        <h3>リテラルは丸めない</h3>
+        <p><code>Decimal[7, 2]</code> の位置に <code>1.234</code> と書くとコンパイルエラーになります。表せない値は黙って丸めません。</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:28px">黙って間違える式を、コンパイル時に弾く</h3>
+<pre><code>let interest: Decimal[11, 0] := round(balance * (days / 365), TowardZero());  <span class="ng">-- コンパイルエラー</span>
+let interest: Decimal[11, 0] := divide(balance * days, 365, TowardZero());     <span class="ok">-- こう書く</span></code></pre>
+    <p class="note">整数の <code>/</code> は小数部を黙って切り捨てるので、<code>days / 365</code> は365日未満なら 0 になります。金額の式でこれが通ると、間違った金額が黙って出ます。</p>
+
+    <h3 style="margin-top:28px">失敗の扱いを選べる</h3>
+    <p>演算子と <code>checked</code> の付かない演算は、桁あふれするとメッセージを出して止まります。<code>checked</code> の付く演算は <code>Option</code> を返すので、不正なデータで止めたくないバッチでは、<code>None</code> のレコードだけをよけられます。</p>
+<pre><code>let stored: Option[Decimal[11, 0]] := checkedRound(balance * rate, TowardZero());</code></pre>
+
+    <h3 style="margin-top:28px">COBOL との対応</h3>
+    <div class="table-wrap">
+      <table>
+        <tr><th>COBOL</th><th>Zustral</th></tr>
+        <tr><td><code>COMPUTE X = A * B</code></td><td><code>x := round(a * b, TowardZero());</code></td></tr>
+        <tr><td><code>COMPUTE X ROUNDED = A * B</code></td><td><code>x := round(a * b, NearestAwayFromZero());</code></td></tr>
+        <tr><td><code>ON SIZE ERROR</code></td><td><code>checked</code> の付く演算と <code>case</code></td></tr>
+        <tr><td><code>MOVE A TO B</code>（桁が減る）</td><td><code>b := exact(a);</code> か <code>b := round(a, mode);</code></td></tr>
+      </table>
+    </div>
+    <p class="note">Decimal 型は仕様が決まった段階で、コンパイラへの実装はまだです。仕様は <a href="https://github.com/seiei-sogen/zustral/blob/master/docs/decimal.md">docs/decimal.md</a> にあります。</p>
+  </section>
+
+  <section id="features">
+    <h2>Austral から受け継ぐ機能</h2>
+    <div class="grid">
+      <div class="card"><h3>線形型</h3><p>メモリやファイル、DBのハンドルを、実行時のオーバーヘッドなしに安全に扱えます。二重 free や解放後の使用を防ぎます。</p></div>
+      <div class="card"><h3>ケイパビリティ</h3><p>低水準の機能へのアクセス権を細かく与え、依存ライブラリが触れる資源を制限します。サプライチェーン攻撃に強くなります。</p></div>
+      <div class="card"><h3>型クラス</h3><p>Haskell 由来の型クラスで、有界なアドホック多相を使えます。</p></div>
+      <div class="card"><h3>安全な算術</h3><p>Ada と同じく、オーバーフローでトラップする演算と剰余算術を別々に持ちます。</p></div>
+      <div class="card"><h3>代数的データ型</h3><p>ML や Haskell と同じ代数的データ型を、網羅性の検査つきで備えます。</p></div>
+    </div>
+
+    <h3 style="margin-top:32px">持たない機能</h3>
+    <ul class="nots">
+      <li>ガベージコレクション</li>
+      <li>デストラクタ</li>
+      <li>例外</li>
+      <li>暗黙の関数呼び出し</li>
+      <li>暗黙の型変換</li>
+      <li>暗黙のコピー</li>
+      <li>グローバルな状態</li>
+      <li>サブタイピング</li>
+      <li>マクロ</li>
+      <li>リフレクション</li>
+      <li>@アノテーション</li>
+      <li>型推論（型の情報は一方向に流れる）</li>
+      <li>初期化されていない変数</li>
+      <li><code>x++</code> のような増減の演算子</li>
+      <li>言語組み込みの async</li>
+      <li>関数のオーバーロード（型クラスを除く）</li>
+      <li>算術演算子の優先順位</li>
+      <li>変数のシャドーイング</li>
+    </ul>
+  </section>
+
+  <section id="example">
+    <h2>例</h2>
+<pre><code>module body Fib is
+    function fib(n: Nat64): Nat64 is
+        if n &lt; 2 then
+            return n;
+        else
+            return fib(n - 1) + fib(n - 2);
+        end if;
+    end;
+
+    function main(): ExitCode is
+        print("fib(10) = ");
+        printLn(fib(10));
+        return ExitSuccess();
+    end;
+end module body.</code></pre>
+<pre><code>$ austral compile fib.aum --entrypoint=Fib:main --output=fib
+$ ./fib
+fib(10) = 55</code></pre>
+    <p class="note">コンパイラの実行ファイル名は、Austral から受け継いだ <code>austral</code> のままです。</p>
+  </section>
+
+  <section id="build">
+    <h2>ビルド</h2>
+    <p><a href="https://nixos.org/">Nix</a> があれば次だけで済みます。</p>
+<pre><code>$ git clone https://github.com/seiei-sogen/zustral.git
+$ cd zustral
+$ nix-shell
+$ make</code></pre>
+    <p>Nix を使わない場合は、OCaml 4.13.0 以上と <code>opam</code>、<code>dune</code>、C コンパイラが要ります。</p>
+<pre><code>$ opam switch create austral 4.13.0
+$ eval $(opam env --switch=austral)
+$ opam install --deps-only -y .
+$ make
+$ ./run-tests.sh</code></pre>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Zustral は <a href="https://austral-lang.org/">Austral</a>（© 2018–2023 Fernando Borretti）のフォークです。Apache 2.0 ライセンス（LLVM 例外つき）で提供されます。</p>
+    <p><a href="https://github.com/seiei-sogen/zustral">github.com/seiei-sogen/zustral</a> · <a href="/">seiei-sogen</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
