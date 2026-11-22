@@ -25,6 +25,8 @@ export default defineConfig({
         new URL('et-cetera/quaternion/double-cover/', siteConfig.site.url).href,
         new URL('et-cetera/quaternion/euler/', siteConfig.site.url).href,
         new URL('et-cetera/quaternion/hypersphere/', siteConfig.site.url).href,
+        new URL('et-cetera/kenron/', siteConfig.site.url).href,
+        new URL('et-cetera/kenron/natural-transformation/', siteConfig.site.url).href,
       ],
     }),
     icon(),

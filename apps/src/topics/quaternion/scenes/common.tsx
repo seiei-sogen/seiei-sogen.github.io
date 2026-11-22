@@ -243,6 +243,8 @@ type LabelProps = {
   math?: boolean;
   /** ワールド座標での文字の高さ */
   size?: number;
+  /** 文字の色（既定は COLOR.hull） */
+  color?: string;
 };
 
 /**
@@ -267,7 +269,7 @@ export function Label(props: LabelProps) {
   ctx.fill();
   ctx.font = font;
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = COLOR.hull;
+  ctx.fillStyle = props.color ?? COLOR.hull;
   ctx.fillText(props.text, pad, canvas.height / 2 + 3);
 
   const texture = new CanvasTexture(canvas);
