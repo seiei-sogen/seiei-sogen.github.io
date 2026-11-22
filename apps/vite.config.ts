@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
-import { tanstackStart } from '@tanstack/react-start/plugin/vite';
-import viteReact from '@vitejs/plugin-react';
+import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
+import viteSolid from 'vite-plugin-solid';
 
 // ブログの /et-cetera/ 配下に置くため、取り込み時は BASE_PATH=/et-cetera/ を渡す。
 // ローカル開発では "/"。
@@ -17,6 +17,6 @@ export default defineConfig({
         failOnError: true,
       },
     }),
-    viteReact(),
+    viteSolid({ ssr: true }),
   ],
 });

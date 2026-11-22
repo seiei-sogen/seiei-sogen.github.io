@@ -1,7 +1,7 @@
 # apps — et cetera
 
 ブログの `/et-cetera/` 配下で配信する、動かして確かめるページ置き場。
-TanStack Start（React）のアプリはこの `apps/` 1つだけで、トピック（クォータニオンなど）はその下の階層として足していく。依存のインストールもビルドも1回で済む。
+TanStack Start（SolidJS）のアプリはこの `apps/` 1つだけで、トピック（クォータニオンなど）はその下の階層として足していく。依存のインストールもビルドも1回で済む。
 
 - 全ページをビルド時にプリレンダーする静的サイト。サーバー処理なし
 - トピックごとに URL の階層・レイアウト・CSS が独立している（`/et-cetera/<トピック名>/…`）
@@ -46,18 +46,25 @@ CSS はトピックの `route.tsx` で読み込んだものだけが効くので
 
 重いライブラリ（three.js など）は `lazy(() => import(...))` で読み込み、そのトピックを開いたときだけ取りに行くようにする。
 
+## SolidJS で書くときの注意
+
+- SolidJS は 1.9 系（TanStack Solid Router が 1.x を前提にしているため）
+- ページを読み込み直さない移動（タブ切り替えなど）では、ルートの `head()` の `title` が `<title>` に反映されない。`src/routes/__root.tsx` の `TitleSync` が `document.title` を合わせている
+
 ## いまあるトピック
 
 ### quaternion — クォータニオンを手で回す
 
-クォータニオン（四元数）を3Dで動かして確かめる。3D は React Three Fiber（three.js）。
+クォータニオン（四元数）を3Dで動かして確かめる。3D は three.js を [solid-three](https://github.com/solidjs-community/solid-three) 経由で JSX として書いている。
+
+solid-three は開発版（`0.3.0-next.11`）を版を固定して使っている。配布されている README と実際の API が一部違う（例: `<Canvas>` のカメラ指定は `camera` ではなく `defaultCamera`、`useThree()` のカメラは `currentCamera`）。solid-three を直接使っているのは `scenes/` の中だけなので、差し替えるときはそこだけ見ればよい。太い線（`FatLine`）・視点のドラッグ・文字ラベルは three.js を直接使っている。
 
 ```
 src/routes/quaternion/       route = 枠（冒頭の図解とタブ） ・ index = 1 軸と角度 ・ double-cover = 2 ふた回り
                              euler = 3 オイラー角 ・ hypersphere = 4 四次元
 src/topics/quaternion/
   sections/                  実験ごとの状態・操作盤・説明文
-  scenes/                    3Dシーン（遅延読み込み。three.js を使うのはここだけ）
+  scenes/                    3Dシーン（遅延読み込み。three.js と solid-three を使うのはここだけ）
   figures/                   説明用の静的な図（SVG）
   components/                スライダー、q の表示、半角の文字盤、ステージ枠、「やってみよう」など
   lib/quat.ts                四元数の計算（three.js 非依存）

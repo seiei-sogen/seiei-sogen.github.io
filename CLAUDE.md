@@ -16,7 +16,7 @@ All commands go through `just` (see `justfile`). Package manager is **pnpm** (No
 - `just clean` — remove `.astro` and `node_modules/.vite`
 - `just reset` — clean + dev (recovery when the dev server crashes after dependency / config changes)
 - `just pwa-icons` — regenerate PWA icons via `scripts/generate-pwa-icons.mjs`
-- `just apps-install` / `just apps-dev` — install deps / dev server (http://localhost:3000) for `apps/`, a single TanStack Start (React) app that holds every `/et-cetera/` topic (its own `package.json` and lockfile, not part of the Astro build). See `apps/README.md` for how to add a topic.
+- `just apps-install` / `just apps-dev` — install deps / dev server (http://localhost:3000) for `apps/`, a single TanStack Start (SolidJS 1.9) app that holds every `/et-cetera/` topic (its own `package.json` and lockfile, not part of the Astro build). See `apps/README.md` for how to add a topic.
 - `just apps-build` — build + typecheck `apps/` and copy the output into `public/et-cetera/` (served at `/et-cetera/`). The copied output is committed; rerun this after changing anything under `apps/`.
 - `just search <query>` — semantic codebase search via [`cocoindex-code`](https://github.com/cocoindex-io/cocoindex-code) (`ccc search`); index lives in `.cocoindex_code/`. Prefer this over `grep` for concept-level lookups.
 

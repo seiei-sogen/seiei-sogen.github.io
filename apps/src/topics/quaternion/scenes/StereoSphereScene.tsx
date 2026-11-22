@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
-import { Line } from '@react-three/drei';
+import { For, Index, Show, createMemo } from 'solid-js';
 import { DoubleSide } from 'three';
 import { fromAxisAngle, rad, rotate, type Vec3 } from '../lib/quat';
 import { projectS2, splitRuns } from '../lib/stereo';
-import { COLOR, Label, SceneCanvas } from './common';
+import { COLOR, FatLine, Label, SceneCanvas, T, xyz } from './common';
 
 type Props = {
   /** 球を回す角度（ラジアン）。北極「1」が +X のほうへ倒れていく */
@@ -24,7 +23,7 @@ const LATITUDES = [
 ].map(({ lat, color }) => {
   const c = Math.cos(rad(lat));
   const s = Math.sin(rad(lat));
-  return { key: `lat${lat}`, color, points: ring((t) => [c * Math.cos(t), s, c * Math.sin(t)]) };
+  return { color, points: ring((t) => [c * Math.cos(t), s, c * Math.sin(t)]) };
 });
 
 // 経線（北極と南極を通る大きな輪）
@@ -32,7 +31,6 @@ const MERIDIANS = [0, 45, 90, 135].map((lon) => {
   const c = Math.cos(rad(lon));
   const s = Math.sin(rad(lon));
   return {
-    key: `lon${lon}`,
     color: COLOR.faint,
     points: ring((t) => [Math.sin(t) * c, Math.cos(t), Math.sin(t) * s]),
   };
@@ -42,84 +40,69 @@ const CURVES = [...MERIDIANS, ...LATITUDES];
 const EYE: Vec3 = [0, -1, 0];
 const UNIT_CIRCLE = ring((t) => [Math.cos(t), 0, Math.sin(t)]);
 
-export default function StereoSphereScene({ alpha }: Props) {
-  const drawn = useMemo(() => {
-    const turn = fromAxisAngle([0, 0, 1], -alpha);
-    return {
-      curves: CURVES.map((c) => {
-        const onSphere = c.points.map((p) => rotate(turn, p));
-        return { ...c, onSphere, onPlane: splitRuns(onSphere.map(projectS2)) };
-      }),
-      pole: rotate(turn, [0, 1, 0]),
-    };
-  }, [alpha]);
-  const poleImage = projectS2(drawn.pole);
+export default function StereoSphereScene(props: Props) {
+  const turn = createMemo(() => fromAxisAngle([0, 0, 1], -props.alpha));
+  const pole = createMemo(() => rotate(turn(), [0, 1, 0]));
+  const poleImage = createMemo(() => projectS2(pole()));
 
   return (
     <SceneCanvas camera={[4.4, 4.8, 7.2]}>
       {/* 写す先の板（赤道の高さ） */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[4.6, 64]} />
-        <meshBasicMaterial
+      <T.Mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <T.CircleGeometry args={[4.6, 64]} />
+        <T.MeshBasicMaterial
           color={COLOR.faint}
           transparent
           opacity={0.13}
           side={DoubleSide}
           depthWrite={false}
         />
-      </mesh>
-      <Line
-        points={UNIT_CIRCLE}
-        color={COLOR.hull}
-        lineWidth={1}
-        transparent
-        opacity={0.35}
-        dashed
-        dashSize={0.08}
-        gapSize={0.06}
-      />
+      </T.Mesh>
+      <FatLine points={UNIT_CIRCLE} color={COLOR.hull} opacity={0.35} dashed />
 
       {/* 球 */}
-      <mesh>
-        <sphereGeometry args={[1, 32, 24]} />
-        <meshBasicMaterial color={COLOR.faint} transparent opacity={0.1} depthWrite={false} />
-      </mesh>
+      <T.Mesh>
+        <T.SphereGeometry args={[1, 32, 24]} />
+        <T.MeshBasicMaterial color={COLOR.faint} transparent opacity={0.1} depthWrite={false} />
+      </T.Mesh>
 
-      {drawn.curves.map((c) => (
-        <group key={c.key}>
-          <Line points={c.onSphere} color={c.color} lineWidth={1} transparent opacity={0.55} />
-          {c.onPlane.map((run, i) => (
-            <Line key={i} points={run} color={c.color} lineWidth={2.25} />
-          ))}
-        </group>
-      ))}
+      <For each={CURVES}>
+        {(curve) => {
+          const onSphere = createMemo(() => curve.points.map((p) => rotate(turn(), p)));
+          const onPlane = createMemo(() => splitRuns(onSphere().map(projectS2)));
+          return (
+            <>
+              <FatLine points={onSphere()} color={curve.color} opacity={0.55} />
+              <Index each={onPlane()}>
+                {(run) => <FatLine points={run()} color={curve.color} width={2.25} />}
+              </Index>
+            </>
+          );
+        }}
+      </For>
 
       {/* 目（南極 = −1）と、北極「1」の写り先 */}
-      <mesh position={EYE}>
-        <sphereGeometry args={[0.07, 16, 16]} />
-        <meshBasicMaterial color={COLOR.x} />
-      </mesh>
+      <T.Mesh position={xyz(EYE)}>
+        <T.SphereGeometry args={[0.07, 16, 16]} />
+        <T.MeshBasicMaterial color={COLOR.x} />
+      </T.Mesh>
       <Label text="−1（目）" position={EYE} size={0.36} />
-      <Line
-        points={[EYE, poleImage ?? drawn.pole, drawn.pole]}
-        color="#ffffff"
-        lineWidth={1}
-        transparent
-        opacity={0.7}
-      />
-      <mesh position={drawn.pole}>
-        <sphereGeometry args={[0.055, 16, 16]} />
-        <meshBasicMaterial color="#ffffff" />
-      </mesh>
-      {poleImage && (
-        <>
-          <mesh position={poleImage}>
-            <sphereGeometry args={[0.085, 16, 16]} />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          <Label text="1" position={poleImage} math size={0.42} />
-        </>
-      )}
+      <FatLine points={[EYE, poleImage() ?? pole(), pole()]} color="#ffffff" opacity={0.7} />
+      <T.Mesh position={xyz(pole())}>
+        <T.SphereGeometry args={[0.055, 16, 16]} />
+        <T.MeshBasicMaterial color="#ffffff" />
+      </T.Mesh>
+      <Show when={poleImage()}>
+        {(at) => (
+          <>
+            <T.Mesh position={xyz(at())}>
+              <T.SphereGeometry args={[0.085, 16, 16]} />
+              <T.MeshBasicMaterial color="#ffffff" />
+            </T.Mesh>
+            <Label text="1" position={at()} math size={0.42} />
+          </>
+        )}
+      </Show>
     </SceneCanvas>
   );
 }

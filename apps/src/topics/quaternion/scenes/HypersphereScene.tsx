@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
-import { Line } from '@react-three/drei';
+import { For, Index, Show, createMemo, onCleanup } from 'solid-js';
+import { MeshBasicMaterial, SphereGeometry } from 'three';
 import { mul, neg, type Quat, type Vec3 } from '../lib/quat';
 import { projectS3, splitRuns } from '../lib/stereo';
-import { COLOR, Label, SceneCanvas } from './common';
+import { COLOR, FatLine, Label, SceneCanvas, T, xyz } from './common';
 
 type Props = {
   /** すべての点に左から掛ける四元数 */
@@ -34,71 +34,77 @@ const greatCircle = (a: Quat, b: Quat): Quat[] =>
 // 1 と −1 を通る輪は、写すと直線になる（−1 が無限の遠くにあるから）。
 // w = 0 の輪は、写すと単位球の表面の輪になる。色は「取り巻いている軸」の色。
 const CURVES = [
-  { key: '1i', color: COLOR.x, width: 2.75, points: greatCircle(ONE, I) },
-  { key: '1j', color: COLOR.y, width: 2.75, points: greatCircle(ONE, J) },
-  { key: '1k', color: COLOR.z, width: 2.75, points: greatCircle(ONE, K) },
-  { key: 'jk', color: COLOR.x, width: 1.5, points: greatCircle(J, K) },
-  { key: 'ki', color: COLOR.y, width: 1.5, points: greatCircle(K, I) },
-  { key: 'ij', color: COLOR.z, width: 1.5, points: greatCircle(I, J) },
+  { color: COLOR.x, width: 2.75, points: greatCircle(ONE, I) },
+  { color: COLOR.y, width: 2.75, points: greatCircle(ONE, J) },
+  { color: COLOR.z, width: 2.75, points: greatCircle(ONE, K) },
+  { color: COLOR.x, width: 1.5, points: greatCircle(J, K) },
+  { color: COLOR.y, width: 1.5, points: greatCircle(K, I) },
+  { color: COLOR.z, width: 1.5, points: greatCircle(I, J) },
 ];
 
 const LANDMARKS = [
-  { key: '1', label: '1', color: '#ffffff', p: ONE, size: 0.09 },
-  { key: '-1', label: '−1', color: '#ffffff', p: neg(ONE), size: 0.06 },
-  { key: 'i', label: 'i', color: COLOR.x, p: I, size: 0.07 },
-  { key: 'j', label: 'j', color: COLOR.y, p: J, size: 0.07 },
-  { key: 'k', label: 'k', color: COLOR.z, p: K, size: 0.07 },
+  { label: '1', color: '#ffffff', p: ONE, size: 0.09 },
+  { label: '−1', color: '#ffffff', p: neg(ONE), size: 0.06 },
+  { label: 'i', color: COLOR.x, p: I, size: 0.07 },
+  { label: 'j', color: COLOR.y, p: J, size: 0.07 },
+  { label: 'k', color: COLOR.z, p: K, size: 0.07 },
 ];
 
-export default function HypersphereScene({ q }: Props) {
-  const drawn = useMemo(
-    () =>
-      CURVES.map((c) => {
-        const images = c.points.map((p) => projectS3(mul(q, p)));
-        return {
-          ...c,
-          runs: splitRuns(images),
-          ticks: images.filter((v, n): v is Vec3 => v !== null && n % TICK_EVERY === 0 && n < N),
-        };
-      }),
-    [q]
-  );
-  const landmarks = LANDMARKS.map((m) => ({ ...m, at: projectS3(mul(q, m.p)) }));
+export default function HypersphereScene(props: Props) {
+  // 目盛りの小さな玉は数が多いので、形を1つだけ作って使い回す
+  const tickGeometry = new SphereGeometry(0.035, 8, 8);
+  onCleanup(() => tickGeometry.dispose());
 
   return (
     <SceneCanvas camera={[4.2, 3.0, 5.8]}>
       {/* w = 0 の点が写る場所。動かない目印 */}
-      <mesh>
-        <sphereGeometry args={[1, 24, 16]} />
-        <meshBasicMaterial color={COLOR.faint} wireframe transparent opacity={0.14} />
-      </mesh>
+      <T.Mesh>
+        <T.SphereGeometry args={[1, 24, 16]} />
+        <T.MeshBasicMaterial color={COLOR.faint} wireframe transparent opacity={0.14} />
+      </T.Mesh>
 
-      {drawn.map((c) => (
-        <group key={c.key}>
-          {c.runs.map((run, i) => (
-            <Line key={i} points={run} color={c.color} lineWidth={c.width} />
-          ))}
-          {c.ticks.map((v, i) => (
-            <mesh key={i} position={v}>
-              <sphereGeometry args={[0.035, 8, 8]} />
-              <meshBasicMaterial color={c.color} />
-            </mesh>
-          ))}
-        </group>
-      ))}
+      <For each={CURVES}>
+        {(curve) => {
+          const images = createMemo(() => curve.points.map((p) => projectS3(mul(props.q, p))));
+          const runs = createMemo(() => splitRuns(images()));
+          const ticks = createMemo(() =>
+            images().filter((v, n): v is Vec3 => v !== null && n % TICK_EVERY === 0 && n < N)
+          );
+          const tickMaterial = new MeshBasicMaterial({ color: curve.color });
+          onCleanup(() => tickMaterial.dispose());
+          return (
+            <>
+              <Index each={runs()}>
+                {(run) => <FatLine points={run()} color={curve.color} width={curve.width} />}
+              </Index>
+              <Index each={ticks()}>
+                {(v) => (
+                  <T.Mesh geometry={tickGeometry} material={tickMaterial} position={xyz(v())} />
+                )}
+              </Index>
+            </>
+          );
+        }}
+      </For>
 
-      {landmarks.map(
-        (m) =>
-          m.at && (
-            <group key={m.key}>
-              <mesh position={m.at}>
-                <sphereGeometry args={[m.size, 16, 16]} />
-                <meshBasicMaterial color={m.color} />
-              </mesh>
-              <Label text={m.label} position={m.at} math />
-            </group>
-          )
-      )}
+      <For each={LANDMARKS}>
+        {(mark) => {
+          const at = createMemo(() => projectS3(mul(props.q, mark.p)));
+          return (
+            <Show when={at()}>
+              {(v) => (
+                <>
+                  <T.Mesh position={xyz(v())}>
+                    <T.SphereGeometry args={[mark.size, 16, 16]} />
+                    <T.MeshBasicMaterial color={mark.color} />
+                  </T.Mesh>
+                  <Label text={mark.label} position={v()} math />
+                </>
+              )}
+            </Show>
+          );
+        }}
+      </For>
     </SceneCanvas>
   );
 }

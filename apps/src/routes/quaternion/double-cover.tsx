@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/solid-router';
 import { DoubleCover } from '../../topics/quaternion/sections/DoubleCover';
 import { SITE_TITLE } from './route';
 

@@ -1,4 +1,4 @@
-import { lazy, useMemo, useState } from 'react';
+import { Show, createMemo, createSignal, lazy } from 'solid-js';
 import { Deeper, Fig, TryIt } from '../components/Explain';
 import { QuatReadout } from '../components/QuatReadout';
 import { Slider } from '../components/Slider';
@@ -6,7 +6,7 @@ import { Stage } from '../components/Stage';
 import { GimbalSchematic } from '../figures/GimbalSchematic';
 import { PathCompare } from '../figures/PathCompare';
 import { IDENTITY, angleBetween, deg, fromEulerXYZ, rad, slerp, type Quat } from '../lib/quat';
-import { useTween } from '../lib/useTween';
+import { createTween } from '../lib/tween';
 
 const GimbalScene = lazy(() => import('../scenes/GimbalScene'));
 const InterpScene = lazy(() => import('../scenes/InterpScene'));
@@ -14,11 +14,11 @@ const InterpScene = lazy(() => import('../scenes/InterpScene'));
 type Mode = 'gimbal' | 'interp';
 
 export function EulerCompare() {
-  const [mode, setMode] = useState<Mode>('gimbal');
+  const [mode, setMode] = createSignal<Mode>('gimbal');
 
   return (
-    <section className="demo" aria-labelledby="euler-compare">
-      <header className="demo-head">
+    <section class="demo" aria-labelledby="euler-compare">
+      <header class="demo-head">
         <h2 id="euler-compare">
           <span>3つの角度で表すと、</span>
           <span>困ることがある</span>
@@ -29,41 +29,51 @@ export function EulerCompare() {
         <p>
           わかりやすいけれど、困ることが2つある。ある向きで軸どうしが重なってしまうことと、2つの向きのあいだをきれいにつなげないこと。クォータニオンはこの2つを解決するために使われている。
         </p>
-        <div className="buttons subtabs" role="group" aria-label="見る実験を選ぶ">
-          <button type="button" aria-pressed={mode === 'gimbal'} onClick={() => setMode('gimbal')}>
+        <div class="buttons subtabs" role="group" aria-label="見る実験を選ぶ">
+          <button
+            type="button"
+            aria-pressed={mode() === 'gimbal'}
+            onClick={() => setMode('gimbal')}
+          >
             困りごと1: 軸が重なる
           </button>
-          <button type="button" aria-pressed={mode === 'interp'} onClick={() => setMode('interp')}>
+          <button
+            type="button"
+            aria-pressed={mode() === 'interp'}
+            onClick={() => setMode('interp')}
+          >
             困りごと2: 遠回りする
           </button>
         </div>
       </header>
 
-      {mode === 'gimbal' ? <Gimbal /> : <Interp />}
+      <Show when={mode() === 'gimbal'} fallback={<Interp />}>
+        <Gimbal />
+      </Show>
     </section>
   );
 }
 
 function Gimbal() {
-  const [x, setX] = useState(30);
-  const [y, setY] = useState(20);
-  const [z, setZ] = useState(0);
+  const [x, setX] = createSignal(30);
+  const [y, setY] = createSignal(20);
+  const [z, setZ] = createSignal(0);
 
-  const q = useMemo(() => fromEulerXYZ(rad(x), rad(y), rad(z)), [x, y, z]);
-  const gap = 90 - Math.abs(y);
-  const locked = gap === 0;
+  const q = createMemo(() => fromEulerXYZ(rad(x()), rad(y()), rad(z())));
+  const gap = () => 90 - Math.abs(y());
+  const locked = () => gap() === 0;
 
   return (
     <>
       <Stage label="3つの入れ子の輪（ジンバル）の中に機体がある3D図">
-        <GimbalScene x={rad(x)} y={rad(y)} z={rad(z)} />
+        <GimbalScene x={rad(x())} y={rad(y())} z={rad(z())} />
       </Stage>
 
-      <div className="panel">
-        <div className="controls">
+      <div class="panel">
+        <div class="controls">
           <Slider
             label="外側の輪 X"
-            value={x}
+            value={x()}
             min={-180}
             max={180}
             swatch="var(--x)"
@@ -71,7 +81,7 @@ function Gimbal() {
           />
           <Slider
             label="中間の輪 Y"
-            value={y}
+            value={y()}
             min={-90}
             max={90}
             swatch="var(--y)"
@@ -79,17 +89,17 @@ function Gimbal() {
           />
           <Slider
             label="内側の輪 Z"
-            value={z}
+            value={z()}
             min={-180}
             max={180}
             swatch="var(--z)"
             onChange={setZ}
           />
-          <div className="buttons">
+          <div class="buttons">
             <button
               type="button"
-              className="primary"
-              aria-pressed={y === 90}
+              class="primary"
+              aria-pressed={y() === 90}
               onClick={() => setY(90)}
             >
               中間の輪を 90° にする
@@ -97,20 +107,20 @@ function Gimbal() {
           </div>
         </div>
 
-        <div className="readout">
-          <p className="vec">赤い軸（X）と青い軸（Z）の開き = {gap}°</p>
-          <p className={locked ? 'status status-alert' : 'status'} aria-live="polite">
-            {locked
+        <div class="readout">
+          <p class="vec">赤い軸（X）と青い軸（Z）の開き = {gap()}°</p>
+          <p class={locked() ? 'status status-alert' : 'status'} aria-live="polite">
+            {locked()
               ? 'ロックした。X と Z のスライダーが同じ回り方になり、機体を回せる向きが1つ減っている。'
-              : gap <= 15
+              : gap() <= 15
                 ? '赤い軸と青い軸がほとんど重なっている。X と Z の効き方が似てきた。'
                 : '3本の軸が別々の向きを向いているので、機体をどの向きにも回せる。'}
           </p>
-          <QuatReadout q={q} />
+          <QuatReadout q={q()} />
         </div>
       </div>
 
-      <div className="notes">
+      <div class="notes">
         <TryIt>
           <li>「内側の輪 Z」を動かす。機体が青い軸のまわりを回る。</li>
           <li>「外側の輪 X」を動かす。機体は赤い軸のまわりを回る。さっきとは違う動き。</li>
@@ -170,36 +180,36 @@ function speedAt(at: (t: number) => Quat, t: number): number {
 }
 
 function Interp() {
-  const tween = useTween();
+  const tween = createTween();
   const t = tween.value;
-  const eulerSpeed = speedAt(eulerAt, t) / SLERP_TOTAL;
+  const eulerSpeed = () => speedAt(eulerAt, t()) / SLERP_TOTAL;
 
   return (
     <>
       <Stage label="2機の機体が同じ姿勢から同じ姿勢へ、別々の道を通って回る3D図">
         <InterpScene
-          slerpNow={slerpAt(t)}
-          eulerNow={eulerAt(t)}
+          slerpNow={slerpAt(t())}
+          eulerNow={eulerAt(t())}
           slerpPath={SLERP_PATH}
           eulerPath={EULER_PATH}
         />
       </Stage>
 
-      <div className="panel">
-        <div className="controls">
+      <div class="panel">
+        <div class="controls">
           <Slider
             label="進み具合 t"
-            value={Math.round(t * 100)}
+            value={Math.round(t() * 100)}
             min={0}
             max={100}
             unit="%"
             onChange={(v) => tween.set(v / 100)}
           />
-          <div className="buttons">
+          <div class="buttons">
             <button
               type="button"
-              className="primary"
-              disabled={tween.running}
+              class="primary"
+              disabled={tween.running()}
               onClick={() => tween.play(4500)}
             >
               最初から再生する
@@ -207,8 +217,8 @@ function Interp() {
           </div>
         </div>
 
-        <div className="readout">
-          <table className="compare">
+        <div class="readout">
+          <table class="compare">
             <thead>
               <tr>
                 <th scope="col">方法</th>
@@ -219,11 +229,7 @@ function Interp() {
             <tbody>
               <tr>
                 <th scope="row">
-                  <span
-                    className="swatch"
-                    style={{ background: 'var(--slerp)' }}
-                    aria-hidden="true"
-                  />
+                  <span class="swatch" style={{ background: 'var(--slerp)' }} aria-hidden="true" />
                   クォータニオン
                 </th>
                 <td>{SLERP_TOTAL.toFixed(0)}°</td>
@@ -231,23 +237,19 @@ function Interp() {
               </tr>
               <tr>
                 <th scope="row">
-                  <span
-                    className="swatch"
-                    style={{ background: 'var(--euler)' }}
-                    aria-hidden="true"
-                  />
+                  <span class="swatch" style={{ background: 'var(--euler)' }} aria-hidden="true" />
                   オイラー角
                 </th>
                 <td>{EULER_TOTAL.toFixed(0)}°</td>
-                <td>{eulerSpeed.toFixed(2)}</td>
+                <td>{eulerSpeed().toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
-          <p className="hint">速さは、黄色（クォータニオン）を 1 としたときの比。</p>
+          <p class="hint">速さは、黄色（クォータニオン）を 1 としたときの比。</p>
         </div>
       </div>
 
-      <div className="notes">
+      <div class="notes">
         <TryIt>
           <li>「最初から再生する」を押す。2機が同じ向きから出発して、同じ向きに着く。</li>
           <li>黄色い機体（クォータニオン）を見る。1本の軸のまわりを、同じ速さですっと回る。</li>

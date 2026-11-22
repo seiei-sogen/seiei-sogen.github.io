@@ -1,8 +1,17 @@
-import { useMemo } from 'react';
-import { Line } from '@react-three/drei';
+import { createMemo } from 'solid-js';
 import { Quaternion, Vector3 } from 'three';
 import { fromAxisAngle, rotate, toXYZW, type Quat, type Vec3 } from '../lib/quat';
-import { Aircraft, COLOR, NOSE, RIGHT_WING_TIP, SceneCanvas, WorldAxes } from './common';
+import {
+  Aircraft,
+  COLOR,
+  FatLine,
+  NOSE,
+  RIGHT_WING_TIP,
+  SceneCanvas,
+  T,
+  WorldAxes,
+  xyz,
+} from './common';
 
 type Props = {
   axis: Vec3;
@@ -22,15 +31,16 @@ function trail(p: Vec3, axis: Vec3, angle: number): Vec3[] {
   );
 }
 
-export default function AxisAngleScene({ axis, angle, q }: Props) {
-  const tipQuaternion = useMemo(
-    () => new Quaternion().setFromUnitVectors(UP, new Vector3(...axis)),
-    [axis]
+export default function AxisAngleScene(props: Props) {
+  const tipQuaternion = createMemo(() =>
+    new Quaternion().setFromUnitVectors(UP, new Vector3(...props.axis))
   );
-  const end: Vec3 = [axis[0] * AXIS_LENGTH, axis[1] * AXIS_LENGTH, axis[2] * AXIS_LENGTH];
-  const start: Vec3 = [-end[0], -end[1], -end[2]];
-  const noseTrail = useMemo(() => trail(NOSE, axis, angle), [axis, angle]);
-  const wingTrail = useMemo(() => trail(RIGHT_WING_TIP, axis, angle), [axis, angle]);
+  const end = (): Vec3 => [
+    props.axis[0] * AXIS_LENGTH,
+    props.axis[1] * AXIS_LENGTH,
+    props.axis[2] * AXIS_LENGTH,
+  ];
+  const start = (): Vec3 => [-end()[0], -end()[1], -end()[2]];
 
   return (
     <SceneCanvas camera={[2.9, 2.1, 3.9]}>
@@ -38,19 +48,29 @@ export default function AxisAngleScene({ axis, angle, q }: Props) {
       <Aircraft ghost />
 
       {/* 回転軸 n */}
-      <Line points={[start, end]} color={COLOR.w} lineWidth={3} />
-      <mesh position={end} quaternion={tipQuaternion}>
-        <coneGeometry args={[0.09, 0.26, 16]} />
-        <meshBasicMaterial color={COLOR.w} />
-      </mesh>
+      <FatLine points={[start(), end()]} color={COLOR.w} width={3} />
+      <T.Mesh position={xyz(end())} quaternion={tipQuaternion()}>
+        <T.ConeGeometry args={[0.09, 0.26, 16]} />
+        <T.MeshBasicMaterial color={COLOR.w} />
+      </T.Mesh>
 
       {/* 機首と右翼端が通った道。どちらも軸を中心とする円弧になる */}
-      <Line points={noseTrail} color={COLOR.hull} lineWidth={1.5} transparent opacity={0.8} />
-      <Line points={wingTrail} color={COLOR.y} lineWidth={1.5} transparent opacity={0.8} />
+      <FatLine
+        points={trail(NOSE, props.axis, props.angle)}
+        color={COLOR.hull}
+        width={1.5}
+        opacity={0.8}
+      />
+      <FatLine
+        points={trail(RIGHT_WING_TIP, props.axis, props.angle)}
+        color={COLOR.y}
+        width={1.5}
+        opacity={0.8}
+      />
 
-      <group quaternion={toXYZW(q)}>
+      <T.Group quaternion={toXYZW(props.q)}>
         <Aircraft />
-      </group>
+      </T.Group>
     </SceneCanvas>
   );
 }

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/solid-router';
 import { Hypersphere } from '../../topics/quaternion/sections/Hypersphere';
 import { SITE_TITLE } from './route';
 
