@@ -30,6 +30,7 @@ src/routes/<トピック名>/      そのトピックの URL
 src/topics/<トピック名>/      そのトピックの中身（コンポーネント、計算、CSS など。構成は自由）
 src/topics.ts                トピック一覧のデータ
 src/shared/                  トピックをまたいで使うもの（テーマ切り替えなど）
+plugins/                     ビルド時の変換（Vite プラグイン）
 ```
 
 ## トピックを足すとき
@@ -52,6 +53,35 @@ CSS はトピックの `route.tsx` で読み込んだものだけが効くので
 - ページを読み込み直さない移動（タブ切り替えなど）では、ルートの `head()` の `title` が `<title>` に反映されない。`src/routes/__root.tsx` の `TitleSync` が `document.title` を合わせている
 
 ## いまあるトピック
+
+### code-vipassana — Code Vipassana
+
+OSSの実コードを1画面ぶん読み、4択の設問に答えるコードリーディング練習（全10問）。
+
+- シンタックスハイライト（Shiki）と解説の Markdown 変換はビルド時に行い、ブラウザには HTML だけを送る（`plugins/problem-assets.ts`）
+- 進捗は `localStorage`（`code-vipassana:progress:v1`）に「初回正解 / 再挑戦で正解 / 未正解」で保存
+
+```
+src/routes/code-vipassana/   route = 枠（ヘッダーとフッター） ・ index = 問題一覧 ・ problems/$id = 問題 ・ licenses = 出典とライセンス
+src/topics/code-vipassana/
+  problems/
+    types.ts                 Problem 型
+    index.ts                 問題の集約と検証（不整合があるとビルドが落ちる）
+    001-clsx/
+      problem.ts             設問・選択肢・正解・根拠行・出典
+      snippet.js.txt         表示するコードそのまま（拡張子の手前が言語）
+      explanation.md         解説
+  licenses/                  使用したOSSのライセンス全文
+  lib/                       進捗の保存、選択肢のシャッフル、インラインコード
+  styles.css                 このトピックの CSS
+```
+
+問題を足すとき:
+
+1. `src/topics/code-vipassana/problems/NNN-name/` を作り、上の3ファイルを置く
+2. `source.commit` はタグではなくコミットSHAで固定する
+3. 抜粋に手を加えたら `modified: true` と `modification` を書く（画面に「一部改変」と出る）
+4. 新しいOSSから引用するときは `licenses/` にライセンス全文を足し、`licenses/index.ts` に登録する
 
 ### quaternion — クォータニオンを手で回す
 

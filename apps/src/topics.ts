@@ -13,6 +13,12 @@ type Topic = {
  */
 export const TOPICS: readonly Topic[] = [
   {
+    to: '/code-vipassana',
+    title: 'Code Vipassana',
+    description:
+      'OSSの実コードを1画面ぶん読んで、4択で答えるコードリーディングの練習問題。初級から上級まで全10問。',
+  },
+  {
     to: '/quaternion',
     title: 'クォータニオンを手で回す',
     description:

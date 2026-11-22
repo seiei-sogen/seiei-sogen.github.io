@@ -38,12 +38,6 @@ pwa-icons:
 search QUERY:
     ccc search {{QUERY}}
 
-# code-vipassana をビルドして public/code-vipassana/ に取り込む（/code-vipassana/ 配下で配信）
-vipassana DIR="../code-vipassana":
-    cd {{DIR}} && npm ci && BASE_PATH=/code-vipassana/ npm run build
-    rm -rf public/code-vipassana
-    cp -r {{DIR}}/dist/client public/code-vipassana
-
 # apps/（et-cetera 用の TanStack Start アプリ。全トピック共通）の依存をインストール
 apps-install:
     cd apps && pnpm install
