@@ -5,7 +5,7 @@ import appCss from '../styles.css?url';
 
 export const SITE_TITLE = 'クォータニオンを手で回す';
 const DESCRIPTION =
-  '回転を表す4つの数 q = (w, x, y, z) が何をしているのかを、3Dで動かして確かめるページ。軸と角度、二重被覆、オイラー角との比較。';
+  'ものの向きを表す4つの数 q = (w, x, y, z) が何をしているのかを、3Dで動かして確かめるページ。軸と角度、二重被覆、オイラー角との比較、四次元の球。';
 
 export const Route = createRootRoute({
   head: () => ({
@@ -80,8 +80,9 @@ function ThemeToggle() {
 
 const TABS = [
   { to: '/', no: 1, label: '軸と角度' },
-  { to: '/double-cover', no: 2, label: '二重被覆' },
+  { to: '/double-cover', no: 2, label: 'ふた回り' },
   { to: '/euler', no: 3, label: 'オイラー角' },
+  { to: '/hypersphere', no: 4, label: '四次元' },
 ] as const;
 
 function RootLayout() {
@@ -104,49 +105,39 @@ function RootLayout() {
           <span>クォータニオンを</span>
           <span>手で回す</span>
         </h1>
-        <p className="hero-lead">回転を表す4つの数が何をしているのかを、3つの実験で確かめる。</p>
-        <p className="hero-formula" aria-label="q = cos(θ/2) + sin(θ/2)(nx i + ny j + nz k)">
-          <span aria-hidden="true">
-            <var>q</var> ={' '}
-            <span className="c-w">
-              cos(<var>θ</var>/2)
-            </span>{' '}
-            + sin(<var>θ</var>/2)
-            <wbr />(
-            <span className="c-x">
-              <var>n</var>
-              <sub>x</sub>
-              <b>i</b>
-            </span>{' '}
-            +{' '}
-            <span className="c-y">
-              <var>n</var>
-              <sub>y</sub>
-              <b>j</b>
-            </span>{' '}
-            +{' '}
-            <span className="c-z">
-              <var>n</var>
-              <sub>z</sub>
-              <b>k</b>
-            </span>
-            )
-          </span>
+        <p className="hero-lead">
+          ゲームやCGで、ものの「向き」を表すのに使う4つの数がクォータニオン。式を追う前に、まず自分の手で回して感じをつかむためのページ。
         </p>
-        <ul className="legend" aria-label="色の対応">
-          <li>
-            <span className="swatch" style={{ background: 'var(--w)' }} aria-hidden="true" />w
-          </li>
-          <li>
-            <span className="swatch" style={{ background: 'var(--x)' }} aria-hidden="true" />x
-          </li>
-          <li>
-            <span className="swatch" style={{ background: 'var(--y)' }} aria-hidden="true" />y
-          </li>
-          <li>
-            <span className="swatch" style={{ background: 'var(--z)' }} aria-hidden="true" />z
-          </li>
-        </ul>
+        <div
+          className="hero-q"
+          role="img"
+          aria-label="q = (w, x, y, z)。w はどれだけ回したか、x・y・z はどの軸のまわりに回したかを表す"
+        >
+          <span aria-hidden="true">
+            <var>q</var> = (
+          </span>
+          <span className="hq-group" aria-hidden="true">
+            <span className="hq-sym c-w">w</span>
+            <span className="hq-cap">
+              どれだけ
+              <br />
+              回したか
+            </span>
+          </span>
+          <span aria-hidden="true">,</span>
+          <span className="hq-group" aria-hidden="true">
+            <span className="hq-sym">
+              <span className="c-x">x</span>, <span className="c-y">y</span>,{' '}
+              <span className="c-z">z</span>
+            </span>
+            <span className="hq-cap">
+              どの軸のまわりに
+              <br />
+              回したか
+            </span>
+          </span>
+          <span aria-hidden="true">)</span>
+        </div>
       </header>
 
       <div ref={tabsTop} />

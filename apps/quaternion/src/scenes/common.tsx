@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
+import { CanvasTexture, SRGBColorSpace } from 'three';
 
 // 3Dステージ上の色。軸の色はページ本文の x / y / z の色と対応させる
 export const COLOR = {
@@ -140,3 +141,59 @@ export function Aircraft({ tint, ghost = false }: AircraftProps) {
 
 export const NOSE: [number, number, number] = [0.75, 0, 0];
 export const RIGHT_WING_TIP: [number, number, number] = [-0.08, 0, 0.75];
+
+type LabelProps = {
+  text: string;
+  position: readonly [number, number, number];
+  /** 数式の記号（1、i、j、k など）は斜体のセリフ体で描く */
+  math?: boolean;
+  /** ワールド座標での文字の高さ */
+  size?: number;
+};
+
+/**
+ * 3D空間内の点に付ける文字ラベル。2Dキャンバスに描いた文字をスプライトにして貼る。
+ * 常にこちらを向き、ほかの物に隠れない。点の右どなりに出る。
+ */
+export function Label({ text, position, math = false, size = 0.34 }: LabelProps) {
+  const { texture, aspect } = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    const font = math
+      ? "italic 700 60px 'STIX Two Text', 'Times New Roman', serif"
+      : "600 46px 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', 'Noto Sans CJK JP', sans-serif";
+    const measure = canvas.getContext('2d');
+    if (!measure) return { texture: null, aspect: 1 };
+    measure.font = font;
+    const pad = 16;
+    canvas.width = Math.ceil(measure.measureText(text).width) + pad * 2;
+    canvas.height = 84;
+    // 幅を変えると描画設定が初期化されるので、取り直す
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { texture: null, aspect: 1 };
+    ctx.fillStyle = 'rgba(23, 32, 56, 0.8)';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, canvas.width, canvas.height, 14);
+    ctx.fill();
+    ctx.font = font;
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = COLOR.hull;
+    ctx.fillText(text, pad, canvas.height / 2 + 3);
+    const t = new CanvasTexture(canvas);
+    t.colorSpace = SRGBColorSpace;
+    return { texture: t, aspect: canvas.width / canvas.height };
+  }, [text, math]);
+
+  useEffect(() => () => texture?.dispose(), [texture]);
+
+  if (!texture) return null;
+  return (
+    <sprite
+      position={position}
+      scale={[size * aspect, size, 1]}
+      center={[-0.2 / aspect, 0.5]}
+      renderOrder={10}
+    >
+      <spriteMaterial map={texture} depthTest={false} depthWrite={false} transparent />
+    </sprite>
+  );
+}
