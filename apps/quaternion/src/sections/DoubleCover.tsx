@@ -36,9 +36,7 @@ export function DoubleCover() {
   return (
     <section className="demo" aria-labelledby="double-cover">
       <header className="demo-head">
-        <h2 id="double-cover">
-          <span className="demo-no">2</span>360°では元に戻らない
-        </h2>
+        <h2 id="double-cover">360°では元に戻らない</h2>
         <p>
           機体を 360° 回すと見た目は元通りになる。ところが <var>q</var> は (−1, 0, 0, 0)
           で、出発点の (1, 0, 0, 0) とは符号が逆。<var>q</var> まで元に戻るのは 720°

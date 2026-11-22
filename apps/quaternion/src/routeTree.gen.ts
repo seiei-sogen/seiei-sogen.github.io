@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DoubleCoverRouteImport } from './routes/double-cover'
+import { Route as EulerRouteImport } from './routes/euler'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DoubleCoverRoute = DoubleCoverRouteImport.update({
+  id: '/double-cover',
+  path: '/double-cover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EulerRoute = EulerRouteImport.update({
+  id: '/euler',
+  path: '/euler',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/double-cover': typeof DoubleCoverRoute
+  '/euler': typeof EulerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/double-cover': typeof DoubleCoverRoute
+  '/euler': typeof EulerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/double-cover': typeof DoubleCoverRoute
+  '/euler': typeof EulerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/double-cover' | '/euler'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/double-cover' | '/euler'
+  id: '__root__' | '/' | '/double-cover' | '/euler'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DoubleCoverRoute: typeof DoubleCoverRoute
+  EulerRoute: typeof EulerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/double-cover': {
+      id: '/double-cover'
+      path: '/double-cover'
+      fullPath: '/double-cover'
+      preLoaderRoute: typeof DoubleCoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/euler': {
+      id: '/euler'
+      path: '/euler'
+      fullPath: '/euler'
+      preLoaderRoute: typeof EulerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DoubleCoverRoute: DoubleCoverRoute,
+  EulerRoute: EulerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

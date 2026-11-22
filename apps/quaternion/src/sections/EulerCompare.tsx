@@ -16,13 +16,11 @@ export function EulerCompare() {
   return (
     <section className="demo" aria-labelledby="euler-compare">
       <header className="demo-head">
-        <h2 id="euler-compare">
-          <span className="demo-no">3</span>オイラー角とくらべる
-        </h2>
+        <h2 id="euler-compare">オイラー角とくらべる</h2>
         <p>
           オイラー角は、3つの軸を決まった順番で回して姿勢を表す。直感的だが弱点が2つある。ある姿勢で軸が重なってしまうことと、2つの姿勢のあいだをなめらかにつなげないこと。
         </p>
-        <div className="buttons tabs" role="group" aria-label="見る実験を選ぶ">
+        <div className="buttons subtabs" role="group" aria-label="見る実験を選ぶ">
           <button type="button" aria-pressed={mode === 'gimbal'} onClick={() => setMode('gimbal')}>
             ジンバルロック
           </button>

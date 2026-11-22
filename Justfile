@@ -54,7 +54,7 @@ quaternion-dev:
 
 # apps/quaternion をビルドして public/et-cetera/quaternion/ に取り込む（/et-cetera/quaternion/ 配下で配信）
 quaternion:
-    cd apps/quaternion && pnpm install --frozen-lockfile && pnpm typecheck && BASE_PATH=/et-cetera/quaternion/ pnpm build
+    cd apps/quaternion && pnpm install --frozen-lockfile && BASE_PATH=/et-cetera/quaternion/ pnpm build && pnpm typecheck
     rm -rf public/et-cetera/quaternion
     mkdir -p public/et-cetera
     cp -r apps/quaternion/dist/client public/et-cetera/quaternion

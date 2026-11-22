@@ -20,6 +20,8 @@ export default defineConfig({
       customPages: [
         new URL('fukan_zazen_gi/', siteConfig.site.url).href,
         new URL('et-cetera/quaternion/', siteConfig.site.url).href,
+        new URL('et-cetera/quaternion/double-cover/', siteConfig.site.url).href,
+        new URL('et-cetera/quaternion/euler/', siteConfig.site.url).href,
       ],
     }),
     icon(),

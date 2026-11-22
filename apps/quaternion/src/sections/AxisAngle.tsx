@@ -28,9 +28,7 @@ export function AxisAngle() {
   return (
     <section className="demo" aria-labelledby="axis-angle">
       <header className="demo-head">
-        <h2 id="axis-angle">
-          <span className="demo-no">1</span>軸と角度
-        </h2>
+        <h2 id="axis-angle">軸と角度</h2>
         <p>
           どんな3D回転も「ある軸のまわりに、ある角度だけ回す」の一言で言い切れる。クォータニオンは、その軸{' '}
           <var>n</var> と角度 <var>θ</var> を4つの数にたたんだもの。

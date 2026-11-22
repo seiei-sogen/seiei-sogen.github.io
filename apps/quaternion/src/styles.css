@@ -99,7 +99,7 @@ var {
 
 .hero {
   padding-top: 56px;
-  padding-bottom: 8px;
+  padding-bottom: 36px;
 }
 
 .hero h1 {
@@ -151,13 +151,54 @@ var {
 
 /* ---------- 実験 ---------- */
 
+/* ---------- タブ ---------- */
+
+.tabbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.tabbar .wrap {
+  display: flex;
+  gap: 4px;
+}
+
+.tabbar a {
+  flex: 1 1 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: 48px;
+  padding: 10px 4px 9px;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tabbar a[aria-current='page'] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tab-no {
+  font-family: var(--math);
+  font-size: 1.25em;
+  line-height: 1;
+}
+
 .demo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 20px;
-  margin-top: 64px;
-  padding-top: 28px;
-  border-top: 1px solid var(--line);
+  margin-top: 28px;
 }
 
 .demo-head h2 {
@@ -166,15 +207,6 @@ var {
   font-weight: 600;
   font-size: clamp(1.4rem, 4.6vw, 1.9rem);
   line-height: 1.4;
-}
-
-.demo-no {
-  display: inline-block;
-  margin-right: 0.5em;
-  font-family: var(--math);
-  font-size: 1.5em;
-  line-height: 1;
-  color: var(--muted);
 }
 
 .demo-head p,
@@ -294,7 +326,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.tabs {
+.subtabs {
   margin-top: 16px;
 }
 
@@ -470,12 +502,23 @@ button:disabled {
 
   .hero {
     padding-top: 88px;
+    padding-bottom: 56px;
+  }
+
+  .tabbar .wrap {
+    gap: 28px;
+  }
+
+  .tabbar a {
+    flex: 0 0 auto;
+    padding-inline: 2px;
+    font-size: 1rem;
   }
 
   .demo {
     grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
     column-gap: 36px;
-    margin-top: 96px;
+    margin-top: 40px;
   }
 
   .demo-head,
