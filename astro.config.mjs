@@ -16,7 +16,12 @@ export default defineConfig({
     }),
     mdx(),
     // public/ files are not crawled by the sitemap integration
-    sitemap({ customPages: [new URL('fukan_zazen_gi/', siteConfig.site.url).href] }),
+    sitemap({
+      customPages: [
+        new URL('fukan_zazen_gi/', siteConfig.site.url).href,
+        new URL('et-cetera/quaternion/', siteConfig.site.url).href,
+      ],
+    }),
     icon(),
     astroPwa({
       registerType: 'autoUpdate',
@@ -41,8 +46,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,avif}'],
         // /code-vipassana/ は別アプリ（public/ に同梱）。プリキャッシュせず、
         // ナビゲーションをこのサイトの index.html にフォールバックさせない
-        globIgnores: ['code-vipassana/**'],
-        navigateFallbackDenylist: [/^\/code-vipassana\//],
+        // /et-cetera/quaternion/ も同様（apps/quaternion のビルド成果物）
+        globIgnores: ['code-vipassana/**', 'et-cetera/**'],
+        navigateFallbackDenylist: [/^\/code-vipassana\//, /^\/et-cetera\//],
       },
       devOptions: {
         enabled: true,

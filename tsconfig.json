@@ -1,7 +1,7 @@
 {
   "extends": "astro/tsconfigs/strictest",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "public/code-vipassana"],
+  "exclude": ["dist", "public/code-vipassana", "public/et-cetera", "apps"],
   "compilerOptions": {
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",

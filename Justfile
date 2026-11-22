@@ -43,3 +43,18 @@ vipassana DIR="../code-vipassana":
     cd {{DIR}} && npm ci && BASE_PATH=/code-vipassana/ npm run build
     rm -rf public/code-vipassana
     cp -r {{DIR}}/dist/client public/code-vipassana
+
+# apps/quaternion（TanStack Start + React Three Fiber）の依存をインストール
+quaternion-install:
+    cd apps/quaternion && pnpm install
+
+# apps/quaternion の開発サーバー (http://localhost:3000)
+quaternion-dev:
+    cd apps/quaternion && pnpm dev
+
+# apps/quaternion をビルドして public/et-cetera/quaternion/ に取り込む（/et-cetera/quaternion/ 配下で配信）
+quaternion:
+    cd apps/quaternion && pnpm install --frozen-lockfile && pnpm typecheck && BASE_PATH=/et-cetera/quaternion/ pnpm build
+    rm -rf public/et-cetera/quaternion
+    mkdir -p public/et-cetera
+    cp -r apps/quaternion/dist/client public/et-cetera/quaternion
