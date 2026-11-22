@@ -10,21 +10,40 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CodeVipassanaRouteRouteImport } from './routes/code-vipassana/route'
 import { Route as QuaternionRouteRouteImport } from './routes/quaternion/route'
+import { Route as CodeVipassanaIndexRouteImport } from './routes/code-vipassana/index'
+import { Route as CodeVipassanaLicensesRouteImport } from './routes/code-vipassana/licenses'
 import { Route as QuaternionIndexRouteImport } from './routes/quaternion/index'
 import { Route as QuaternionDoubleCoverRouteImport } from './routes/quaternion/double-cover'
 import { Route as QuaternionEulerRouteImport } from './routes/quaternion/euler'
 import { Route as QuaternionHypersphereRouteImport } from './routes/quaternion/hypersphere'
+import { Route as CodeVipassanaProblemsIdRouteImport } from './routes/code-vipassana/problems/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CodeVipassanaRouteRoute = CodeVipassanaRouteRouteImport.update({
+  id: '/code-vipassana',
+  path: '/code-vipassana',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuaternionRouteRoute = QuaternionRouteRouteImport.update({
   id: '/quaternion',
   path: '/quaternion',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CodeVipassanaIndexRoute = CodeVipassanaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CodeVipassanaRouteRoute,
+} as any)
+const CodeVipassanaLicensesRoute = CodeVipassanaLicensesRouteImport.update({
+  id: '/licenses',
+  path: '/licenses',
+  getParentRoute: () => CodeVipassanaRouteRoute,
 } as any)
 const QuaternionIndexRoute = QuaternionIndexRouteImport.update({
   id: '/',
@@ -46,59 +65,87 @@ const QuaternionHypersphereRoute = QuaternionHypersphereRouteImport.update({
   path: '/hypersphere',
   getParentRoute: () => QuaternionRouteRoute,
 } as any)
+const CodeVipassanaProblemsIdRoute = CodeVipassanaProblemsIdRouteImport.update({
+  id: '/problems/$id',
+  path: '/problems/$id',
+  getParentRoute: () => CodeVipassanaRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/code-vipassana': typeof CodeVipassanaRouteRouteWithChildren
   '/quaternion': typeof QuaternionRouteRouteWithChildren
+  '/code-vipassana/licenses': typeof CodeVipassanaLicensesRoute
   '/quaternion/double-cover': typeof QuaternionDoubleCoverRoute
   '/quaternion/euler': typeof QuaternionEulerRoute
   '/quaternion/hypersphere': typeof QuaternionHypersphereRoute
+  '/code-vipassana/': typeof CodeVipassanaIndexRoute
   '/quaternion/': typeof QuaternionIndexRoute
+  '/code-vipassana/problems/$id': typeof CodeVipassanaProblemsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/code-vipassana/licenses': typeof CodeVipassanaLicensesRoute
   '/quaternion/double-cover': typeof QuaternionDoubleCoverRoute
   '/quaternion/euler': typeof QuaternionEulerRoute
   '/quaternion/hypersphere': typeof QuaternionHypersphereRoute
+  '/code-vipassana': typeof CodeVipassanaIndexRoute
   '/quaternion': typeof QuaternionIndexRoute
+  '/code-vipassana/problems/$id': typeof CodeVipassanaProblemsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/code-vipassana': typeof CodeVipassanaRouteRouteWithChildren
   '/quaternion': typeof QuaternionRouteRouteWithChildren
+  '/code-vipassana/licenses': typeof CodeVipassanaLicensesRoute
   '/quaternion/double-cover': typeof QuaternionDoubleCoverRoute
   '/quaternion/euler': typeof QuaternionEulerRoute
   '/quaternion/hypersphere': typeof QuaternionHypersphereRoute
+  '/code-vipassana/': typeof CodeVipassanaIndexRoute
   '/quaternion/': typeof QuaternionIndexRoute
+  '/code-vipassana/problems/$id': typeof CodeVipassanaProblemsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/code-vipassana'
     | '/quaternion'
+    | '/code-vipassana/licenses'
     | '/quaternion/double-cover'
     | '/quaternion/euler'
     | '/quaternion/hypersphere'
+    | '/code-vipassana/'
     | '/quaternion/'
+    | '/code-vipassana/problems/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/code-vipassana/licenses'
     | '/quaternion/double-cover'
     | '/quaternion/euler'
     | '/quaternion/hypersphere'
+    | '/code-vipassana'
     | '/quaternion'
+    | '/code-vipassana/problems/$id'
   id:
     | '__root__'
     | '/'
+    | '/code-vipassana'
     | '/quaternion'
+    | '/code-vipassana/licenses'
     | '/quaternion/double-cover'
     | '/quaternion/euler'
     | '/quaternion/hypersphere'
+    | '/code-vipassana/'
     | '/quaternion/'
+    | '/code-vipassana/problems/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CodeVipassanaRouteRoute: typeof CodeVipassanaRouteRouteWithChildren
   QuaternionRouteRoute: typeof QuaternionRouteRouteWithChildren
 }
 
@@ -111,12 +158,33 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/code-vipassana': {
+      id: '/code-vipassana'
+      path: '/code-vipassana'
+      fullPath: '/code-vipassana'
+      preLoaderRoute: typeof CodeVipassanaRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quaternion': {
       id: '/quaternion'
       path: '/quaternion'
       fullPath: '/quaternion'
       preLoaderRoute: typeof QuaternionRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/code-vipassana/': {
+      id: '/code-vipassana/'
+      path: '/'
+      fullPath: '/code-vipassana/'
+      preLoaderRoute: typeof CodeVipassanaIndexRouteImport
+      parentRoute: typeof CodeVipassanaRouteRoute
+    }
+    '/code-vipassana/licenses': {
+      id: '/code-vipassana/licenses'
+      path: '/licenses'
+      fullPath: '/code-vipassana/licenses'
+      preLoaderRoute: typeof CodeVipassanaLicensesRouteImport
+      parentRoute: typeof CodeVipassanaRouteRoute
     }
     '/quaternion/': {
       id: '/quaternion/'
@@ -146,8 +214,30 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof QuaternionHypersphereRouteImport
       parentRoute: typeof QuaternionRouteRoute
     }
+    '/code-vipassana/problems/$id': {
+      id: '/code-vipassana/problems/$id'
+      path: '/problems/$id'
+      fullPath: '/code-vipassana/problems/$id'
+      preLoaderRoute: typeof CodeVipassanaProblemsIdRouteImport
+      parentRoute: typeof CodeVipassanaRouteRoute
+    }
   }
 }
+
+interface CodeVipassanaRouteRouteChildren {
+  CodeVipassanaLicensesRoute: typeof CodeVipassanaLicensesRoute
+  CodeVipassanaIndexRoute: typeof CodeVipassanaIndexRoute
+  CodeVipassanaProblemsIdRoute: typeof CodeVipassanaProblemsIdRoute
+}
+
+const CodeVipassanaRouteRouteChildren: CodeVipassanaRouteRouteChildren = {
+  CodeVipassanaLicensesRoute: CodeVipassanaLicensesRoute,
+  CodeVipassanaIndexRoute: CodeVipassanaIndexRoute,
+  CodeVipassanaProblemsIdRoute: CodeVipassanaProblemsIdRoute,
+}
+
+const CodeVipassanaRouteRouteWithChildren =
+  CodeVipassanaRouteRoute._addFileChildren(CodeVipassanaRouteRouteChildren)
 
 interface QuaternionRouteRouteChildren {
   QuaternionDoubleCoverRoute: typeof QuaternionDoubleCoverRoute
@@ -169,6 +259,7 @@ const QuaternionRouteRouteWithChildren = QuaternionRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CodeVipassanaRouteRoute: CodeVipassanaRouteRouteWithChildren,
   QuaternionRouteRoute: QuaternionRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport

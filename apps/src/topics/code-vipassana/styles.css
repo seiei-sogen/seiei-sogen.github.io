@@ -1,0 +1,889 @@
+/* 色は et-cetera の決まりに合わせる: 既定がダーク、<html data-theme="light"> のときライト */
+:root {
+  --bg: #15140f;
+  --surface: #1d1c17;
+  --surface-2: #262420;
+  --text: #ebe7dd;
+  --muted: #a39d90;
+  --border: #36332c;
+  --accent: #e48a45;
+  --accent-ink: #1a1208;
+  --accent-soft: #3a2616;
+  --ok: #6cc28b;
+  --ok-soft: #1c3226;
+  --ng: #ef8a7f;
+  --ng-soft: #3a1f1c;
+  --evidence: #3d3413;
+  --evidence-edge: #d9a400;
+  --code-bg: #191813;
+  --radius: 10px;
+  --font: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI', sans-serif;
+  --mono: ui-monospace, 'SFMono-Regular', 'Cascadia Code', Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --surface-2: #efece4;
+  --text: #22201c;
+  --muted: #6b665c;
+  --border: #dcd7cb;
+  --accent: #b5561c;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6e6d8;
+  --ok: #2f7d4f;
+  --ok-soft: #e3f2e8;
+  --ng: #b3392f;
+  --ng-soft: #f8e4e1;
+  --evidence: #fff1b8;
+  --evidence-edge: #e0a800;
+  --code-bg: #fbfaf7;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+h1,
+h2 {
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- header / footer ---------- */
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.site-header .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.brand {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.brand-mark {
+  color: var(--accent);
+}
+.brand-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* モード切り替え。主役ではないので枠なしの小さな文字ボタンにする */
+button.theme-toggle {
+  margin-left: auto;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.site-footer {
+  margin-top: 64px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.site-footer .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+  padding-top: 20px;
+  padding-bottom: 32px;
+}
+
+.page {
+  padding-top: 28px;
+}
+
+/* ---------- home ---------- */
+
+.intro h1 {
+  font-size: clamp(1.35rem, 4vw, 1.8rem);
+  margin: 8px 0 12px;
+}
+.intro p {
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.progress-summary {
+  margin-top: 16px !important;
+  color: var(--text) !important;
+}
+.progress-summary strong {
+  font-size: 1.5rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.level {
+  margin-top: 36px;
+}
+.level-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+.level-head h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.level-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.problem-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.problem-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.problem-card:hover {
+  border-color: var(--accent);
+}
+.problem-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.problem-no {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.problem-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.problem-title {
+  font-weight: 600;
+}
+.problem-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.repo {
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+.tag {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.mark {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.mark-none {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+}
+.mark-first {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.mark-retry {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- problem ---------- */
+
+.crumbs {
+  display: flex;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.problem-head h1 {
+  font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+  margin: 4px 0 10px;
+}
+.problem-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 14px 0 0;
+}
+.problem-id {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.question {
+  font-size: 1.05rem;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.inline-code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.code-frame {
+  margin: 0 0 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--code-bg);
+}
+.code-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.code-caption .path {
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+.badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  cursor: help;
+}
+
+.code {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.code pre {
+  margin: 0;
+  padding: 12px 0;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  min-width: max-content;
+}
+.code code {
+  display: block;
+  font-family: inherit;
+}
+.line {
+  display: flex;
+  padding-right: 16px;
+  border-left: 3px solid transparent;
+  transition: background-color 0.3s;
+}
+.line.evidence {
+  background: var(--evidence);
+  border-left-color: var(--evidence-edge);
+}
+.ln {
+  flex: none;
+  width: 3.2em;
+  padding-right: 1em;
+  text-align: right;
+  color: var(--muted);
+  opacity: 0.7;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lc {
+  white-space: pre;
+}
+/* シンタックスハイライトの色。--d がダーク用、--l がライト用（plugins/problem-assets.ts が埋め込む） */
+.lc span {
+  color: var(--d);
+}
+:root[data-theme='light'] .lc span {
+  color: var(--l);
+}
+
+/* ---------- choices ---------- */
+
+.choices fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+.choice:hover {
+  border-color: var(--muted);
+}
+.choice.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.choice input {
+  margin: 6px 0 0;
+  accent-color: var(--accent);
+  flex: none;
+}
+fieldset:disabled .choice {
+  cursor: default;
+}
+.choice.is-answer {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+.choice.is-wrong {
+  border-color: var(--ng);
+  background: var(--ng-soft);
+}
+.choice-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.choice-why {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.verdict {
+  font-weight: 700;
+  margin-right: 8px;
+}
+.is-answer .verdict {
+  color: var(--ok);
+}
+.choice:not(.is-answer) .verdict {
+  color: var(--ng);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover {
+  border-color: var(--muted);
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-primary:hover {
+  border-color: var(--accent);
+  filter: brightness(1.05);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.choices > .btn {
+  margin-top: 16px;
+  width: 100%;
+}
+
+/* ---------- result ---------- */
+
+.result {
+  margin-top: 24px;
+  padding: 20px 20px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--ok);
+  border-radius: var(--radius);
+  outline: none;
+}
+.result.ng {
+  border-top-color: var(--ng);
+}
+.result h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+.result.ok h2 {
+  color: var(--ok);
+}
+.result.ng h2 {
+  color: var(--ng);
+}
+.evidence-note {
+  margin: 4px 0 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.prose {
+  overflow-wrap: anywhere;
+}
+.prose code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.prose pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+  overflow-wrap: normal;
+}
+.prose table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin: 12px 0;
+}
+.prose th,
+.prose td {
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.prose td {
+  min-width: 4.5em;
+}
+.prose th {
+  white-space: nowrap;
+  background: var(--surface-2);
+}
+.prose td code,
+.prose th code {
+  white-space: nowrap;
+}
+.prose h3 {
+  font-size: 1.05rem;
+  margin: 28px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.prose li + li {
+  margin-top: 4px;
+}
+
+/* ---------- 解説の部品（explanation.md に HTML で書く） ---------- */
+
+/* ひとことで言うと / たとえ / 注意 */
+.prose .lead,
+.prose .note {
+  margin: 14px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+.prose .lead {
+  background: var(--accent-soft);
+  border-left: 4px solid var(--accent);
+  font-size: 1.02rem;
+}
+.prose .note {
+  background: var(--surface-2);
+  border-left: 4px solid var(--muted);
+}
+.prose .lead > :first-child,
+.prose .note > :first-child {
+  margin-top: 0;
+}
+.prose .lead > :last-child,
+.prose .note > :last-child {
+  margin-bottom: 0;
+}
+
+/* 図の枠。中身は SVG か下の HTML 部品。はみ出す図は枠の中だけ横スクロール */
+.prose .fig {
+  margin: 16px 0;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+.prose .fig > svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  font-family: var(--font);
+}
+.prose .fig.wide > svg {
+  max-width: none;
+}
+.prose .fig figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* SVG 用のクラス。色はテーマ変数から取るのでダークモードでも読める */
+.prose svg text {
+  fill: var(--text);
+  font-size: 14px;
+}
+.prose svg .mono {
+  font-family: var(--mono);
+}
+.prose svg .sm {
+  font-size: 12px;
+}
+.prose svg .bold {
+  font-weight: 700;
+}
+.prose svg .tm {
+  fill: var(--muted);
+}
+.prose svg .ta {
+  fill: var(--accent);
+}
+.prose svg .tok {
+  fill: var(--ok);
+}
+.prose svg .tng {
+  fill: var(--ng);
+}
+.prose svg .b {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.prose svg .ba {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.prose svg .bok {
+  fill: var(--ok-soft);
+  stroke: var(--ok);
+  stroke-width: 1.5;
+}
+.prose svg .bng {
+  fill: var(--ng-soft);
+  stroke: var(--ng);
+  stroke-width: 1.5;
+}
+.prose svg .bev {
+  fill: var(--evidence);
+  stroke: var(--evidence-edge);
+  stroke-width: 1.5;
+}
+.prose svg .l {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+.prose svg .la {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.prose svg .lok {
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 2;
+}
+.prose svg .lng {
+  fill: none;
+  stroke: var(--ng);
+  stroke-width: 2;
+}
+.prose svg .dash {
+  stroke-dasharray: 5 4;
+}
+.prose svg .ah {
+  fill: var(--muted);
+}
+.prose svg .aha {
+  fill: var(--accent);
+}
+.prose svg .ahok {
+  fill: var(--ok);
+}
+.prose svg .ahng {
+  fill: var(--ng);
+}
+
+/* 小さなラベル: <span class="tag ok">残る</span> */
+.prose .tag {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.prose .tag.ok {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: var(--ok);
+}
+.prose .tag.ng {
+  color: var(--ng);
+  background: var(--ng-soft);
+  border-color: var(--ng);
+}
+.prose .tag.acc {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.prose .muted {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* 木構造: <ul class="tree"><li>…<ul><li>…</li></ul></li></ul> */
+.prose ul.tree,
+.prose ul.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.prose ul.tree ul {
+  margin-left: 10px;
+  padding-left: 18px;
+  border-left: 1.5px solid var(--border);
+}
+.prose ul.tree li {
+  position: relative;
+  margin: 0;
+  padding: 3px 0;
+}
+.prose ul.tree ul > li::before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 1.05em;
+  width: 13px;
+  border-top: 1.5px solid var(--border);
+}
+
+/* 横に並ぶ箱: 左右比較など。狭い画面では縦に積む */
+.prose .cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.prose .cols > div {
+  min-width: 0;
+}
+.prose .cols h4 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+.prose .cols pre {
+  margin: 0;
+}
+
+.source {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 20px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.source dt {
+  color: var(--muted);
+}
+.source dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.commit {
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 12px;
+}
+
+/* ---------- licenses ---------- */
+
+.license {
+  margin-top: 32px;
+}
+.license h2 {
+  font-size: 1.1rem;
+  margin: 0 0 4px;
+}
+.license-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.license-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* スマホでは解説の余白を詰め、図の文字が縮みすぎないようにする */
+@media (max-width: 480px) {
+  .result {
+    padding: 16px 12px 8px;
+  }
+  .prose .fig {
+    padding: 10px 6px;
+  }
+}
