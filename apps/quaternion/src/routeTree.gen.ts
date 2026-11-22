@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DoubleCoverRouteImport } from './routes/double-cover'
 import { Route as EulerRouteImport } from './routes/euler'
+import { Route as HypersphereRouteImport } from './routes/hypersphere'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const EulerRoute = EulerRouteImport.update({
   path: '/euler',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HypersphereRoute = HypersphereRouteImport.update({
+  id: '/hypersphere',
+  path: '/hypersphere',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/double-cover': typeof DoubleCoverRoute
   '/euler': typeof EulerRoute
+  '/hypersphere': typeof HypersphereRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/double-cover': typeof DoubleCoverRoute
   '/euler': typeof EulerRoute
+  '/hypersphere': typeof HypersphereRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/double-cover': typeof DoubleCoverRoute
   '/euler': typeof EulerRoute
+  '/hypersphere': typeof HypersphereRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/double-cover' | '/euler'
+  fullPaths: '/' | '/double-cover' | '/euler' | '/hypersphere'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/double-cover' | '/euler'
-  id: '__root__' | '/' | '/double-cover' | '/euler'
+  to: '/' | '/double-cover' | '/euler' | '/hypersphere'
+  id: '__root__' | '/' | '/double-cover' | '/euler' | '/hypersphere'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DoubleCoverRoute: typeof DoubleCoverRoute
   EulerRoute: typeof EulerRoute
+  HypersphereRoute: typeof HypersphereRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EulerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hypersphere': {
+      id: '/hypersphere'
+      path: '/hypersphere'
+      fullPath: '/hypersphere'
+      preLoaderRoute: typeof HypersphereRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DoubleCoverRoute: DoubleCoverRoute,
   EulerRoute: EulerRoute,
+  HypersphereRoute: HypersphereRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

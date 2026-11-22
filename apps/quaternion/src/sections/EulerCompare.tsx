@@ -1,7 +1,10 @@
 import { lazy, useMemo, useState } from 'react';
+import { Deeper, Fig, TryIt } from '../components/Explain';
 import { QuatReadout } from '../components/QuatReadout';
 import { Slider } from '../components/Slider';
 import { Stage } from '../components/Stage';
+import { GimbalSchematic } from '../figures/GimbalSchematic';
+import { PathCompare } from '../figures/PathCompare';
 import { IDENTITY, angleBetween, deg, fromEulerXYZ, rad, slerp, type Quat } from '../lib/quat';
 import { useTween } from '../lib/useTween';
 
@@ -16,16 +19,22 @@ export function EulerCompare() {
   return (
     <section className="demo" aria-labelledby="euler-compare">
       <header className="demo-head">
-        <h2 id="euler-compare">オイラー角とくらべる</h2>
+        <h2 id="euler-compare">
+          <span>3つの角度で表すと、</span>
+          <span>困ることがある</span>
+        </h2>
         <p>
-          オイラー角は、3つの軸を決まった順番で回して姿勢を表す。直感的だが弱点が2つある。ある姿勢で軸が重なってしまうことと、2つの姿勢のあいだをなめらかにつなげないこと。
+          向きを表すいちばん身近な方法は、角度を3つ使うやり方。人の頭でいえば「首を横に振る」「うなずく」「首をかしげる」の3つを、決まった順番で行う。これをオイラー角という。
+        </p>
+        <p>
+          わかりやすいけれど、困ることが2つある。ある向きで軸どうしが重なってしまうことと、2つの向きのあいだをきれいにつなげないこと。クォータニオンはこの2つを解決するために使われている。
         </p>
         <div className="buttons subtabs" role="group" aria-label="見る実験を選ぶ">
           <button type="button" aria-pressed={mode === 'gimbal'} onClick={() => setMode('gimbal')}>
-            ジンバルロック
+            困りごと1: 軸が重なる
           </button>
           <button type="button" aria-pressed={mode === 'interp'} onClick={() => setMode('interp')}>
-            補間をくらべる
+            困りごと2: 遠回りする
           </button>
         </div>
       </header>
@@ -89,10 +98,10 @@ function Gimbal() {
         </div>
 
         <div className="readout">
-          <p className="vec">X 軸と Z 軸のなす角 = {gap}°</p>
+          <p className="vec">赤い軸（X）と青い軸（Z）の開き = {gap}°</p>
           <p className={locked ? 'status status-alert' : 'status'} aria-live="polite">
             {locked
-              ? 'ロックした。X と Z のスライダーが同じ軸まわりの回転になり、機体を回せる向きが1つ減っている。'
+              ? 'ロックした。X と Z のスライダーが同じ回り方になり、機体を回せる向きが1つ減っている。'
               : gap <= 15
                 ? '赤い軸と青い軸がほとんど重なっている。X と Z の効き方が似てきた。'
                 : '3本の軸が別々の向きを向いているので、機体をどの向きにも回せる。'}
@@ -102,12 +111,29 @@ function Gimbal() {
       </div>
 
       <div className="notes">
+        <TryIt>
+          <li>「内側の輪 Z」を動かす。機体が青い軸のまわりを回る。</li>
+          <li>「外側の輪 X」を動かす。機体は赤い軸のまわりを回る。さっきとは違う動き。</li>
+          <li>「中間の輪を 90° にする」を押す。青い軸が倒れて、赤い軸にぴったり重なる。</li>
+          <li>
+            もう一度 X と Z を動かす。どちらを動かしても、機体は同じ回り方しかしなくなっている。
+          </li>
+        </TryIt>
+
+        <h3>何が起きたのか</h3>
         <p>
-          輪は外側から X・Y・Z の順に入れ子になっている。中間の輪を 90°
-          倒すと、内側の輪の軸（青）が外側の輪の軸（赤）に重なる。3つあったはずの回転の自由が2つに減る。これがジンバルロック。
+          輪は外側から X・Y・Z
+          の順に入れ子になっていて、外の輪を回すと中の輪もいっしょに動く。だから中間の輪を 90°
+          倒すと、内側の輪の軸（青）が外側の輪の軸（赤）と同じ向きになってしまう。
+        </p>
+        <Fig caption="軸は3本あるのに、2本が同じ向きになると、回せる向きは2つしか残らない。これをジンバルロックという。">
+          <GimbalSchematic />
+        </Fig>
+        <p>
+          カメラの三脚でも同じことが起きる。カメラを真上に向けると、「左右に振る」と「かたむける」が同じ動きになって、思った向きに動かせなくなる。
         </p>
         <p>
-          クォータニオンは回転を「1本の軸と1つの角度」のまま持っているので、軸どうしが重なってつぶれる姿勢がない。上の{' '}
+          クォータニオンは向きを「軸1本と角度1つ」でまとめて持っているので、軸どうしが重なるということが起きない。上の{' '}
           <var>q</var> は、ロックした瞬間もふつうに1つの値を指している。
         </p>
       </div>
@@ -198,7 +224,7 @@ function Interp() {
                     style={{ background: 'var(--slerp)' }}
                     aria-hidden="true"
                   />
-                  slerp
+                  クォータニオン
                 </th>
                 <td>{SLERP_TOTAL.toFixed(0)}°</td>
                 <td>1.00</td>
@@ -217,21 +243,48 @@ function Interp() {
               </tr>
             </tbody>
           </table>
-          <p className="hint">速さは slerp を 1 としたときの比。線は機首の先が通る道。</p>
+          <p className="hint">速さは、黄色（クォータニオン）を 1 としたときの比。</p>
         </div>
       </div>
 
       <div className="notes">
+        <TryIt>
+          <li>「最初から再生する」を押す。2機が同じ向きから出発して、同じ向きに着く。</li>
+          <li>黄色い機体（クォータニオン）を見る。1本の軸のまわりを、同じ速さですっと回る。</li>
+          <li>
+            ピンクの機体（オイラー角）を見る。途中でぐらっと大回りして、速くなったり遅くなったりする。
+          </li>
+          <li>表の「回った角度」をくらべる。ピンクのほうがずっと多く回っている。</li>
+        </TryIt>
+
+        <h3>何をくらべているのか</h3>
         <p>
-          同じ出発の姿勢から同じ到着の姿勢へ、2通りの方法でつないでいる。オイラー角のほうは (0°, 0°,
-          0°) から ({B_EULER[0]}°, {B_EULER[1]}°, {B_EULER[2]}°)
-          まで、3つの角度を別々にまっすぐ増やす。クォータニオンのほうは slerp（球面線形補間）で、
-          <var>q</var> を4次元の単位球の上の最短の弧に沿って動かす。
+          ゲームやアニメでは「向き A から向き B
+          へ、なめらかに回す」ことがよくある。そのためには、途中の向きを少しずつ作らないといけない。
+        </p>
+        <Fig caption="同じ A から同じ B へ行くのに、道が2通りある。線は機首の先が通ったあと。">
+          <PathCompare shortest={Math.round(SLERP_TOTAL)} detour={Math.round(EULER_TOTAL)} />
+        </Fig>
+        <p>
+          オイラー角でやると、3つの角度を別々に少しずつ増やすことになる。3つの回転がばらばらに進むので、全体としては遠回りになる。
         </p>
         <p>
-          slerp
-          は1本の軸のまわりを一定の速さで回る。これが2つの姿勢を結ぶ最短の回り方になる。オイラー角の補間は途中で回る軸がぶれ、速さも変わり、遠回りをする。
+          クォータニオンでやると、A から B
+          へいちばん短い道をまっすぐ進める。1本の軸のまわりを同じ速さで回るだけなので、動きが自然に見える。このつなぎ方を
+          slerp（スラープ）という。
         </p>
+
+        <Deeper>
+          <p>
+            オイラー角のほうは (0°, 0°, 0°) から ({B_EULER[0]}°, {B_EULER[1]}°, {B_EULER[2]}°)
+            まで、3つの角度をそれぞれ線形補間している。
+          </p>
+          <p>
+            slerp は球面線形補間（spherical linear interpolation）の略。<var>q</var>{' '}
+            は4次元の球の上の点なので、2つの <var>q</var>{' '}
+            を球の上の最短の弧で結ぶ。弧の上を一定の速さで進むと、回転も一定の速さになる。4次元の球については、次のタブ「四次元」で見る。
+          </p>
+        </Deeper>
       </div>
     </>
   );

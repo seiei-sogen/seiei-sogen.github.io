@@ -57,7 +57,7 @@ export function HalfAngleDial({ theta, full = false }: Props) {
       </svg>
       <figcaption>
         <span>
-          針の傾き <var>θ</var>/2 = {theta / 2}°
+          針の傾き = <var>θ</var> の半分 = {theta / 2}°
         </span>
         <span>
           <span className="key key-w" aria-hidden="true" />
@@ -65,11 +65,11 @@ export function HalfAngleDial({ theta, full = false }: Props) {
         </span>
         <span>
           <span className="key key-v" aria-hidden="true" />
-          縦の影 = sin(<var>θ</var>/2) = {fmt(Math.sin(half))}
+          縦の影 = {fmt(Math.sin(half))}
         </span>
         {full && (
           <span>
-            <span className="key key-antipode" aria-hidden="true" />−<var>q</var>
+            <span className="key key-antipode" aria-hidden="true" />−<var>q</var> の位置
           </span>
         )}
         <span className="dial-note">外の目盛りは機体の回転角 θ</span>
