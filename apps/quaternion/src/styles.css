@@ -1,20 +1,22 @@
 :root {
-  /* 紙面 */
-  --bg: #eef1f6;
-  --surface: #ffffff;
-  --ink: #1b2440;
-  --muted: #55607c;
-  --line: #cdd5e3;
-  /* 3Dステージ（scenes/common.tsx の COLOR.stage と同じ） */
+  /* 既定はダークモード。ライトは :root[data-theme='light'] で上書きする */
+  --bg: #0d1220;
+  --surface: #19213a;
+  --ink: #e6eaf5;
+  --on-ink: #0d1220;
+  --muted: #9aa5c2;
+  --line: #2a3350;
+  /* 3Dステージ（scenes/common.tsx の COLOR.stage と同じ）。どちらのモードでも同じ色 */
   --stage: #172038;
   /* 成分の色。w・x・y・z はページ全体でこの色に固定する */
-  --w: #8f5d00;
-  --x: #c22f37;
-  --y: #1a7f47;
-  --z: #2458c4;
+  --w: #f5c451;
+  --x: #ff7b7b;
+  --y: #5fd693;
+  --z: #7fb2ff;
   /* 補間の比較 */
-  --slerp: #d99a0b;
-  --euler: #e04fbb;
+  --slerp: #f5c451;
+  --euler: #ff7ad9;
+  color-scheme: dark;
 
   --serif:
     'Hiragino Mincho ProN', 'Yu Mincho', 'YuMincho', 'Noto Serif JP', 'Noto Serif CJK JP', serif;
@@ -24,6 +26,21 @@
   --math: 'STIX Two Text', 'Cambria Math', 'Times New Roman', 'Noto Serif', serif;
 
   --gutter: 20px;
+}
+
+:root[data-theme='light'] {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --ink: #1b2440;
+  --on-ink: #ffffff;
+  --muted: #55607c;
+  --line: #cdd5e3;
+  --w: #8f5d00;
+  --x: #c22f37;
+  --y: #1a7f47;
+  --z: #2458c4;
+  --slerp: #d99a0b;
+  --euler: #e04fbb;
   color-scheme: light;
 }
 
@@ -98,8 +115,23 @@ var {
 /* ---------- 冒頭 ---------- */
 
 .hero {
+  position: relative;
   padding-top: 56px;
   padding-bottom: 36px;
+}
+
+/* モード切り替え。主役ではないので枠なしの小さな文字ボタンにする */
+button.theme-toggle {
+  position: absolute;
+  top: 8px;
+  right: calc(var(--gutter) - 8px);
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .hero h1 {
@@ -318,7 +350,7 @@ button {
 button[aria-pressed='true'],
 button.primary {
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 
 button:disabled {
@@ -376,6 +408,61 @@ button:disabled {
   font-weight: 700;
 }
 
+/* q の内訳（成分 = 式 = 値） */
+.breakdown {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown caption {
+  padding-bottom: 4px;
+  text-align: left;
+}
+
+.breakdown th,
+.breakdown td {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.breakdown th {
+  width: 2.2em;
+  text-align: left;
+  font-family: var(--math);
+  font-style: italic;
+  font-size: 1.1em;
+  font-weight: 700;
+}
+
+.breakdown .how {
+  color: var(--muted);
+}
+
+.breakdown .val {
+  text-align: right;
+  font-weight: 700;
+}
+
+/* w と (x, y, z) の役割 */
+.parts {
+  display: grid;
+  gap: 14px;
+  max-width: 40em;
+  margin: 0;
+}
+
+.parts dt {
+  font-weight: 700;
+}
+
+.parts dd {
+  margin: 2px 0 0;
+}
+
 /* 半角の文字盤 */
 .dial {
   display: flex;
@@ -398,6 +485,11 @@ button:disabled {
   line-height: 1.6;
 }
 
+.dial-note {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .dial-axis {
   stroke: var(--line);
   stroke-width: 1;
@@ -409,7 +501,7 @@ button:disabled {
 }
 .dial-label {
   fill: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 .dial-arc {
   fill: none;

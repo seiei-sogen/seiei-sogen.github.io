@@ -24,6 +24,7 @@ export function AxisAngle() {
     return [ce * Math.cos(rad(azimuth)), Math.sin(rad(elevation)), ce * Math.sin(rad(azimuth))];
   }, [azimuth, elevation]);
   const q = useMemo(() => fromAxisAngle(axis, rad(theta)), [axis, theta]);
+  const half = theta / 2;
 
   return (
     <section className="demo" aria-labelledby="axis-angle">
@@ -76,23 +77,68 @@ export function AxisAngle() {
         </div>
 
         <div className="readout">
-          <p className="vec">
-            <var>n</var> = ({fmt(axis[0])}, {fmt(axis[1])}, {fmt(axis[2])})
-          </p>
           <QuatReadout q={q} />
+          <table className="breakdown">
+            <caption className="hint">
+              4つの数の内訳。sin に掛けているのは軸 <var>n</var> の成分
+            </caption>
+            <tbody>
+              <tr>
+                <th scope="row" className="c-w">
+                  w
+                </th>
+                <td className="how">cos({half}°)</td>
+                <td className="val">{fmt(q.w)}</td>
+              </tr>
+              {(['x', 'y', 'z'] as const).map((k, i) => (
+                <tr key={k}>
+                  <th scope="row" className={`c-${k}`}>
+                    {k}
+                  </th>
+                  <td className="how">
+                    sin({half}°) × {fmt(axis[i] as number)}
+                  </td>
+                  <td className="val">{fmt(q[k])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           <HalfAngleDial theta={theta} />
         </div>
       </div>
 
       <div className="notes">
+        <dl className="parts">
+          <div>
+            <dt>
+              <span className="c-w">w</span> は「どれだけ回したか」
+            </dt>
+            <dd>
+              回していないとき 1、半回転（180°）で 0、1回転（360°）で −1。角度 <var>θ</var>{' '}
+              だけで決まり、軸の向きには関係しない。上で軸のスライダーだけを動かしても{' '}
+              <span className="c-w">w</span> は変わらない。
+            </dd>
+          </div>
+          <div>
+            <dt>
+              (<span className="c-x">x</span>, <span className="c-y">y</span>,{' '}
+              <span className="c-z">z</span>) は「どの軸で回したか」
+            </dt>
+            <dd>
+              黄色い回転軸 <var>n</var> と同じ向きの矢印。長さは回した量で変わり、回していないとき
+              0、半回転でいちばん長い 1 になる。
+            </dd>
+          </div>
+        </dl>
         <p>
-          <span className="c-w">w</span> は角度だけで決まる cos(<var>θ</var>/2)。
-          <span className="c-x">x</span>, <span className="c-y">y</span>,{' '}
-          <span className="c-z">z</span> は軸 <var>n</var> の向きに sin(<var>θ</var>/2)
-          を掛けたもの。だから4つの数の2乗和はいつも 1 になる。
+          文字盤は、この2つの取り分を表している。長さ 1 の針が <var>θ</var>/2 だけ傾き、針の横の影が{' '}
+          <span className="c-w">w</span>、縦の影が (<span className="c-x">x</span>,{' '}
+          <span className="c-y">y</span>, <span className="c-z">z</span>)
+          の長さ。回すほど横の影が縮み、そのぶん縦の影が伸びる。針の長さは変わらないので、4つの数の2乗和はいつも
+          1 になる。
         </p>
         <p>
-          <var>θ</var> ではなく <var>θ</var>/2 なのは、ベクトル <var>v</var> を回すときに{' '}
+          針の傾きが <var>θ</var> ではなく <var>θ</var>/2 なのは、ベクトル <var>v</var> を回すときに{' '}
           <span className="formula-inline">
             <var>v</var>′ = <var>q</var> <var>v</var> <var>q</var>
             <sup>−1</sup>

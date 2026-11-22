@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { HeadContent, Link, Outlet, Scripts, createRootRoute } from '@tanstack/react-router';
 import appCss from '../styles.css?url';
 
@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: SITE_TITLE },
       { name: 'description', content: DESCRIPTION },
-      { name: 'theme-color', content: '#eef1f6' },
+      { name: 'theme-color', content: '#0d1220' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
@@ -31,10 +31,17 @@ export const Route = createRootRoute({
   ),
 });
 
+const THEME_KEY = 'quaternion:theme';
+
+// 既定はダーク。前回ライトを選んだ人だけ、描画前に切り替える（ちらつき防止のため head に直接置く）
+const applySavedTheme = `try{if(localStorage.getItem('${THEME_KEY}')==='light')document.documentElement.dataset.theme='light'}catch(e){}`;
+
 function RootDocument({ children }: { children: ReactNode }) {
   return (
-    <html lang="ja">
+    // data-theme は上のスクリプトが書き換えるので、ハイドレーションの差分警告を止める
+    <html lang="ja" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: applySavedTheme }} />
         <HeadContent />
       </head>
       <body>
@@ -42,6 +49,32 @@ function RootDocument({ children }: { children: ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    if (document.documentElement.dataset.theme === 'light') setTheme('light');
+  }, []);
+
+  const toggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    if (next === 'light') document.documentElement.dataset.theme = 'light';
+    else delete document.documentElement.dataset.theme;
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      // 保存できなくても、このページを開いているあいだは切り替わる
+    }
+  };
+
+  return (
+    <button type="button" className="theme-toggle" onClick={toggle}>
+      {theme === 'dark' ? 'ライトモードにする' : 'ダークモードにする'}
+    </button>
   );
 }
 
@@ -66,6 +99,7 @@ function RootLayout() {
   return (
     <>
       <header className="hero wrap">
+        <ThemeToggle />
         <h1>
           <span>クォータニオンを</span>
           <span>手で回す</span>

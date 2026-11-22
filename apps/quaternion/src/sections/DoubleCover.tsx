@@ -86,7 +86,7 @@ export function DoubleCover() {
         <div className="readout">
           <QuatReadout q={q} />
           <QuatReadout q={neg(q)} name="−q" />
-          <HalfAngleDial theta={theta} showAntipode />
+          <HalfAngleDial theta={theta} full />
         </div>
       </div>
 
