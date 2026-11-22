@@ -16,6 +16,8 @@ All commands go through `just` (see `justfile`). Package manager is **pnpm** (No
 - `just clean` — remove `.astro` and `node_modules/.vite`
 - `just reset` — clean + dev (recovery when the dev server crashes after dependency / config changes)
 - `just pwa-icons` — regenerate PWA icons via `scripts/generate-pwa-icons.mjs`
+- `just quaternion-install` / `just quaternion-dev` — install deps / dev server (http://localhost:3000) for `apps/quaternion` (TanStack Start + React Three Fiber; its own `package.json` and lockfile, not part of the Astro build)
+- `just quaternion` — typecheck + build `apps/quaternion` and copy the output into `public/et-cetera/quaternion/` (served at `/et-cetera/quaternion/`). The copied output is committed; rerun this after changing the app.
 - `just search <query>` — semantic codebase search via [`cocoindex-code`](https://github.com/cocoindex-io/cocoindex-code) (`ccc search`); index lives in `.cocoindex_code/`. Prefer this over `grep` for concept-level lookups.
 
 There is no test framework wired up. `playwright` and `lighthouse` are devDependencies but no recipes invoke them.
