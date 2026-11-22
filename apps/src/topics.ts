@@ -1,4 +1,4 @@
-import type { LinkProps } from '@tanstack/react-router';
+import type { LinkProps } from '@tanstack/solid-router';
 
 type Topic = {
   /** トピックの入口のパス（src/routes/ の下のフォルダ名と同じ） */

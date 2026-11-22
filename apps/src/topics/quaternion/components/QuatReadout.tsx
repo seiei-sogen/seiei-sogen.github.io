@@ -7,24 +7,25 @@ type Props = {
 };
 
 /** q = ( w, x, y, z ) を成分ごとの色で表示する */
-export function QuatReadout({ q, name = 'q' }: Props) {
+export function QuatReadout(props: Props) {
+  const name = () => props.name ?? 'q';
   return (
-    <p className="quat" aria-label={`${name} の成分`}>
-      <var>{name}</var> = (
-      <span className="num c-w" title="w">
-        {fmt(q.w)}
+    <p class="quat" aria-label={`${name()} の成分`}>
+      <var>{name()}</var> = (
+      <span class="num c-w" title="w">
+        {fmt(props.q.w)}
       </span>
       ,
-      <span className="num c-x" title="x">
-        {fmt(q.x)}
+      <span class="num c-x" title="x">
+        {fmt(props.q.x)}
       </span>
       ,
-      <span className="num c-y" title="y">
-        {fmt(q.y)}
+      <span class="num c-y" title="y">
+        {fmt(props.q.y)}
       </span>
       ,
-      <span className="num c-z" title="z">
-        {fmt(q.z)}
+      <span class="num c-z" title="z">
+        {fmt(props.q.z)}
       </span>
       )
     </p>

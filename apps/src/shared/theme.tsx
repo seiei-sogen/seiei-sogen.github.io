@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createSignal, onMount } from 'solid-js';
 
 // 表示モード（ダーク／ライト）は et-cetera 全体で共有する。
 // <html data-theme="light"> のときがライト。属性がなければダーク（既定）。
@@ -14,14 +14,14 @@ export const applySavedTheme = `try{if(localStorage.getItem('${THEME_KEY}')==='l
 
 /** モード切り替えボタン。見た目は各トピックの CSS（button.theme-toggle）で決める */
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = createSignal<'dark' | 'light'>('dark');
 
-  useEffect(() => {
+  onMount(() => {
     if (document.documentElement.dataset.theme === 'light') setTheme('light');
-  }, []);
+  });
 
   const toggle = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
+    const next = theme() === 'dark' ? 'light' : 'dark';
     setTheme(next);
     if (next === 'light') document.documentElement.dataset.theme = 'light';
     else delete document.documentElement.dataset.theme;
@@ -33,8 +33,8 @@ export function ThemeToggle() {
   };
 
   return (
-    <button type="button" className="theme-toggle" onClick={toggle}>
-      {theme === 'dark' ? 'ライトモードにする' : 'ダークモードにする'}
+    <button type="button" class="theme-toggle" onClick={toggle}>
+      {theme() === 'dark' ? 'ライトモードにする' : 'ダークモードにする'}
     </button>
   );
 }

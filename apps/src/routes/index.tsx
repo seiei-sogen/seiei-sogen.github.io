@@ -1,4 +1,5 @@
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { For } from 'solid-js';
+import { Link, createFileRoute } from '@tanstack/solid-router';
 import homeCss from '../shared/home.css?url';
 import { TOPICS } from '../topics';
 
@@ -18,21 +19,23 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   return (
-    <main className="home">
+    <main class="home">
       <h1>et cetera</h1>
-      <p className="home-lead">ブログの記事には収まらない、動かして確かめるページの置き場。</p>
-      <ul className="home-list">
-        {TOPICS.map((topic) => (
-          <li key={topic.to}>
-            {/* トピックをまたぐリンクはページごと読み込み直す（前のページの CSS を残さないため） */}
-            <Link to={topic.to} reloadDocument>
-              {topic.title}
-            </Link>
-            <p>{topic.description}</p>
-          </li>
-        ))}
+      <p class="home-lead">ブログの記事には収まらない、動かして確かめるページの置き場。</p>
+      <ul class="home-list">
+        <For each={TOPICS}>
+          {(topic) => (
+            <li>
+              {/* トピックをまたぐリンクはページごと読み込み直す（前のページの CSS を残さないため） */}
+              <Link to={topic.to} reloadDocument>
+                {topic.title}
+              </Link>
+              <p>{topic.description}</p>
+            </li>
+          )}
+        </For>
       </ul>
-      <p className="home-back">
+      <p class="home-back">
         <a href="/">seiei-sogen.dev に戻る</a>
       </p>
     </main>

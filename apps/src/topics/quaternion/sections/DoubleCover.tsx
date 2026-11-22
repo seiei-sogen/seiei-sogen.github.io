@@ -1,4 +1,4 @@
-import { lazy, useMemo, useState } from 'react';
+import { Show, createMemo, createSignal, lazy } from 'solid-js';
 import { Deeper, Fig, TryIt } from '../components/Explain';
 import { HalfAngleDial } from '../components/HalfAngleDial';
 import { QuatReadout } from '../components/QuatReadout';
@@ -6,7 +6,7 @@ import { Slider } from '../components/Slider';
 import { Stage } from '../components/Stage';
 import { TurnStrip } from '../figures/TurnStrip';
 import { fromAxisAngle, neg, rad } from '../lib/quat';
-import { useTween } from '../lib/useTween';
+import { createTween } from '../lib/tween';
 
 const DoubleCoverScene = lazy(() => import('../scenes/DoubleCoverScene'));
 
@@ -24,20 +24,20 @@ function status(theta: number, untangle: number): string {
 }
 
 export function DoubleCover() {
-  const [theta, setThetaRaw] = useState(90);
-  const untangle = useTween();
+  const [theta, setThetaRaw] = createSignal(90);
+  const untangle = createTween();
 
   const setTheta = (v: number) => {
     untangle.set(0);
     setThetaRaw(v);
   };
 
-  const q = useMemo(() => fromAxisAngle([1, 0, 0], rad(theta)), [theta]);
-  const canUntangle = theta === 720;
+  const q = createMemo(() => fromAxisAngle([1, 0, 0], rad(theta())));
+  const canUntangle = () => theta() === 720;
 
   return (
-    <section className="demo" aria-labelledby="double-cover">
-      <header className="demo-head">
+    <section class="demo" aria-labelledby="double-cover">
+      <header class="demo-head">
         <h2 id="double-cover">
           <span>1回転では戻らない。</span>
           <span>2回転で元通り</span>
@@ -54,58 +54,58 @@ export function DoubleCover() {
       </header>
 
       <Stage label="壁と機体を板の列でつなぎ、機体を回すと板の列がねじれていく3D図">
-        <DoubleCoverScene angle={rad(theta)} untangle={untangle.value} q={q} />
+        <DoubleCoverScene angle={rad(theta())} untangle={untangle.value()} q={q()} />
       </Stage>
 
-      <div className="panel">
-        <div className="controls">
+      <div class="panel">
+        <div class="controls">
           <Slider
             label="角度 θ（どれだけ回すか）"
-            value={theta}
+            value={theta()}
             min={0}
             max={720}
             onChange={setTheta}
           />
-          <div className="buttons" role="group" aria-label="角度をそろえる">
-            <button type="button" aria-pressed={theta === 360} onClick={() => setTheta(360)}>
+          <div class="buttons" role="group" aria-label="角度をそろえる">
+            <button type="button" aria-pressed={theta() === 360} onClick={() => setTheta(360)}>
               360°にする
             </button>
-            <button type="button" aria-pressed={theta === 720} onClick={() => setTheta(720)}>
+            <button type="button" aria-pressed={theta() === 720} onClick={() => setTheta(720)}>
               720°にする
             </button>
           </div>
-          <div className="buttons">
-            {untangle.value >= 1 ? (
-              <button type="button" className="primary" onClick={() => untangle.set(0)}>
+          <div class="buttons">
+            {untangle.value() >= 1 ? (
+              <button type="button" class="primary" onClick={() => untangle.set(0)}>
                 ねじれを戻す
               </button>
             ) : (
               <button
                 type="button"
-                className="primary"
-                disabled={!canUntangle || untangle.running}
+                class="primary"
+                disabled={!canUntangle() || untangle.running()}
                 onClick={() => untangle.play(3200, easeInOut)}
               >
                 ねじれをほどく
               </button>
             )}
           </div>
-          {!canUntangle && (
-            <p className="hint">「ねじれをほどく」は θ が 720° のときだけ押せます。</p>
-          )}
-          <p className="status" aria-live="polite">
-            {status(theta, untangle.value)}
+          <Show when={!canUntangle()}>
+            <p class="hint">「ねじれをほどく」は θ が 720° のときだけ押せます。</p>
+          </Show>
+          <p class="status" aria-live="polite">
+            {status(theta(), untangle.value())}
           </p>
         </div>
 
-        <div className="readout">
-          <QuatReadout q={q} />
-          <QuatReadout q={neg(q)} name="−q" />
-          <HalfAngleDial theta={theta} full />
+        <div class="readout">
+          <QuatReadout q={q()} />
+          <QuatReadout q={neg(q())} name="−q" />
+          <HalfAngleDial theta={theta()} full />
         </div>
       </div>
 
-      <div className="notes">
+      <div class="notes">
         <TryIt>
           <li>
             「360°にする」を押す。機体は最初と同じ向き。でも <var>q</var> は (−1, 0, 0, 0)
@@ -141,13 +141,13 @@ export function DoubleCover() {
         <Deeper>
           <p>
             ベクトル <var>v</var> を回す式は{' '}
-            <span className="formula-inline">
+            <span class="formula-inline">
               <var>v</var>′ = <var>q</var> <var>v</var> <var>q</var>
               <sup>−1</sup>
             </span>
             。ここで <var>q</var> を −<var>q</var> に替えると、
           </p>
-          <p className="formula">
+          <p class="formula">
             (−<var>q</var>) <var>v</var> (−<var>q</var>)<sup>−1</sup> = <var>q</var> <var>v</var>{' '}
             <var>q</var>
             <sup>−1</sup>

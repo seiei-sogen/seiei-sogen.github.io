@@ -1,6 +1,7 @@
-import { Line } from '@react-three/drei';
+import { For, onCleanup } from 'solid-js';
+import { BoxGeometry, MeshStandardMaterial } from 'three';
 import { fromAxisAngle, mul, toXYZW, type Quat } from '../lib/quat';
-import { Aircraft, COLOR, SceneCanvas } from './common';
+import { Aircraft, COLOR, FatLine, SceneCanvas, T } from './common';
 
 type Props = {
   /** 機体を X 軸まわりに回した角度（ラジアン、0〜4π） */
@@ -15,6 +16,7 @@ const WALL_X = -2.3;
 const CHAIN_END_X = 0.55;
 const AIRCRAFT_X = 1.3;
 const TILE_PITCH = (CHAIN_END_X - WALL_X) / TILE_COUNT;
+const TILES = Array.from({ length: TILE_COUNT }, (_, i) => i);
 
 /**
  * 壁（s=0）から機体（s=1）までの板の向き。
@@ -31,52 +33,58 @@ function tileOrientation(s: number, angle: number, untangle: number): Quat {
   );
 }
 
-export default function DoubleCoverScene({ angle, untangle, q }: Props) {
+export default function DoubleCoverScene(props: Props) {
+  // 板は30枚とも同じ形・同じ色なので、形と素材を1組だけ作って使い回す。
+  // 表（+Y）と裏（−Y）で色を変えて、ひねりが見えるようにする
+  const tileGeometry = new BoxGeometry(TILE_PITCH * 0.8, 0.03, 0.8);
+  const edge = new MeshStandardMaterial({ color: COLOR.faint });
+  const top = new MeshStandardMaterial({ color: COLOR.hull, roughness: 0.6 });
+  const bottom = new MeshStandardMaterial({ color: '#2bb3a3', roughness: 0.6 });
+  const tileMaterials = [edge, edge, top, bottom, edge, edge];
+  onCleanup(() => {
+    tileGeometry.dispose();
+    edge.dispose();
+    top.dispose();
+    bottom.dispose();
+  });
+
   return (
     <SceneCanvas camera={[2.6, 2.3, 5.8]}>
-      <group position={[0.15, 0.25, 0]}>
+      <T.Group position={[0.15, 0.25, 0]}>
         {/* 回転軸 */}
-        <Line
+        <FatLine
           points={[
             [WALL_X, 0, 0],
             [AIRCRAFT_X + 1.1, 0, 0],
           ]}
           color={COLOR.x}
-          lineWidth={1}
-          transparent
           opacity={0.5}
         />
 
         {/* 固定された壁 */}
-        <mesh position={[WALL_X - 0.06, 0, 0]}>
-          <boxGeometry args={[0.08, 1.7, 1.7]} />
-          <meshStandardMaterial color={COLOR.faint} roughness={0.9} />
-        </mesh>
+        <T.Mesh position={[WALL_X - 0.06, 0, 0]}>
+          <T.BoxGeometry args={[0.08, 1.7, 1.7]} />
+          <T.MeshStandardMaterial color={COLOR.faint} roughness={0.9} />
+        </T.Mesh>
 
-        {/* 板の列。表と裏で色を変えて、ひねりが見えるようにする */}
-        {Array.from({ length: TILE_COUNT }, (_, i) => {
-          const s = (i + 0.5) / TILE_COUNT;
-          return (
-            <mesh
-              key={i}
+        {/* 板の列 */}
+        <For each={TILES}>
+          {(i) => (
+            <T.Mesh
+              geometry={tileGeometry}
+              material={tileMaterials}
               position={[WALL_X + TILE_PITCH * (i + 0.5), 0, 0]}
-              quaternion={toXYZW(tileOrientation(s, angle, untangle))}
-            >
-              <boxGeometry args={[TILE_PITCH * 0.8, 0.03, 0.8]} />
-              <meshStandardMaterial attach="material-0" color={COLOR.faint} />
-              <meshStandardMaterial attach="material-1" color={COLOR.faint} />
-              <meshStandardMaterial attach="material-2" color={COLOR.hull} roughness={0.6} />
-              <meshStandardMaterial attach="material-3" color="#2bb3a3" roughness={0.6} />
-              <meshStandardMaterial attach="material-4" color={COLOR.faint} />
-              <meshStandardMaterial attach="material-5" color={COLOR.faint} />
-            </mesh>
-          );
-        })}
+              quaternion={toXYZW(
+                tileOrientation((i + 0.5) / TILE_COUNT, props.angle, props.untangle)
+              )}
+            />
+          )}
+        </For>
 
-        <group position={[AIRCRAFT_X, 0, 0]} quaternion={toXYZW(q)}>
+        <T.Group position={[AIRCRAFT_X, 0, 0]} quaternion={toXYZW(props.q)}>
           <Aircraft />
-        </group>
-      </group>
+        </T.Group>
+      </T.Group>
     </SceneCanvas>
   );
 }

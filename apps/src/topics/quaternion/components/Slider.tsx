@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { Show, createUniqueId } from 'solid-js';
 
 type Props = {
   label: string;
@@ -12,26 +12,28 @@ type Props = {
   onChange: (value: number) => void;
 };
 
-export function Slider({ label, value, min, max, step = 1, unit = '°', swatch, onChange }: Props) {
-  const id = useId();
+export function Slider(props: Props) {
+  const id = createUniqueId();
   return (
-    <div className="slider">
-      <label htmlFor={id}>
-        {swatch && <span className="swatch" style={{ background: swatch }} aria-hidden="true" />}
-        {label}
+    <div class="slider">
+      <label for={id}>
+        <Show when={props.swatch}>
+          <span class="swatch" style={{ background: props.swatch }} aria-hidden="true" />
+        </Show>
+        {props.label}
       </label>
-      <output htmlFor={id}>
-        {value}
-        {unit}
+      <output for={id}>
+        {props.value}
+        {props.unit ?? '°'}
       </output>
       <input
         id={id}
         type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.currentTarget.value))}
+        min={props.min}
+        max={props.max}
+        step={props.step ?? 1}
+        value={props.value}
+        onInput={(e) => props.onChange(Number(e.currentTarget.value))}
       />
     </div>
   );

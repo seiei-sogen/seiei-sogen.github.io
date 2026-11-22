@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/solid-router';
 import { EulerCompare } from '../../topics/quaternion/sections/EulerCompare';
 import { SITE_TITLE } from './route';
 

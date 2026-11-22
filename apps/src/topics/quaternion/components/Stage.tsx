@@ -1,23 +1,23 @@
-import { Suspense, type ReactNode } from 'react';
-import { ClientOnly } from '@tanstack/react-router';
+import { Suspense, type JSX } from 'solid-js';
+import { ClientOnly } from '@tanstack/solid-router';
 
 type Props = {
   /** スクリーンリーダー向けの、この3D図の説明 */
   label: string;
-  children: ReactNode;
+  children: JSX.Element;
 };
 
 /**
  * 3Dシーンの枠。three.js はブラウザでだけ読み込む（プリレンダーされた HTML には枠だけが入る）。
  */
-export function Stage({ label, children }: Props) {
-  const loading = <p className="stage-loading">3Dを読み込んでいます</p>;
+export function Stage(props: Props) {
+  const loading = () => <p class="stage-loading">3Dを読み込んでいます</p>;
   return (
-    <div className="stage" role="img" aria-label={label}>
-      <ClientOnly fallback={loading}>
-        <Suspense fallback={loading}>{children}</Suspense>
+    <div class="stage" role="img" aria-label={props.label}>
+      <ClientOnly fallback={loading()}>
+        <Suspense fallback={loading()}>{props.children}</Suspense>
       </ClientOnly>
-      <p className="stage-hint" aria-hidden="true">
+      <p class="stage-hint" aria-hidden="true">
         ドラッグで視点を回せます
       </p>
     </div>
