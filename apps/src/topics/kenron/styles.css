@@ -1,0 +1,635 @@
+:root {
+  /* 既定はダークモード。ライトは :root[data-theme='light'] で上書きする */
+  --bg: #0d1220;
+  --surface: #19213a;
+  --ink: #e6eaf5;
+  --on-ink: #0d1220;
+  --muted: #9aa5c2;
+  --line: #2a3350;
+  /* 3Dステージ（quaternion の COLOR.stage と同じ）。どちらのモードでも同じ色 */
+  --stage: #172038;
+  /* 2つの道と自然変換の柱。natural-transformation/parts.tsx の PAINT と同じ */
+  --path-a: #ff7ad9;
+  --path-b: #5ad1e6;
+  --alpha: #f5c451;
+  --ok: #5fd693;
+  --ng: #ff9f5a;
+  /* ビーズの色。3Dと同じ色を、どちらのモードでも使う */
+  --bead-r: #ff6b6b;
+  --bead-b: #6aa5ff;
+  --bead-y: #f5c451;
+  color-scheme: dark;
+
+  --serif:
+    'Hiragino Mincho ProN', 'Yu Mincho', 'YuMincho', 'Noto Serif JP', 'Noto Serif CJK JP', serif;
+  --sans:
+    'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Noto Sans JP',
+    'Noto Sans CJK JP', system-ui, sans-serif;
+  --math: 'STIX Two Text', 'Cambria Math', 'Times New Roman', 'Noto Serif', serif;
+  --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* 本文の文字の大きさ */
+  --text: 28px;
+  --small: 22px;
+  --gutter: 20px;
+}
+
+:root[data-theme='light'] {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --ink: #1b2440;
+  --on-ink: #ffffff;
+  --muted: #55607c;
+  --line: #cdd5e3;
+  --path-a: #c2338f;
+  --path-b: #137c91;
+  --alpha: #8f5d00;
+  --ok: #1a7f47;
+  --ng: #c05600;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--text);
+  line-height: 1.8;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+a {
+  color: var(--path-b);
+  text-underline-offset: 4px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--path-b);
+  outline-offset: 2px;
+}
+
+var {
+  font-family: var(--math);
+  font-style: italic;
+  font-size: 1.08em;
+}
+
+dfn {
+  font-style: normal;
+  font-weight: 700;
+}
+
+code,
+pre {
+  font-family: var(--mono);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.c-a {
+  color: var(--path-a);
+  font-weight: 700;
+}
+.c-b {
+  color: var(--path-b);
+  font-weight: 700;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ---------- 上の帯 ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-home {
+  color: var(--muted);
+  font-size: 18px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.topbar-home:hover {
+  color: var(--ink);
+}
+
+button.theme-toggle {
+  min-height: 44px;
+  margin-right: -8px;
+  padding: 6px 8px;
+  border: 0;
+  color: var(--muted);
+  font-size: 16px;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- ページ ---------- */
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 72px;
+  padding: 48px 0 24px;
+}
+
+.hero {
+  display: grid;
+  gap: 16px;
+}
+
+.hero-kicker {
+  color: var(--muted);
+  font-size: var(--small);
+}
+
+.hero h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(48px, 10vw, 80px);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+
+/* 見出しは文節の途中で折り返さない */
+.hero h1 span {
+  display: inline-block;
+}
+
+.hero-lead {
+  max-width: 32em;
+}
+
+.hero-lead strong,
+.block strong {
+  color: var(--alpha);
+}
+
+.block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+
+.block > p,
+.ways,
+.terms,
+.tryit,
+.deeper {
+  max-width: 32em;
+}
+
+.block h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(34px, 5.6vw, 44px);
+  line-height: 1.4;
+}
+
+.ways {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.takeaway {
+  padding: 20px 24px;
+  border-left: 4px solid var(--alpha);
+  background: var(--surface);
+  font-weight: 700;
+}
+
+/* ---------- ビーズの図 ---------- */
+
+.fig {
+  margin: 0;
+}
+
+.fig figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: var(--small);
+  line-height: 1.7;
+}
+
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding: 10px 0;
+}
+
+.flow-op {
+  color: var(--muted);
+  font-size: var(--small);
+  white-space: nowrap;
+}
+
+.beads {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 64px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  vertical-align: middle;
+}
+
+.beads-box {
+  justify-content: center;
+  min-width: 52px;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.bead {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.18);
+}
+
+.bead-r {
+  background: var(--bead-r);
+}
+.bead-b {
+  background: var(--bead-b);
+}
+.bead-y {
+  background: var(--bead-y);
+}
+
+/* ---------- 自然性の四角（SVG） ---------- */
+
+.square-fig svg {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+
+.s-a,
+.s-b {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.s-a {
+  stroke: var(--path-a);
+}
+.s-b {
+  stroke: var(--path-b);
+}
+.m-a {
+  fill: var(--path-a);
+}
+.m-b {
+  fill: var(--path-b);
+}
+
+.t-obj,
+.t-arrow {
+  font-family: var(--math);
+  font-style: italic;
+  font-size: 28px;
+}
+
+.t-obj {
+  fill: var(--ink);
+  text-anchor: middle;
+}
+
+.t-a {
+  fill: var(--path-a);
+}
+.t-b {
+  fill: var(--path-b);
+}
+
+.t-sub {
+  font-size: 20px;
+}
+
+/* ---------- 3Dステージ ---------- */
+
+/* スマホでは画面の端まで広げる */
+.stage {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  margin: 0 calc(var(--gutter) * -1);
+  background: var(--stage);
+  overflow: hidden;
+}
+
+@media (min-width: 1080px) {
+  .stage {
+    margin: 0;
+    border-radius: 8px;
+  }
+}
+
+.stage canvas {
+  display: block;
+}
+
+/* OrbitControls は touch-action: none を付けるが、それだとスマホで縦スクロールできなくなる。
+   縦スワイプはページのスクロール、横ドラッグは視点の回転に振り分ける */
+.stage,
+.stage * {
+  touch-action: pan-y !important;
+}
+
+.stage-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #9aa6c8;
+  font-size: var(--small);
+}
+
+.stage-hint {
+  position: absolute;
+  left: 12px;
+  bottom: 8px;
+  color: #9aa6c8;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+/* ---------- 操作盤 ---------- */
+
+.panel {
+  display: grid;
+  gap: 18px;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.group-label {
+  flex: 0 0 100%;
+  color: var(--muted);
+  font-size: var(--small);
+}
+
+button {
+  min-height: 48px;
+  padding: 6px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--small);
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+button[aria-pressed='true'],
+button.primary {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+button.primary {
+  min-width: 8em;
+  font-weight: 700;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.status {
+  display: grid;
+  gap: 14px;
+  max-width: 32em;
+  padding: 16px 20px;
+  border-left: 4px solid var(--ink);
+  background: var(--surface);
+}
+
+.status-ok {
+  border-left-color: var(--ok);
+}
+
+.status-ng {
+  border-left-color: var(--ng);
+}
+
+.results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+}
+
+.results > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--small);
+}
+
+/* ---------- やってみよう・折りたたみ ---------- */
+
+.tryit {
+  padding: 20px 24px 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.tryit h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.5;
+}
+
+.tryit ol {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding-left: 1.4em;
+}
+
+.deeper {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.deeper summary {
+  padding: 16px 0;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.deeper-body {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.deeper code {
+  font-size: 0.85em;
+}
+
+.deeper pre {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--surface);
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
+.deeper pre code {
+  font-size: 20px;
+}
+
+.formula-inline {
+  font-family: var(--math);
+  white-space: nowrap;
+}
+
+/* ---------- 組み合わせの表 ---------- */
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.nat-table {
+  border-collapse: collapse;
+  font-size: var(--text);
+}
+
+.nat-table th,
+.nat-table td {
+  min-width: 3.4em;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.nat-table thead th {
+  color: var(--muted);
+  font-size: var(--small);
+  font-weight: 400;
+}
+
+.nat-table tbody th {
+  text-align: left;
+  font-weight: 700;
+}
+
+.cell-ok {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.cell-ng {
+  color: var(--ng);
+  font-weight: 700;
+}
+
+/* ---------- 用語 ---------- */
+
+.terms {
+  display: grid;
+  gap: 20px;
+  margin: 0;
+}
+
+.terms dt {
+  font-weight: 700;
+}
+
+.terms dd {
+  margin: 4px 0 0;
+}
+
+/* ---------- 一覧（/kenron/） ---------- */
+
+.page-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.page-list li {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.page-list a {
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 600;
+}
+
+.page-list p {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+/* ---------- フッター ---------- */
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding-top: 40px;
+  padding-bottom: 48px;
+  font-size: var(--small);
+}
