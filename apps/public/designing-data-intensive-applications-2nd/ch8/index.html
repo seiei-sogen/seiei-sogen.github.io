@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA第8章 トランザクション図解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* レイアウト: 1カラムの読み物。図は「左=Aさん / 右=Bさん / 中央=DBの状態」の時系列チャット */
+  --bg:#0f131d; --surface:#171c29; --raise:#202739; --line:#323b54;
+  --text:#eeeae0; --muted:#a9b1c6;
+  --a:#f4b860; --b:#62cbe8; --db:#bba6ff; --bad:#ff7d7d; --ok:#74d7a1;
+  --display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:27px;line-height:2;overflow-wrap:anywhere}
+main{max-width:920px;margin:0 auto;padding:28px 18px 140px}
+p{margin:0 0 1em}
+a{color:var(--b)}
+a:focus-visible{outline:3px solid var(--a);outline-offset:3px;border-radius:6px}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.45;text-wrap:balance;margin:0}
+h1{font-size:clamp(38px,10vw,76px);font-weight:900;letter-spacing:.02em}
+h2{font-size:clamp(34px,7.4vw,46px);font-weight:900;margin:2.6em 0 .7em;padding-top:.6em;border-top:2px solid var(--line)}
+h3{font-size:clamp(30px,6.4vw,36px);font-weight:700;margin:2.2em 0 .6em}
+h4{font-size:28px;font-weight:700;margin:1.6em 0 .4em;color:var(--a)}
+.no{display:inline-block;font-family:var(--mono);font-size:.5em;font-weight:700;color:var(--bg);background:var(--a);border-radius:8px;padding:.1em .55em;margin-right:.6em;vertical-align:.35em;letter-spacing:0}
+h3 .no{background:var(--b)}
+strong{font-weight:700;background:linear-gradient(transparent 64%,rgba(244,184,96,.3) 0)}
+code{font-family:var(--mono);font-size:.82em;background:var(--raise);border-radius:6px;padding:.1em .35em}
+ul,ol{margin:0 0 1em;padding-left:1.3em}
+li{margin-bottom:.4em}
+
+/* ヒーロー */
+.hero{padding:26px 0 8px}
+.eyebrow{font-family:var(--mono);font-size:19px;color:var(--muted);letter-spacing:.08em;line-height:1.6}
+.lead{font-size:30px;margin-top:.8em}
+.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:26px 0 0;padding:0;list-style:none;font-size:22px;line-height:1.6}
+.toc a{display:block;height:100%;text-decoration:none;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.toc a:hover{border-color:var(--a)}
+.toc b{display:block;font-family:var(--mono);color:var(--a);font-size:18px}
+.toc span{display:block;color:var(--muted);font-size:18px}
+
+/* 箱 */
+.box{border-radius:16px;padding:18px 20px;margin:1.2em 0;background:var(--surface);border:1px solid var(--line)}
+.box>.tag{display:block;font-family:var(--display);font-weight:700;font-size:20px;line-height:1.5;margin-bottom:.3em}
+.box.gist{border-left:7px solid var(--ok)} .box.gist>.tag{color:var(--ok)}
+.box.trap{border-left:7px solid var(--bad)} .box.trap>.tag{color:var(--bad)}
+.box.note{border-left:7px solid var(--db)} .box.note>.tag{color:var(--db)}
+.box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+
+/* 図の共通 */
+figure{margin:1.4em 0}
+figcaption{font-size:19px;line-height:1.7;color:var(--muted);margin-top:.6em}
+figcaption b{color:var(--text)}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 14px;font-size:20px;line-height:1.65}
+.fig-title{font-family:var(--display);font-weight:700;font-size:21px;margin-bottom:12px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:17px;color:var(--muted);margin-bottom:14px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-1px}
+
+/* 時系列チャット図 */
+.tl{display:flex;flex-direction:column;gap:10px}
+.ev{max-width:86%;padding:10px 14px;border-radius:14px;background:var(--raise)}
+.ev .who{display:block;font-family:var(--mono);font-size:15px;font-weight:700;line-height:1.5}
+.ev.a{align-self:flex-start;border-left:6px solid var(--a)} .ev.a .who{color:var(--a)}
+.ev.b{align-self:flex-end;border-right:6px solid var(--b)} .ev.b .who{color:var(--b)}
+.ev.c{align-self:center;text-align:center;border-bottom:4px solid var(--db)} .ev.c .who{color:var(--db)}
+.ev.db{align-self:center;text-align:center;background:transparent;border:2px dashed var(--db);color:var(--db);border-radius:999px;font-family:var(--mono);font-size:18px;padding:6px 18px}
+.ev.bad{align-self:stretch;max-width:100%;text-align:center;background:rgba(255,125,125,.12);border:2px solid var(--bad);color:#ffc4c4;font-weight:700}
+.ev.good{align-self:stretch;max-width:100%;text-align:center;background:rgba(116,215,161,.1);border:2px solid var(--ok);color:#c5f1d8;font-weight:700}
+.time{align-self:center;font-family:var(--mono);font-size:14px;color:var(--muted)}
+
+/* カード群 */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:1.2em 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;font-size:22px;line-height:1.75}
+.card h4{margin:0 0 .2em;font-size:25px}
+.card .big{font-family:var(--display);font-weight:900;font-size:58px;line-height:1.1;color:var(--a)}
+.card .en{font-family:var(--mono);font-size:16px;color:var(--muted);display:block}
+.card.a{border-top:6px solid var(--a)} .card.b{border-top:6px solid var(--b)} .card.b h4{color:var(--b)}
+.card.ok{border-top:6px solid var(--ok)} .card.ok h4{color:var(--ok)}
+.card.bad{border-top:6px solid var(--bad)} .card.bad h4{color:var(--bad)}
+.card.db{border-top:6px solid var(--db)} .card.db h4{color:var(--db)}
+.card p:last-child,.card ul:last-child,.card ol:last-child{margin-bottom:0}
+
+/* まとめ買い図 */
+.bundle{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;border:3px solid var(--a);border-radius:16px;padding:14px;position:relative}
+.bundle::before{content:"1つのトランザクション";position:absolute;top:-15px;left:16px;background:var(--surface);padding:0 8px;font-size:16px;color:var(--a);font-weight:700;line-height:1.6}
+.chip{background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:19px}
+.fork{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;text-align:center}
+.out{border-radius:14px;padding:12px 8px;font-weight:700}
+.out small{display:block;font-weight:400;font-size:17px}
+.out.ok{background:rgba(116,215,161,.12);border:2px solid var(--ok);color:#c5f1d8}
+.out.bad{background:rgba(255,125,125,.12);border:2px solid var(--bad);color:#ffc4c4}
+.down{text-align:center;color:var(--muted);font-size:22px;line-height:1.2;margin:10px 0 0}
+
+/* はしご */
+.ladder{display:flex;flex-direction:column;gap:10px}
+.rung{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center;background:var(--raise);border-radius:14px;padding:12px 14px}
+.rung .lv{font-family:var(--mono);font-size:15px;color:var(--bg);background:var(--muted);border-radius:8px;padding:2px 8px;font-weight:700}
+.rung .nm{font-family:var(--display);font-weight:700;font-size:22px}
+.rung .ds{grid-column:1/-1;font-size:18px;color:var(--muted)}
+.rung.r4{border-left:8px solid var(--ok)} .rung.r4 .lv{background:var(--ok)}
+.rung.r3{border-left:8px solid var(--b)} .rung.r3 .lv{background:var(--b)}
+.rung.r2{border-left:8px solid var(--a)} .rung.r2 .lv{background:var(--a)}
+.rung.r1{border-left:8px solid var(--bad)} .rung.r1 .lv{background:var(--bad)}
+
+/* 表 */
+.tw{overflow-x:auto;margin:1.2em 0;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:20px;line-height:1.6;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:left;vertical-align:top}
+tr:last-child td{border-bottom:0} th:last-child,td:last-child{border-right:0}
+th{background:var(--raise);font-family:var(--display);font-weight:700;white-space:nowrap}
+td.y{background:rgba(116,215,161,.12);color:#c5f1d8;white-space:nowrap}
+td.n{background:rgba(255,125,125,.12);color:#ffc4c4;white-space:nowrap}
+td.m{background:rgba(244,184,96,.14);color:#ffe0ad;white-space:nowrap}
+td.mono,th.mono{font-family:var(--mono);font-size:18px}
+table.keep td:first-child{white-space:nowrap}
+
+pre{margin:1.2em 0;background:#0a0d15;border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto;font-family:var(--mono);font-size:19px;line-height:1.7}
+pre code{background:none;padding:0;font-size:inherit}
+pre .cm{color:var(--muted)} pre .hl{color:var(--a);font-weight:700}
+
+/* 往復図 */
+.pp{display:flex;flex-direction:column;gap:6px;font-size:18px}
+.pp div{border-radius:10px;padding:5px 10px;background:var(--raise)}
+.pp .to{border-left:5px solid var(--a)} .pp .back{border-right:5px solid var(--b);text-align:right}
+.pp .in{background:transparent;border:2px dashed var(--db);color:var(--db);text-align:center}
+.queue{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:center}
+.queue .run{border:3px solid var(--ok);border-radius:12px;padding:8px 14px;font-weight:700;color:#c5f1d8}
+.arrow{color:var(--muted);font-family:var(--mono)}
+.steps{counter-reset:s;list-style:none;padding:0;display:flex;flex-direction:column;gap:10px}
+.steps li{counter-increment:s;position:relative;margin:0;background:var(--raise);border-radius:14px;padding:12px 14px 12px 58px}
+.steps li::before{content:counter(s);position:absolute;left:14px;top:12px;width:32px;height:32px;border-radius:50%;background:var(--b);color:var(--bg);font-family:var(--mono);font-weight:700;font-size:18px;line-height:32px;text-align:center}
+footer{margin-top:4em;font-size:19px;line-height:1.8;color:var(--muted);border-top:1px solid var(--line);padding-top:1.2em}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">データ指向アプリケーションデザイン 第2版 / 第8章</div>
+  <h1>トランザクション</h1>
+  <p class="lead">ひとことで言うと、<strong>「いくつかの読み書きを1つの塊にして、全部成功か、全部なかったことにする」</strong>仕組みの話です。</p>
+
+  <figure class="fig">
+    <div class="bundle">
+      <span class="chip">読む</span><span class="chip">書く</span><span class="chip">書く</span><span class="chip">書く</span>
+    </div>
+    <div class="down">↓ 結果はこの2つだけ</div>
+    <div class="fork">
+      <div class="out ok">コミット<small>全部反映される</small></div>
+      <div class="out bad">アボート<small>全部なかったことに</small></div>
+    </div>
+    <figcaption><b>図0</b> 「半分だけ成功」が存在しない。だからアプリは、失敗したら最初からやり直すだけでいい。</figcaption>
+  </figure>
+
+  <ul class="toc">
+    <li><a href="#s81"><b>8.1</b>トランザクションって何？<span>ACID の本当の意味</span></a></li>
+    <li><a href="#s82"><b>8.2</b>弱い分離レベル<span>同時実行で起きる5つの事故</span></a></li>
+    <li><a href="#s83"><b>8.3</b>シリアライザブル<span>事故ゼロにする3つの作り方</span></a></li>
+    <li><a href="#s84"><b>8.4</b>分散トランザクション<span>2相コミットとその弱点</span></a></li>
+    <li><a href="#s85"><b>8.5</b>まとめ<span>全体を1枚の表で</span></a></li>
+  </ul>
+</header>
+
+<section>
+<h2>まず、なぜ要るのか</h2>
+<p>データを扱うシステムでは、いろんなことが壊れます。</p>
+<ul>
+  <li>DB のソフトやハードが、書き込みの<strong>途中で</strong>落ちる</li>
+  <li>アプリが、一連の処理の<strong>途中で</strong>クラッシュする</li>
+  <li>ネットワークが突然切れる</li>
+  <li>複数のクライアントが同時に書いて、お互いを上書きする</li>
+  <li>半分しか更新されていない、意味不明なデータを読んでしまう</li>
+</ul>
+<p>これを全部アプリ側で面倒を見るのは地獄です。そこでトランザクション。「途中」や「同時」の面倒を DB に押しつけて、アプリのコードを単純にするための道具です。</p>
+<div class="box note"><span class="tag">ポイント</span>
+<p>トランザクションは自然法則ではありません。<strong>プログラミングを楽にするために人間が作った発明</strong>です。だから「どこまで保証してくれるか」は製品ごとに違います。この章はその「どこまで」を見ていきます。</p></div>
+<div class="box note"><span class="tag">歴史を30秒で</span>
+<p>1975年の IBM System R が元祖。2000年代後半の NoSQL ブームで「スケールしないから」と捨てられました。でも CockroachDB、TiDB、Spanner、FoundationDB、YugabyteDB などの「NewSQL」が、<strong>分散していてもトランザクションはできる</strong>と示しました。</p></div>
+</section>
+
+<section id="s81">
+<h2><span class="no">8.1</span>トランザクションって正確には何？</h2>
+
+<h3><span class="no">8.1.1</span>ACID の意味</h3>
+<p>トランザクションの保証は「ACID」の4文字で語られます。ただし本は辛口で、<strong>「ACID 準拠」はほぼマーケティング用語になっている</strong>と言います。DB ごとに中身が違うからです。</p>
+
+<div class="cards">
+  <div class="card a"><div class="big">A</div><h4>原子性<span class="en">Atomicity</span></h4>
+    <p>途中で失敗したら、それまでの書き込みを<strong>全部捨てる</strong>。本当は「アボート可能性」と呼ぶほうが正確。</p></div>
+  <div class="card a"><div class="big">C</div><h4>一貫性<span class="en">Consistency</span></h4>
+    <p>「貸方と借方は必ず釣り合う」のような<strong>データのお約束</strong>（不変条件）が守られている。</p></div>
+  <div class="card a"><div class="big">I</div><h4>分離性<span class="en">Isolation</span></h4>
+    <p>同時に走っている他のトランザクションに<strong>邪魔されない</strong>。</p></div>
+  <div class="card a"><div class="big">D</div><h4>永続性<span class="en">Durability</span></h4>
+    <p>「コミット成功」と言われたデータは、クラッシュしても<strong>消えない</strong>。</p></div>
+</div>
+
+<h4>A：原子性は「同時実行」の話ではない</h4>
+<p>マルチスレッドの「アトミック」は「途中の状態が他スレッドから見えない」という意味です。でも ACID の A は違います。<strong>「途中でコケたらどうなるか」</strong>の話です。同時実行の話は I（分離性）の担当です。</p>
+
+<figure class="fig">
+  <div class="fig-title">メールを受信して、未読カウンターを +1 する</div>
+  <div class="tl">
+    <div class="ev a"><span class="who">書き込み 1</span>メールを INSERT → 成功</div>
+    <div class="ev a"><span class="who">書き込み 2</span>未読カウンターを +1 → <b>エラー！</b></div>
+    <div class="ev bad">原子性なし：メールだけ残り、カウンターがずれたまま</div>
+    <div class="ev good">原子性あり：INSERT も取り消されて、何も起きなかった状態に戻る</div>
+  </div>
+  <figcaption><b>図8-3 相当</b> 原子性があれば「どこまで反映されたっけ？」と悩まず、安心してリトライできる。</figcaption>
+</figure>
+
+<h4>C：一貫性は、実は DB の性質ではない</h4>
+<p>「お約束」を知っているのはアプリです。DB にできるのは、外部キー制約やユニーク制約など<strong>宣言された制約を守らせること</strong>だけ。宣言していないお約束を破るデータを書いても、DB は止められません。本はこう言います。ACID の C は、アプリが DB をどう使うか次第であり、DB 単体の性質ではない、と。</p>
+<div class="box trap"><span class="tag">「一貫性」という言葉の罠</span>
+<p>同じ単語に少なくとも5つの意味があります。レプリカの一貫性、一貫性のあるスナップショット、コンシステントハッシング、CAP 定理の一貫性（＝線形化可能性）、そして ACID の一貫性。全部別物です。</p></div>
+
+<h4>I：分離性がないとこうなる</h4>
+<figure class="fig">
+  <div class="fig-title">2人が同時にカウンターを +1 する</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>クライアント A</span><span><i style="background:var(--b)"></i>クライアント B</span><span><i style="background:var(--db)"></i>DB の状態</span></div>
+  <div class="tl">
+    <div class="ev db">counter = 42</div>
+    <div class="ev a"><span class="who">A</span>読む → 42</div>
+    <div class="ev b"><span class="who">B</span>読む → 42</div>
+    <div class="ev a"><span class="who">A</span>42 + 1 = 43 を書く</div>
+    <div class="ev db">counter = 43</div>
+    <div class="ev b"><span class="who">B</span>42 + 1 = 43 を書く</div>
+    <div class="ev db">counter = 43</div>
+    <div class="ev bad">2回足したのに 44 にならない</div>
+  </div>
+  <figcaption><b>図8-1 相当</b> これが競合状態（race condition）。</figcaption>
+</figure>
+<p>教科書的な分離性は<strong>シリアライザブル</strong>です。「同時に走らせても、1個ずつ順番に実行したのと同じ結果になる」という意味です。でもこれは遅いので、現実の DB の多くはもっと弱い保証で動いています。Oracle には「serializable」という名前のレベルがありますが、中身はもっと弱いスナップショット分離です。</p>
+
+<h4>D：永続性に「完璧」はない</h4>
+<p>1台の DB なら、ログ先行書き込み（WAL）と <code>fsync</code> でディスクに確実に書くこと。レプリケーションしているなら、何台かにコピーが届くこと。どちらにも穴があります。</p>
+<div class="cards">
+  <div class="card db"><h4>ディスクだけ</h4><p>マシンが壊れたら、直すまで読めない。SSD は電源断で約束を破ることがある。データが静かに腐ることもある。</p></div>
+  <div class="card db"><h4>レプリケーションだけ</h4><p>停電や同じバグで全ノードが同時に落ちたら、メモリ上のデータは消える。非同期だとリーダー障害で直近の書き込みが消える。</p></div>
+</div>
+<p>だから本の結論は<strong>「ディスク書き込み、レプリケーション、バックアップを組み合わせろ」</strong>です。絶対の保証はどこにもありません。</p>
+
+<h3><span class="no">8.1.2</span>1個のオブジェクト vs 複数のオブジェクト</h3>
+<p>A と I は「1つのトランザクションで<strong>複数</strong>書き込んだとき」の約束です。メールの例で、今度は分離性のほうを見ます。</p>
+
+<figure class="fig">
+  <div class="fig-title">メール追加と未読カウンター更新の「あいだ」を読まれる</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>A：メールを届ける側</span><span><i style="background:var(--b)"></i>B：受信者（ユーザー2）</span></div>
+  <div class="tl">
+    <div class="ev a"><span class="who">A</span>メールを INSERT（まだコミット前）</div>
+    <div class="ev b"><span class="who">B</span>メール一覧を読む → 未読が1通ある</div>
+    <div class="ev b"><span class="who">B</span>未読カウンターを読む → 0</div>
+    <div class="ev a"><span class="who">A</span>未読カウンターを +1 → コミット</div>
+    <div class="ev bad">B の画面：未読メールがあるのに、バッジは 0</div>
+  </div>
+  <figcaption><b>図8-2 相当</b> コミット前の書き込みを読んでしまう「ダーティリード」。分離性があれば、B には「両方反映前」か「両方反映後」しか見えない。</figcaption>
+</figure>
+
+<p>「どの読み書きが同じトランザクションか」は、RDB では普通 <code>BEGIN</code> から <code>COMMIT</code> までです（クライアントとの TCP 接続の上で区切ります）。多くの非リレーショナル DB には、この「まとめる」手段がありません。</p>
+
+<h4>1個のオブジェクトなら、だいたい守ってくれる</h4>
+<p>20kB の JSON を書いている途中で回線が切れたら？ 電源が落ちたら？ 途中を誰かに読まれたら？ これは困りすぎるので、ほぼすべてのストレージエンジンが<strong>1オブジェクト単位の原子性と分離性</strong>は用意しています。アトミックなインクリメントや、条件付き書き込み（CAS）もその仲間です。</p>
+<p>でもそれは普通の意味の「トランザクション」ではありません。次の場面では複数オブジェクトをまとめる必要があります。</p>
+<ul>
+  <li><strong>外部キー</strong>：参照する行と参照される行を、ずれないように書く</li>
+  <li><strong>非正規化したデータ</strong>：同じ情報を持つ複数のドキュメントを一緒に更新する</li>
+  <li><strong>セカンダリインデックス</strong>：行本体とインデックスを一緒に更新する</li>
+</ul>
+
+<h4>エラーとリトライの落とし穴</h4>
+<p>ACID な DB の哲学は<strong>「約束を破りそうなら、中途半端に残さず全部捨てる」</strong>です（リーダーレスレプリケーションの DB は逆で、ベストエフォート。失敗しても巻き戻さないので、後始末はアプリの仕事です）。捨ててくれるならリトライすればいい。ただし、リトライにも罠があります。</p>
+<div class="box trap"><span class="tag">リトライ5つの罠</span>
+<ol>
+  <li>本当は成功していて、<strong>返事だけ届かなかった</strong> → リトライで二重実行</li>
+  <li>原因が過負荷なら、リトライは<strong>火に油</strong> → 回数制限と指数バックオフ</li>
+  <li>意味があるのは<strong>一時的なエラーだけ</strong>（デッドロック、瞬断、フェイルオーバー）。制約違反は何回やっても同じ</li>
+  <li>メール送信など <strong>DB の外の副作用</strong>は巻き戻らない</li>
+  <li>リトライ中にクライアント自体が死ねば、書こうとしたデータは消える</li>
+</ol></div>
+</section>
+
+<section id="s82">
+<h2><span class="no">8.2</span>弱い分離レベル</h2>
+<p>同時実行のバグは、タイミングが悪いときだけ起きます。だからテストで見つからず、再現もできません。そして理屈で考えるのも難しい。</p>
+<p>DB は「分離」でこれを隠そうとしますが、完全な分離（シリアライザブル）は遅い。そこで<strong>「一部の事故だけ防ぐ」弱いレベル</strong>が広く使われています。これは理論上の話ではなく、ビットコイン取引所の破綻のような実害が出ています。攻撃者がわざと同時リクエストを大量に投げて、競合状態を突いてくることもあります。</p>
+
+<figure class="fig">
+  <div class="fig-title">分離レベルのはしご（上ほど安全、下ほど事故が多い）</div>
+  <div class="ladder">
+    <div class="rung r4"><span class="lv">Lv4</span><span class="nm">シリアライザブル</span><span class="ds">全部防ぐ。ただしコストがかかる（8.3）</span></div>
+    <div class="rung r3"><span class="lv">Lv3</span><span class="nm">スナップショット分離</span><span class="ds">開始時点の「写真」を見続ける。ライトスキューは残る</span></div>
+    <div class="rung r2"><span class="lv">Lv2</span><span class="nm">リードコミッテッド</span><span class="ds">コミット済みのものだけ読む・上書きする。多くの DB の初期設定</span></div>
+    <div class="rung r1"><span class="lv">Lv1</span><span class="nm">リードアンコミッテッド</span><span class="ds">ダーティライトだけ防ぐ。未コミットの値は読めてしまう</span></div>
+  </div>
+</figure>
+
+<h3><span class="no">8.2.1</span>リードコミッテッド</h3>
+<p>いちばん基本のレベルです。約束は2つだけ。</p>
+<div class="cards">
+  <div class="card ok"><h4>ダーティリードなし</h4><p>読むときは、<strong>コミット済み</strong>のデータしか見えない。</p></div>
+  <div class="card ok"><h4>ダーティライトなし</h4><p>書くときは、<strong>コミット済み</strong>のデータしか上書きしない。</p></div>
+</div>
+
+<figure class="fig">
+  <div class="fig-title">ダーティリードを防ぐ</div>
+  <div class="tl">
+    <div class="ev db">x = 2</div>
+    <div class="ev a"><span class="who">A</span>x = 3 を書く（まだコミット前）</div>
+    <div class="ev b"><span class="who">B</span>x を読む → <b>2</b>（古いほうが見える）</div>
+    <div class="ev a"><span class="who">A</span>コミット</div>
+    <div class="ev b"><span class="who">B</span>x を読む → <b>3</b></div>
+  </div>
+  <figcaption><b>図8-4 相当</b> 他人の書き込みは、コミットされた瞬間にまとめて見えるようになる。</figcaption>
+</figure>
+<p>未コミットの値が読めると何が困るか。①複数行の更新の<strong>半分だけ</strong>見えてしまう。②あとでロールバックされる、<strong>結局存在しなかった値</strong>を見てしまう。</p>
+
+<figure class="fig">
+  <div class="fig-title">ダーティライト：中古車を2人が同時に買う</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>Aaliyah</span><span><i style="background:var(--b)"></i>Bryce</span></div>
+  <div class="tl">
+    <div class="ev a"><span class="who">Aaliyah</span>出品テーブル：買い手 = Aaliyah</div>
+    <div class="ev b"><span class="who">Bryce</span>出品テーブル：買い手 = Bryce（未コミットの値を上書き）</div>
+    <div class="ev b"><span class="who">Bryce</span>請求書テーブル：宛先 = Bryce</div>
+    <div class="ev a"><span class="who">Aaliyah</span>請求書テーブル：宛先 = Aaliyah（未コミットの値を上書き）</div>
+    <div class="ev bad">車は Bryce のもの、請求書は Aaliyah に届く</div>
+  </div>
+  <figcaption><b>図8-5 相当</b> 2つのトランザクションの書き込みが混ざってしまう。</figcaption>
+</figure>
+
+<h4>どう実装しているか</h4>
+<ul>
+  <li><strong>ダーティライト対策</strong>：行ロック。書きたい行のロックを取り、コミットかアボートまで持ち続ける。</li>
+  <li><strong>ダーティリード対策</strong>：書き込み中の行について、<strong>古いコミット済みの値と新しい値の両方</strong>を持っておく。他の人には古いほうを見せる。</li>
+</ul>
+<p>読むときにもロックを取る方法はあまり使われません。長い書き込みが1つあるだけで、読むだけの人が全員待たされるからです。</p>
+<div class="box trap"><span class="tag">リードコミッテッドで防げないもの</span>
+<p>最初のカウンターの例（42 → 43）は防げません。B の書き込みは A のコミット<strong>後</strong>なので、ダーティライトではないからです。これは後で出てくる「ロストアップデート」です。</p></div>
+
+<h3><span class="no">8.2.2</span>スナップショット分離とリピータブルリード</h3>
+<p>リードコミッテッドでも起きる事故を見ます。</p>
+<figure class="fig">
+  <div class="fig-title">リードスキュー：100ドルが消えて見える</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>Aaliyah（残高を見る）</span><span><i style="background:var(--b)"></i>送金処理</span></div>
+  <div class="tl">
+    <div class="ev db">口座1 = 500 / 口座2 = 500</div>
+    <div class="ev a"><span class="who">Aaliyah</span>口座1を読む → 500</div>
+    <div class="ev b"><span class="who">送金</span>口座1 を 600 に、口座2 を 400 に → コミット</div>
+    <div class="ev db">口座1 = 600 / 口座2 = 400</div>
+    <div class="ev a"><span class="who">Aaliyah</span>口座2を読む → 400</div>
+    <div class="ev bad">Aaliyah に見えた合計：500 + 400 = 900ドル</div>
+  </div>
+  <figcaption><b>図8-6 相当</b> どちらもコミット済みの値なので、リードコミッテッドは破っていない。でも「違う時点」を混ぜて見ている。</figcaption>
+</figure>
+<p>画面を再読み込みすれば直るので、この例は軽傷です。でも次の2つは致命的です。</p>
+<ul>
+  <li><strong>バックアップ</strong>：何時間もかかる。一部が古く一部が新しいバックアップから復元したら、不整合が永久に残る。</li>
+  <li><strong>分析クエリ・整合性チェック</strong>：違う時点が混ざったデータを集計しても意味がない。</li>
+</ul>
+<div class="box gist"><span class="tag">スナップショット分離とは</span>
+<p>各トランザクションは、<strong>自分が始まった瞬間の DB の「写真」</strong>を最後まで見続けます。あとから他人が何をコミットしても、写真は変わりません。</p></div>
+
+<h4>仕組み：MVCC（マルチバージョン並行性制御）</h4>
+<p>写真を実現する方法は単純です。<strong>行を上書きせず、バージョンを全部取っておく</strong>。各トランザクションには増え続ける番号（txid）を振り、各バージョンに「誰が作ったか」「誰が消したか」を書いておきます。更新は内部的に「削除＋挿入」です。</p>
+
+<figure>
+  <div class="tw"><table>
+    <thead><tr><th>口座</th><th>残高</th><th class="mono">inserted_by</th><th class="mono">deleted_by</th><th>txid 12 から見える？</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>500</td><td class="mono">3</td><td class="mono">13</td><td class="y">✓ 見える</td></tr>
+      <tr><td>1</td><td>600</td><td class="mono">13</td><td class="mono">—</td><td class="n">✗ 見えない</td></tr>
+      <tr><td>2</td><td>500</td><td class="mono">5</td><td class="mono">13</td><td class="y">✓ 見える</td></tr>
+      <tr><td>2</td><td>400</td><td class="mono">13</td><td class="mono">—</td><td class="n">✗ 見えない</td></tr>
+    </tbody>
+  </table></div>
+  <figcaption><b>図8-7 相当</b>（PostgreSQL 方式。古い行の txid は例）Aaliyah の読み取りが txid 12、送金が txid 13。12 から見ると 13 は「自分より後に始まった人」なので、13 がした挿入も削除も<b>無視</b>する。だから 500 と 500 が見える。</figcaption>
+</figure>
+
+<p>見える・見えないのルールはこうです。次の3つは<strong>無視</strong>し、それ以外は見えます。</p>
+<ol>
+  <li>自分が始まったとき、まだ<strong>進行中だった</strong>トランザクションの書き込み（その後コミットしても無視）</li>
+  <li>自分より<strong>後に始まった</strong>トランザクションの書き込み</li>
+  <li><strong>アボートした</strong>トランザクションの書き込み</li>
+</ol>
+<div class="box gist"><span class="tag">スナップショット分離の合言葉</span>
+<p><strong>読む人は書く人を待たせない。書く人は読む人を待たせない。</strong>読み取りにロックが要らないので、長い集計と普通の書き込みが同居できます。</p></div>
+
+<div class="box trap"><span class="tag">名前がぐちゃぐちゃ</span>
+<p>SQL 標準は1975年の System R が元で、スナップショット分離という概念がありません。そのせいで呼び名が DB ごとに違います。</p>
+<ul>
+  <li>PostgreSQL の「リピータブルリード」＝ スナップショット分離</li>
+  <li>Oracle の「シリアライザブル」＝ スナップショット分離</li>
+  <li>MySQL の「リピータブルリード」＝ スナップショット分離より弱い</li>
+  <li>IBM Db2 の「リピータブルリード」＝ シリアライザブル</li>
+</ul>
+<p>名前を信じず、<strong>その DB が実際に何を防ぐか</strong>を確認しましょう。</p></div>
+
+<h3><span class="no">8.2.3</span>ロストアップデートを防ぐ</h3>
+<p>ここからは「書く人 vs 書く人」の事故です。いちばん有名なのが<strong>ロストアップデート</strong>。「読む → 手元で変える → 書き戻す」を2人が同時にやると、片方の変更が消えます。最初のカウンターの図がまさにこれです。</p>
+<ul>
+  <li>カウンターの加算、口座残高の更新</li>
+  <li>JSON の中のリストに要素を足す</li>
+  <li>Wiki ページを2人が同時に編集して、ページ全体を保存する</li>
+</ul>
+<p>対策は5つあります。</p>
+
+<div class="cards">
+  <div class="card b"><h4>① アトミックな書き込み</h4><p>読んでから書くのをやめて、DB に計算させる。使えるなら<strong>これが最善</strong>。</p></div>
+  <div class="card b"><h4>② 明示的なロック</h4><p><code>FOR UPDATE</code> で、読んだ行を先に押さえる。</p></div>
+  <div class="card b"><h4>③ 自動検出</h4><p>並行に走らせて、DB が検出したらアボート。アプリはリトライ。</p></div>
+  <div class="card b"><h4>④ 条件付き書き込み</h4><p>「読んだときから変わっていなければ」更新する（CAS）。</p></div>
+  <div class="card b"><h4>⑤ マージ</h4><p>レプリケーション環境では、両方の値を残して後で合体させる。</p></div>
+</div>
+
+<pre><code><span class="cm">-- ① アトミックな書き込み：DB の中で足し算する</span>
+UPDATE counters SET value = <span class="hl">value + 1</span>
+WHERE key = 'foo';
+
+<span class="cm">-- ② 明示的なロック：読んだ行を押さえてから考える</span>
+BEGIN;
+SELECT * FROM figures
+ WHERE name = 'robot' AND game_id = 222
+ <span class="hl">FOR UPDATE</span>;
+<span class="cm">-- アプリ側で「この手は有効か」を判定してから</span>
+UPDATE figures SET position = 'c4' WHERE id = 1234;
+COMMIT;
+
+<span class="cm">-- ④ 条件付き書き込み：中身が昔のままなら更新</span>
+UPDATE wiki_pages SET content = '新しい内容'
+ WHERE id = 1234 AND <span class="hl">content = '読んだときの内容'</span>;
+<span class="cm">-- 更新件数が 0 なら、読み直してリトライ</span></code></pre>
+
+<div class="box trap"><span class="tag">それぞれの注意点</span>
+<ul>
+  <li><strong>①</strong> ORM を使うと、うっかり「読んで・変えて・書く」コードを書きやすい。</li>
+  <li><strong>②</strong> ロックを1か所付け忘れるだけで事故る。複数ロックするとデッドロックの危険。</li>
+  <li><strong>③</strong> PostgreSQL のリピータブルリード、Oracle のシリアライザブル、SQL Server のスナップショット分離は自動検出する。<strong>MySQL/InnoDB のリピータブルリードは検出しない</strong>。</li>
+  <li><strong>④</strong> DB の実装によっては安全でないことがある。条件判定が古いスナップショットを見るなら、すり抜ける。</li>
+  <li><strong>⑤</strong> マルチリーダーやリーダーレスでは、「最新のコピーは1つ」という前提が崩れるので、ロックも CAS も効かない。加算のように順番を入れ替えても結果が同じ操作ならきれいにマージできる。<strong>LWW（最後の書き込みが勝つ）はロストアップデートを起こしやすい</strong>。</li>
+</ul></div>
+
+<h3><span class="no">8.2.4</span>ライトスキューとファントム</h3>
+<p>もっとわかりにくい事故があります。病院の当直（オンコール）管理アプリで考えます。ルールは<strong>「最低1人はオンコールでなければならない」</strong>。</p>
+
+<figure class="fig">
+  <div class="fig-title">ライトスキュー：2人同時に当直を降りる</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>Aaliyah</span><span><i style="background:var(--b)"></i>Bryce</span></div>
+  <div class="tl">
+    <div class="ev db">オンコール：Aaliyah, Bryce（2人）</div>
+    <div class="ev a"><span class="who">Aaliyah</span>今オンコールは何人？ → 2人</div>
+    <div class="ev b"><span class="who">Bryce</span>今オンコールは何人？ → 2人</div>
+    <div class="ev a"><span class="who">Aaliyah</span>2人いるから大丈夫 → <b>自分の行</b>を「降りる」に更新</div>
+    <div class="ev b"><span class="who">Bryce</span>2人いるから大丈夫 → <b>自分の行</b>を「降りる」に更新</div>
+    <div class="ev db">両方コミット成功</div>
+    <div class="ev bad">オンコール 0 人。ルール違反</div>
+  </div>
+  <figcaption><b>図8-8 相当</b> スナップショット分離では、2人とも「2人いる写真」を見て判断してしまう。</figcaption>
+</figure>
+
+<p>これは<strong>ダーティライトでもロストアップデートでもありません</strong>。2人が更新したのは<strong>別々の行</strong>だからです。同じものを読んで、別のものを書く。それでも結果がおかしくなる。これがライトスキューです。</p>
+
+<div class="box gist"><span class="tag">ライトスキューの型（全部これ）</span>
+<ol>
+  <li><code>SELECT</code> で条件を確認する（2人以上いるか、予約が空いているか）</li>
+  <li>結果を見て、アプリが「やっていい」と判断する</li>
+  <li>書き込む。<strong>その書き込みが、1 の答えを変えてしまう</strong></li>
+</ol></div>
+
+<p>同じ型の例です。</p>
+<ul>
+  <li><strong>会議室予約</strong>：空きを確認して予約を INSERT。2人同時だと二重予約。</li>
+  <li><strong>マルチプレイヤーゲーム</strong>：別々の駒を同じマスに動かす。</li>
+  <li><strong>ユーザー名の取得</strong>：未使用を確認して登録。これはユニーク制約で簡単に解決できる。</li>
+  <li><strong>二重支払いの防止</strong>：残高を確認して使う。2件同時だと残高がマイナスに。</li>
+</ul>
+
+<h4>なぜ防ぎにくいか</h4>
+<ul>
+  <li>複数の行が絡むので、1オブジェクトのアトミック操作は役に立たない。</li>
+  <li>ロストアップデートの自動検出も効かない（PostgreSQL、MySQL、Oracle、SQL Server のどれも、スナップショット分離相当のレベルでは検出しない）。</li>
+  <li>「最低1人」のような複数行にまたがる制約は、ほとんどの DB に組み込みがない。</li>
+  <li>本当の解決は<strong>シリアライザブル</strong>。使えないなら次善の策は、判断の根拠にした行を <code>FOR UPDATE</code> でロックすること。</li>
+</ul>
+
+<h4>ファントム：ロックする行がそもそも無い</h4>
+<p>当直の例では、手順1で読んだ行をロックできました。でも会議室予約は違います。手順1で確認したのは<strong>「該当する行が存在しないこと」</strong>です。存在しない行に <code>FOR UPDATE</code> は掛けられません。</p>
+<p>あるトランザクションの書き込みが、別のトランザクションの<strong>検索結果を変えてしまう</strong>。この現象をファントム（幽霊）と呼びます。</p>
+<div class="box note"><span class="tag">最後の手段：コンフリクトの実体化</span>
+<p>ロックする相手がいないなら作ってしまう方法です。「部屋 × 15分の時間枠」の行をあらかじめ全部作っておき、予約時にその行をロックします。ただし、並行性制御の都合がデータモデルに漏れ出すので醜い。本は、<strong>できる限りシリアライザブルのほうがいい</strong>と言います。</p></div>
+</section>
+
+<section id="s83">
+<h2><span class="no">8.3</span>シリアライザブル</h2>
+<p>ここまでの話をまとめると、弱い分離レベルはつらい。</p>
+<ul>
+  <li>レベルの意味が難しく、DB ごとに実装が違う。</li>
+  <li>アプリのコードを見ても、そのレベルで安全かどうかわからない。</li>
+  <li>競合状態を見つけてくれる良い道具がない。</li>
+</ul>
+<p>研究者の答えは1970年代からずっと同じです。<strong>「シリアライザブルを使え」</strong>。</p>
+<div class="box gist"><span class="tag">シリアライザブルとは</span>
+<p>トランザクションを同時に走らせても、結果は<strong>「1個ずつ順番に実行した場合」のどれかと同じ</strong>になる、という保証。つまり、起こりうる競合状態を全部防ぎます。</p></div>
+<p>じゃあなぜ皆使わないのか。作り方が3つあり、それぞれに代償があるからです。</p>
+
+<h3><span class="no">8.3.1</span>作り方① 本当に1個ずつ実行する</h3>
+<p>同時実行の問題をなくすいちばん単純な方法は、<strong>同時実行をやめること</strong>です。1本のスレッドで、順番に1個ずつ。</p>
+<figure class="fig">
+  <div class="queue">
+    <span class="chip">Tx 5</span><span class="chip">Tx 4</span><span class="chip">Tx 3</span><span class="chip">Tx 2</span>
+    <span class="arrow">→</span>
+    <span class="run">スレッド1本：Tx 1 を実行中</span>
+  </div>
+  <figcaption><b>図</b> 並ばせて1個ずつ。ロックも検出も要らない。VoltDB/H-Store、Redis、Datomic がこの方式。</figcaption>
+</figure>
+<p>当たり前に見えますが、現実的になったのは2000年代です。理由は2つ。</p>
+<ul>
+  <li><strong>RAM が安くなった</strong>。データを全部メモリに置けば、ディスク待ちがなくて速い。</li>
+  <li><strong>OLTP のトランザクションは短い</strong>と気づいた。長い分析クエリは読み取り専用なので、スナップショットで別に走らせればいい。</li>
+</ul>
+
+<h4>ストアドプロシージャが必須になる</h4>
+<p>普通のトランザクションは、アプリと DB が何往復も会話します。その<strong>往復の待ち時間</strong>のあいだ、1本しかないスレッドが止まったら全員が待たされます。だから、処理をまるごと DB に送って一気に実行させます。</p>
+<figure class="fig">
+  <div class="cards" style="margin:0">
+    <div class="card bad"><h4>対話型（何往復もする）</h4>
+      <div class="pp">
+        <div class="to">アプリ → DB：SELECT</div>
+        <div class="back">DB → アプリ：結果</div>
+        <div class="in">アプリが考える</div>
+        <div class="to">アプリ → DB：UPDATE</div>
+        <div class="back">DB → アプリ：OK</div>
+        <div class="to">アプリ → DB：COMMIT</div>
+        <div class="back">DB → アプリ：OK</div>
+      </div></div>
+    <div class="card ok"><h4>ストアドプロシージャ（1往復）</h4>
+      <div class="pp">
+        <div class="to">アプリ → DB：プロシージャ呼び出し</div>
+        <div class="in">DB の中で SELECT・判定・UPDATE を全部実行</div>
+        <div class="back">DB → アプリ：結果</div>
+      </div></div>
+  </div>
+  <figcaption><b>図8-9 相当</b> データが全部メモリにあれば、ストアドプロシージャはネットワークもディスクも待たずに走り切る。</figcaption>
+</figure>
+<p>ストアドプロシージャは評判が悪いです。DB ごとの独自言語（PL/SQL など）、デバッグ・テスト・デプロイのしにくさ、下手なコードが DB 全体を遅くする危険。でも今どきの実装は汎用言語を使います（VoltDB は Java や Groovy、Datomic は Java や Clojure、Redis は Lua）。</p>
+
+<h4>1コアの壁とシャーディング</h4>
+<p>1本のスレッドなので、書き込み性能は<strong>CPU 1コア分</strong>が上限です。データをシャードに分け、各シャードに1スレッドを割り当てれば伸ばせます。ただし複数シャードにまたがるトランザクションは調整が必要で、桁違いに遅くなります（VoltDB で毎秒約1,000件）。</p>
+<div class="box trap"><span class="tag">逐次実行が使える条件</span>
+<ul>
+  <li>すべてのトランザクションが<strong>小さくて速い</strong>こと。遅いのが1つあると全部止まる。</li>
+  <li>よく使うデータが<strong>メモリに収まる</strong>こと。</li>
+  <li>書き込み量が1コアで足りるか、シャードをまたがずに分割できること。</li>
+</ul></div>
+
+<h3><span class="no">8.3.2</span>作り方② 2相ロック（2PL）</h3>
+<p>約30年間、シリアライザブルの実装といえばこれだけでした。考え方は<strong>「危なそうなら待たせる」</strong>。</p>
+<div class="box trap"><span class="tag">2PL ≠ 2PC</span>
+<p>名前が似ていますが完全に別物です。<strong>2PL</strong>（2相ロック）は分離性のため。<strong>2PC</strong>（2相コミット、8.4）は分散環境の原子性のため。</p></div>
+
+<p>ロックには2種類あります。読むときは<strong>共有ロック</strong>、書くときは<strong>排他ロック</strong>。</p>
+<figure>
+  <div class="tw"><table>
+    <thead><tr><th>自分がしたいこと</th><th>他の人が読んでいる</th><th>他の人が書いている</th></tr></thead>
+    <tbody>
+      <tr><td>読みたい（共有）</td><td class="y">✓ 一緒に読める</td><td class="n">✗ 待つ</td></tr>
+      <tr><td>書きたい（排他）</td><td class="n">✗ 待つ</td><td class="n">✗ 待つ</td></tr>
+    </tbody>
+  </table></div>
+  <figcaption><b>図</b> スナップショット分離の合言葉と正反対。2PL では、<b>書く人は読む人を待たせ、読む人は書く人を待たせる</b>。</figcaption>
+</figure>
+<p>「2相」の意味は、①実行中にロックを<strong>取っていく相</strong>と、②コミットかアボートのときに全部<strong>手放す相</strong>。途中では手放しません。</p>
+
+<h4>欠点：遅い、そして不安定</h4>
+<ul>
+  <li>待ち行列ができる。遅いトランザクション1つで、システム全体が詰まることがある。</li>
+  <li>応答時間が読めない。高パーセンタイルがとても遅くなる。</li>
+  <li><strong>デッドロック</strong>が頻発する。DB が検出して片方をアボートし、アプリがやり直す。その分の仕事は無駄になる。</li>
+</ul>
+
+<h4>ファントムはどう防ぐ？ 述語ロックとインデックス範囲ロック</h4>
+<p>会議室予約のように「まだ無い行」を守るには、行ではなく<strong>検索条件そのもの</strong>にロックを掛けます。これが述語ロック。「部屋123の正午から13時に重なる予約」という条件をロックすれば、これから挿入される行にも効きます。</p>
+<p>ただし、条件どうしの突き合わせは重い。そこで実際の DB は<strong>インデックス範囲ロック</strong>（ネクストキーロック）で近似します。「部屋123の全予約」や「その時間帯の全部屋」のように、<strong>広めに雑に</strong>ロックする。余計な人も待たせますが、判定が軽い。使えるインデックスが無ければ、テーブル全体をロックします。</p>
+
+<h3><span class="no">8.3.3</span>作り方③ シリアライザブルスナップショット分離（SSI）</h3>
+<p>性能が悪いか（2PL）、スケールしないか（逐次実行）、事故が起きるか（弱いレベル）。この三択しかないのか。SSI はそこへの答えです。<strong>スナップショット分離に近い軽さで、完全なシリアライザブル</strong>を実現します。</p>
+
+<div class="cards">
+  <div class="card bad"><h4>悲観的（2PL）</h4><p>「事故るかも」と思ったら<strong>先に待たせる</strong>。逐次実行は、その究極形。</p></div>
+  <div class="card ok"><h4>楽観的（SSI）</h4><p>とりあえず全員走らせる。<strong>コミットのときに検査</strong>して、まずかった人だけアボート。</p></div>
+</div>
+<p>楽観的な方法は、ぶつかり合いが多いとアボートだらけになって遅くなります。でも余力があってぶつかり合いが少なければ、悲観的な方法より速い。</p>
+
+<h4>SSI が見張っているもの</h4>
+<p>ライトスキューの正体は<strong>「古くなった前提で判断した」</strong>ことでした（「オンコールは2人いる」）。そこで SSI は、スナップショット分離の上に「前提が古くなっていないか」の検出を足します。見張るのは2つの場合です。</p>
+
+<figure class="fig">
+  <div class="fig-title">場合1：読む前に、未コミットの書き込みがあった</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>Tx 42（Aaliyah）</span><span><i style="background:var(--b)"></i>Tx 43（Bryce）</span></div>
+  <div class="tl">
+    <div class="ev a"><span class="who">Tx 42</span>Aaliyah を「降りる」に更新（未コミット）</div>
+    <div class="ev b"><span class="who">Tx 43</span>オンコールを数える → 42 の書き込みは<b>無視</b>して「2人」</div>
+    <div class="ev c"><span class="who">DB のメモ</span>43 は、42 の書き込みを無視して読んだ</div>
+    <div class="ev a"><span class="who">Tx 42</span>コミット → 成功</div>
+    <div class="ev b"><span class="who">Tx 43</span>Bryce を「降りる」に更新して、コミットしたい</div>
+    <div class="ev bad">無視した書き込みがコミット済みになっている → Tx 43 はアボート</div>
+  </div>
+  <figcaption><b>図8-10 相当</b> なぜすぐ止めず、コミットまで待つのか。43 が読むだけで終わるなら問題ないし、42 がアボートする可能性もあるから。無駄なアボートを減らしている。</figcaption>
+</figure>
+
+<figure class="fig">
+  <div class="fig-title">場合2：読んだ後に、誰かが書き換えた</div>
+  <div class="tl">
+    <div class="ev a"><span class="who">Tx 42</span>シフト1234 のオンコールを検索 → 2人</div>
+    <div class="ev b"><span class="who">Tx 43</span>シフト1234 のオンコールを検索 → 2人</div>
+    <div class="ev c"><span class="who">DB のメモ</span>インデックス「1234」は、42 と 43 が読んだ</div>
+    <div class="ev a"><span class="who">Tx 42</span>Aaliyah を更新 → 43 に「君の読みは古くなった」と印を付ける</div>
+    <div class="ev b"><span class="who">Tx 43</span>Bryce を更新 → 42 に同じ印を付ける</div>
+    <div class="ev a"><span class="who">Tx 42</span>コミット → 成功（43 の書き込みはまだ未コミット）</div>
+    <div class="ev b"><span class="who">Tx 43</span>コミットしたい</div>
+    <div class="ev bad">42 の書き込みがコミット済み → Tx 43 はアボート</div>
+  </div>
+  <figcaption><b>図8-11 相当</b> 2PL のインデックス範囲ロックに似ているが、<b>誰も待たせない</b>。仕掛け線のように「通ったこと」を記録するだけ。</figcaption>
+</figure>
+
+<h4>3つの作り方を並べる</h4>
+<div class="tw"><table>
+  <thead><tr><th></th><th>① 逐次実行</th><th>② 2PL</th><th>③ SSI</th></tr></thead>
+  <tbody>
+    <tr><td>考え方</td><td>並行をやめる</td><td>悲観的：待たせる</td><td>楽観的：後で検査</td></tr>
+    <tr><td>待ち</td><td>全員が順番待ち</td><td>読み書きが互いに待つ</td><td>待たない</td></tr>
+    <tr><td>失敗の形</td><td>遅い Tx が全体を止める</td><td>デッドロック</td><td>コミット時のアボート</td></tr>
+    <tr><td>弱点</td><td>1コアの壁</td><td>遅くて不安定</td><td>長い読み書き Tx はアボートされやすい</td></tr>
+    <tr><td>例</td><td>VoltDB、Redis、Datomic</td><td>MySQL と SQL Server のシリアライザブル</td><td>PostgreSQL のシリアライザブル、CockroachDB、FoundationDB</td></tr>
+  </tbody>
+</table></div>
+<p>SSI のコツは、<strong>読み書きするトランザクションを短くする</strong>こと。長い読み取り専用のものは問題ありません。</p>
+</section>
+
+<section id="s84">
+<h2><span class="no">8.4</span>分散トランザクション</h2>
+<p>ここからは、1つのトランザクションが<strong>複数のノード</strong>にまたがる場合です（複数シャードへの書き込みなど）。分離性の作り方は1台のときと大差ありません。まったく新しい難題は<strong>原子性</strong>です。</p>
+<p>1台なら簡単でした。データを書き、最後に「コミットした」という記録をディスクに書く。<strong>その記録が書けた瞬間がコミット</strong>です。決めるのは1台だけ。</p>
+<p>複数台だと、全員に「コミットして」と送るだけでは足りません。</p>
+
+<figure class="fig">
+  <div class="fig-title">ただ全員にコミットを送ると…</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>DB 1</span><span><i style="background:var(--b)"></i>DB 2</span><span><i style="background:var(--db)"></i>アプリ</span></div>
+  <div class="tl">
+    <div class="ev c"><span class="who">アプリ</span>DB 1 と DB 2 に「コミットして」</div>
+    <div class="ev a"><span class="who">DB 1</span>コミット成功</div>
+    <div class="ev b"><span class="who">DB 2</span>制約違反 / 通信が消えた / 書く前にクラッシュ → 失敗</div>
+    <div class="ev bad">片方だけコミット。ノード間でデータが食い違う</div>
+  </div>
+  <figcaption><b>図8-12 相当</b> コミットは取り消せない（もう誰かが読んだかもしれない）。だから「全員コミットか、全員アボートか」を保証する必要がある。これがアトミックコミット問題。</figcaption>
+</figure>
+
+<h3><span class="no">8.4.1</span>2相コミット（2PC）</h3>
+<p>解決策の古典です。<strong>コーディネーター</strong>という司会役を置き、コミットを2段階に分けます。</p>
+
+<figure class="fig">
+  <div class="fig-title">2PC がうまくいく場合</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>DB 1</span><span><i style="background:var(--b)"></i>DB 2</span><span><i style="background:var(--db)"></i>コーディネーター</span></div>
+  <div class="tl">
+    <div class="time">第1相：準備</div>
+    <div class="ev c"><span class="who">コーディネーター</span>全員へ「コミットできる？」</div>
+    <div class="ev a"><span class="who">DB 1</span>はい</div>
+    <div class="ev b"><span class="who">DB 2</span>はい</div>
+    <div class="ev c"><span class="who">コーディネーター</span>「コミット」と決めて、<b>自分のディスクに記録</b></div>
+    <div class="time">第2相：コミット</div>
+    <div class="ev c"><span class="who">コーディネーター</span>全員へ「コミットして」</div>
+    <div class="ev a"><span class="who">DB 1</span>コミット完了</div>
+    <div class="ev b"><span class="who">DB 2</span>コミット完了</div>
+  </div>
+  <figcaption><b>図8-13 相当</b> 誰か1人でも「いいえ」なら、第2相で全員に「アボートして」を送る。</figcaption>
+</figure>
+
+<div class="box note"><span class="tag">結婚式のたとえ</span>
+<p>司式者が2人それぞれに「結婚しますか？」と聞く。両方が「誓います」と答えたら、「結婚が成立しました」と宣言する。どちらかが「はい」と言わなければ中止。</p></div>
+
+<h4>なぜ2段階だとうまくいくのか：約束の仕組み</h4>
+<p>2PC には<strong>引き返せない地点</strong>が2つあります。</p>
+<div class="cards">
+  <div class="card a"><h4>地点1：参加者の「はい」</h4><p>「はい」と答えたら、<strong>アボートする権利を手放す</strong>。クラッシュしても停電しても必ずコミットできるよう、データをディスクに書いてから答える。</p></div>
+  <div class="card db"><h4>地点2：司会の記録</h4><p>コーディネーターが決定をディスクに書いたら、<strong>もう覆せない</strong>。届かなければ、届くまで永遠に送り直す。</p></div>
+</div>
+<p>結婚式でいえば、「誓います」と言ってしまった後は、直後に気絶しても結婚は成立している、ということです。</p>
+
+<h4>弱点：司会が倒れると全員が固まる</h4>
+<figure class="fig">
+  <div class="fig-title">「はい」と答えた後に、コーディネーターがクラッシュ</div>
+  <div class="tl">
+    <div class="ev a"><span class="who">DB 1</span>はい</div>
+    <div class="ev b"><span class="who">DB 2</span>はい</div>
+    <div class="ev c"><span class="who">コーディネーター</span>「コミット」と決定</div>
+    <div class="ev b"><span class="who">DB 2</span>コミット指示を受信 → 完了</div>
+    <div class="ev bad">コーディネーターがクラッシュ（DB 1 には指示が届いていない）</div>
+    <div class="ev a"><span class="who">DB 1</span>コミット？ アボート？ わからない。<b>待つしかない</b></div>
+  </div>
+  <figcaption><b>図8-14 相当</b> この状態を「未確定（in doubt）」と呼ぶ。勝手にアボートすると DB 2 と食い違う。勝手にコミットしても、他の誰かがアボートしているかもしれない。</figcaption>
+</figure>
+<p>助かる道は、コーディネーターが復活してログを読み直すことだけです。そのログが消えていたら、人間の管理者が手作業で決めるしかありません。</p>
+<div class="box note"><span class="tag">3相コミット（3PC）は？</span>
+<p>固まらない方式として提案されましたが、<strong>「ネットワーク遅延にも応答時間にも上限がある」</strong>という前提が必要です。現実のネットワークにそんな上限はないので、原子性を保証できません。実用的な答えは、コーディネーターを合意プロトコルで多重化すること（第10章）。</p></div>
+
+<h3><span class="no">8.4.2</span>異なるシステムをまたぐ場合</h3>
+<p>「分散トランザクション」には、まったく違う2種類があります。</p>
+<div class="cards">
+  <div class="card ok"><h4>DB 内部の分散 Tx</h4><p>全ノードが<strong>同じソフト</strong>。CockroachDB や Spanner など。自由に最適化できる。</p></div>
+  <div class="card bad"><h4>ヘテロな分散 Tx</h4><p><strong>別々の製品</strong>をまたぐ。別ベンダーの DB どうし、DB とメッセージブローカーなど。ずっと難しい。</p></div>
+</div>
+
+<h4>何がうれしいか：「厳密に1回」の処理</h4>
+<p>メッセージキューからメッセージを受け取り、DB に書く処理を考えます。「メッセージの受領確認」と「DB の書き込み」を<strong>1つのトランザクション</strong>にできれば、途中で落ちても両方なかったことになり、安全に再配信できます。結果として、何度リトライしても<strong>効果は1回分だけ</strong>。</p>
+<p>ただし、関わる全システムが同じアトミックコミットの手順に対応している必要があります。メール送信サーバーが対応していなければ、リトライのたびにメールが飛びます。</p>
+
+<h4>XA：異種システム用の 2PC 規格</h4>
+<p>1991年に登場した標準規格です。ネットワークプロトコルではなく、コーディネーターとやり取りするための <strong>C 言語の API</strong>（Java なら JTA）。多くの場合、コーディネーターは<strong>アプリと同じプロセスの中のライブラリ</strong>で、ログはアプリサーバーのローカルディスクに書かれます。</p>
+
+<div class="box trap"><span class="tag">XA のつらいところ</span>
+<ul>
+  <li><strong>ロックを握ったまま固まる</strong>。未確定のあいだ、参加者は行ロックを手放せない。コーディネーターが20分落ちれば、ロックも20分そのまま。ログが消えていれば永遠に。関係ない他のトランザクションまで巻き添えで止まる。</li>
+  <li><strong>孤児トランザクション</strong>。ログの破損やバグで、結果が永久に決まらないものが残る。DB を再起動しても直らない（ロックを持ち続けるのが正しい実装だから）。管理者が手作業で解決する。</li>
+  <li><strong>「経験則による決定」</strong>という非常口がある。参加者が独断でコミットかアボートを決める機能。本いわく、これは<strong>「原子性を壊すかもしれない」の婉曲表現</strong>。</li>
+  <li><strong>コーディネーターが単一障害点</strong>。しかもアプリサーバーの中にいるので、アプリサーバーが「消えては困るログを持つ機械」になってしまう。</li>
+  <li><strong>最小公倍数の機能しか使えない</strong>。どんな製品とも話せる必要があるので、システムをまたいだデッドロック検出はできず、SSI とも組み合わせられない。</li>
+</ul></div>
+
+<h3><span class="no">8.4.3</span>DB 内部の分散トランザクション</h3>
+<p>NewSQL 系（CockroachDB、TiDB、Spanner、FoundationDB、YugabyteDB）や Kafka は、内部で分散トランザクションを使います。多くは 2PC ですが、<strong>XA の問題を抱えていません</strong>。他の製品に合わせる必要がないからです。直し方はこうです。</p>
+<ol class="steps">
+  <li><strong>コーディネーターを多重化</strong>する。落ちたら別のノードが自動で引き継ぐ。</li>
+  <li>コーディネーターとシャードが<strong>直接話す</strong>。あいだにアプリのコードを挟まない。</li>
+  <li><strong>参加するシャードも多重化</strong>する。1台の故障でアボートになる危険を減らす。</li>
+  <li>アトミックコミットと並行性制御を<strong>連携させる</strong>。シャードをまたいだデッドロック検出と、一貫した読み取りができる。</li>
+</ol>
+<p>多重化には合意アルゴリズムを使います（第10章）。分離レベルは製品によりますが、スナップショット分離も SSI もシャードをまたいで実現できます。</p>
+
+<h3><span class="no">8.4.4</span>「厳密に1回」をもう一度考える</h3>
+<p>実は「厳密に1回」のために、分散トランザクションは<strong>必須ではありません</strong>。DB の中のトランザクションだけで作れます。</p>
+<figure class="fig">
+  <div class="fig-title">処理済みメッセージ ID の表を使う方法</div>
+  <ol class="steps">
+    <li>DB でトランザクションを開始し、<strong>メッセージ ID が表にあるか</strong>調べる。あれば処理済みなので、受領確認だけ返して捨てる。</li>
+    <li>なければ ID を表に追加し、メッセージを処理する。処理の書き込みも<strong>同じトランザクション</strong>に入れてコミット。</li>
+    <li>コミットできたら、ブローカーに受領確認を返す。</li>
+    <li>確認が済んだら、表から ID を消してよい（別のトランザクションで）。</li>
+  </ol>
+  <figcaption><b>図</b> どこで落ちても大丈夫。コミット前に落ちれば全部なかったことになり、再配信される。コミット後、確認前に落ちれば再配信されるが、手順1で弾かれる。</figcaption>
+</figure>
+<div class="box gist"><span class="tag">ここで出てくる大事な言葉：冪等（べきとう）</span>
+<p>ID を記録することで、<strong>同じメッセージを何回処理しても結果が1回分と同じ</strong>になります。これが冪等。Kafka Streams などのストリーム処理も同じ考え方です（第12章）。</p></div>
+</section>
+
+<section id="s85">
+<h2><span class="no">8.5</span>まとめ</h2>
+<p>トランザクションは抽象化の層です。いろんな種類の失敗を<strong>「アボート」という1種類</strong>にまとめてくれる。アプリはリトライするだけでよくなります。</p>
+
+<h3>どのレベルが、どの事故を防ぐか</h3>
+<figure>
+  <div class="tw"><table class="keep">
+    <thead><tr><th>分離レベル</th><th>ダーティリード</th><th>リードスキュー</th><th>ファントムリード</th><th>ロストアップデート</th><th>ライトスキュー</th></tr></thead>
+    <tbody>
+      <tr><td>リードアンコミッテッド</td><td class="n">✗ 起きる</td><td class="n">✗ 起きる</td><td class="n">✗ 起きる</td><td class="n">✗ 起きる</td><td class="n">✗ 起きる</td></tr>
+      <tr><td>リードコミッテッド</td><td class="y">✓ 防ぐ</td><td class="n">✗ 起きる</td><td class="n">✗ 起きる</td><td class="n">✗ 起きる</td><td class="n">✗ 起きる</td></tr>
+      <tr><td>スナップショット分離</td><td class="y">✓ 防ぐ</td><td class="y">✓ 防ぐ</td><td class="y">✓ 防ぐ</td><td class="m">△ 場合による</td><td class="n">✗ 起きる</td></tr>
+      <tr><td>シリアライザブル</td><td class="y">✓ 防ぐ</td><td class="y">✓ 防ぐ</td><td class="y">✓ 防ぐ</td><td class="y">✓ 防ぐ</td><td class="y">✓ 防ぐ</td></tr>
+    </tbody>
+  </table></div>
+  <figcaption><b>表8-1 相当</b> ダーティライトはほぼすべての実装が防ぐので、表に入っていない。</figcaption>
+</figure>
+
+<h3>事故の名前を一行ずつ</h3>
+<div class="tw"><table>
+  <tbody>
+    <tr><th>ダーティリード</th><td>他人の<strong>コミット前</strong>の書き込みを読む</td></tr>
+    <tr><th>ダーティライト</th><td>他人の<strong>コミット前</strong>の書き込みを上書きする</td></tr>
+    <tr><th>リードスキュー</th><td>DB の別々の部分を<strong>別々の時点</strong>で見る</td></tr>
+    <tr><th>ロストアップデート</th><td>「読む・変える・書く」が重なり、<strong>片方の変更が消える</strong></td></tr>
+    <tr><th>ライトスキュー</th><td>読んで判断して書いたが、書く頃には<strong>判断の前提が崩れている</strong></td></tr>
+    <tr><th>ファントムリード</th><td>他人の書き込みが、自分の<strong>検索結果を変える</strong></td></tr>
+  </tbody>
+</table></div>
+
+<h3>この章を5行で</h3>
+<div class="box gist"><span class="tag">持ち帰り</span>
+<ol>
+  <li>トランザクションは「全部か、ゼロか」。失敗を<strong>アボート1種類</strong>にまとめる道具。</li>
+  <li>「ACID」という看板ではなく、<strong>実際にどの分離レベルか</strong>を見る。名前は DB ごとに意味が違う。</li>
+  <li>弱いレベルは一部の事故しか防がない。残りは<strong>アプリがロックなどで手当て</strong>する。</li>
+  <li>全部防げるのはシリアライザブルだけ。作り方は<strong>逐次実行・2PL・SSI</strong>の3つ。</li>
+  <li>複数ノードの原子性は <strong>2PC</strong>。司会が倒れると固まるのが弱点で、DB 内部なら司会の多重化で直せる。</li>
+</ol></div>
+</section>
+
+<footer>
+  この資料は『データ指向アプリケーションデザイン 第2版』第8章の内容を、自分の言葉で図解し直した学習用ノートです。図の番号は本の図との対応を示します。正確な記述と参考文献は本を参照してください。
+</footer>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

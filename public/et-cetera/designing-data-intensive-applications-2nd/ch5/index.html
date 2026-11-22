@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 5章 エンコーディングと発展性</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@500;700&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 1カラムの読み物。図はスマホ幅(340)基準で描き、幅に合わせて伸縮。本文27px・行間2。常にダーク。
+     色の役割: 琥珀=古いコード・古いデータ / 青緑=新しいコード・新しいデータ / 藤=スキーマ(設計図)とその目印 / 朱=問題 */
+  --bg:#0f1420;
+  --panel:#171e2e;
+  --panel2:#1f2840;
+  --line:#34405f;
+  --text:#ebe7dc;
+  --mute:#a3adc4;
+  --old:#f3b54a;
+  --new:#58cfc2;
+  --sch:#b9a2ff;
+  --bad:#ff8372;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic",sans-serif;
+  --font-label:"M PLUS 1 Code","SFMono-Regular",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:27px;line-height:2;font-weight:400;
+  -webkit-text-size-adjust:100%;overflow-wrap:anywhere;line-break:strict;
+}
+main{max-width:36em;margin:0 auto;padding:36px 18px 140px}
+h1,h2,h3,h4{text-wrap:balance;word-break:auto-phrase;margin:0}
+h1{font-size:42px;line-height:1.4;font-weight:900;margin:6px 0 28px}
+h2{font-size:36px;line-height:1.5;font-weight:900;margin:120px 0 28px;padding-top:28px;border-top:3px solid var(--line)}
+h3{font-size:31px;line-height:1.5;font-weight:900;margin:84px 0 20px}
+h4{font-size:28px;line-height:1.6;font-weight:900;margin:60px 0 12px;color:var(--text)}
+h2 .num,h3 .num,h4 .num{font-family:var(--font-label);font-weight:700;color:var(--mute);margin-right:.4em}
+p{margin:0 0 30px}
+b,strong{font-weight:900}
+b.old{color:var(--old)} b.new{color:var(--new)} b.sch{color:var(--sch)} b.bad{color:var(--bad)}
+a{color:var(--new);text-underline-offset:.2em}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--new);outline-offset:4px;border-radius:6px}
+.eyebrow{font-family:var(--font-label);font-weight:700;color:var(--mute);margin:0}
+.lead{font-weight:500}
+ul,ol{margin:0 0 30px;padding-left:1.25em}
+li{margin:0 0 14px}
+li::marker{color:var(--mute);font-family:var(--font-label);font-weight:700}
+sup{line-height:1}
+
+code{font-family:var(--font-label);font-size:.85em;background:var(--panel2);padding:2px 7px;border-radius:7px;overflow-wrap:anywhere}
+pre{font-family:var(--font-label);font-size:20px;line-height:1.8;background:#0a0e17;border:1.5px solid var(--line);
+  border-radius:14px;padding:18px;margin:0 0 30px;overflow-x:auto;white-space:pre;color:var(--text)}
+pre code{font-size:inherit;background:none;padding:0}
+
+nav.toc{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px 22px;margin:48px 0 0}
+nav.toc p{margin:0 0 6px;font-weight:900}
+nav.toc ol{list-style:none;padding:0;margin:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:6px 0;text-decoration:none;color:var(--text)}
+nav.toc a .num{font-family:var(--font-label);color:var(--mute);margin-right:.5em}
+
+/* 囲み。左の帯の色が役割を表す */
+.box{background:var(--panel);border:1.5px solid var(--line);border-left:8px solid var(--mute);border-radius:14px;padding:18px 20px;margin:0 0 30px}
+.box>:last-child{margin-bottom:0}
+.box .lab{display:block;font-family:var(--font-label);font-weight:700;color:var(--mute);line-height:1.6;margin-bottom:6px}
+.box.key{border-left-color:var(--text)} .box.key .lab{color:var(--text)}
+.box.old{border-left-color:var(--old)} .box.old .lab{color:var(--old)}
+.box.new{border-left-color:var(--new)} .box.new .lab{color:var(--new)}
+.box.sch{border-left-color:var(--sch)} .box.sch .lab{color:var(--sch)}
+.box.bad{border-left-color:var(--bad)} .box.bad .lab{color:var(--bad)}
+.box.extra{border-style:dashed;border-left-style:solid}
+
+/* 2つを並べて比べる */
+.cmp{display:grid;gap:14px;margin:0 0 30px}
+@media (min-width:900px){.cmp{grid-template-columns:1fr 1fr}}
+.cmp .side{background:var(--panel);border:1.5px solid var(--line);border-top:8px solid var(--mute);border-radius:14px;padding:14px 20px 18px}
+.cmp .side>:last-child{margin-bottom:0}
+.cmp .side ul{padding-left:1.1em}
+.cmp .tag{display:block;font-family:var(--font-label);font-weight:700}
+.cmp .sch{border-top-color:var(--sch)} .cmp .sch .tag{color:var(--sch)}
+.cmp .new{border-top-color:var(--new)} .cmp .new .tag{color:var(--new)}
+.cmp .old{border-top-color:var(--old)} .cmp .old .tag{color:var(--old)}
+.cmp .bad{border-top-color:var(--bad)} .cmp .bad .tag{color:var(--bad)}
+
+/* 図 */
+figure.fig{margin:8px 0 34px}
+.canvas{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:14px 8px}
+.canvas svg{display:block;width:100%;height:auto;max-width:680px;margin:0 auto}
+figcaption{color:var(--mute);line-height:1.8;margin-top:14px}
+svg text{font-family:var(--font-body);fill:var(--text);font-weight:500}
+.t{font-size:15px} .ts{font-size:13px} .tb{font-size:16px;font-weight:900}
+.tm{font-family:var(--font-label);font-size:13px} .tmx{font-family:var(--font-label);font-size:12px} .tn{font-family:var(--font-label);font-size:11px}
+svg .c-mute{fill:var(--mute)} svg .c-old{fill:var(--old)} svg .c-new{fill:var(--new)} svg .c-sch{fill:var(--sch)} svg .c-bad{fill:var(--bad)}
+.f-panel{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+.f-none{fill:none;stroke:var(--mute);stroke-width:1.2}
+.f-old{fill:rgba(243,181,74,.2);stroke:var(--old);stroke-width:1.5}
+.f-new{fill:rgba(88,207,194,.18);stroke:var(--new);stroke-width:1.5}
+.f-sch{fill:rgba(185,162,255,.2);stroke:var(--sch);stroke-width:1.5}
+.f-bad{fill:rgba(255,131,114,.18);stroke:var(--bad);stroke-width:1.5}
+.zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5}
+.pg-off{fill:none;stroke:var(--mute);stroke-width:1.2;stroke-dasharray:3 3}
+.ln,.ln-old,.ln-new,.ln-sch,.ln-bad,.ln-tx{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ln{stroke:var(--mute)} .ln-old{stroke:var(--old)} .ln-new{stroke:var(--new)} .ln-sch{stroke:var(--sch)} .ln-bad{stroke:var(--bad)} .ln-tx{stroke:var(--text)}
+.thin{stroke-width:1.2} .dash{stroke-dasharray:5 4}
+.hd{fill:var(--mute)} .hd-old{fill:var(--old)} .hd-new{fill:var(--new)} .hd-sch{fill:var(--sch)} .hd-bad{fill:var(--bad)} .hd-tx{fill:var(--text)}
+svg .dim{opacity:.45}
+
+/* まとめ */
+ol.sum{list-style:none;padding:0;counter-reset:s}
+ol.sum li{counter-increment:s;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:16px 20px;margin:0 0 14px}
+ol.sum li::before{content:counter(s);font-family:var(--font-label);font-weight:700;color:var(--mute);display:block;line-height:1.4}
+dl.pick{margin:0 0 30px}
+dl.pick div{border-bottom:1.5px solid var(--line);padding:14px 0}
+dl.pick dt{color:var(--mute)}
+dl.pick dd{margin:0;font-weight:700}
+
+details{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;margin:0 0 14px}
+summary{cursor:pointer;padding:16px 20px;font-weight:700}
+details .ans{padding:0 20px 18px;border-top:1.5px dashed var(--line);margin-top:4px;padding-top:14px}
+details .ans>:last-child{margin-bottom:0}
+.foot{color:var(--mute);margin-top:96px;border-top:1.5px solid var(--line);padding-top:28px}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<main>
+
+<header>
+<p class="eyebrow">データ指向アプリケーションデザイン 第2版</p>
+<h1>5章 エンコーディングと発展性</h1>
+<p class="lead">アプリは変わり続けます。でも、全部をいっせいに新しくすることはできません。だから、古いコードと新しいコード、古いデータと新しいデータが<b>混ざって動く時間</b>が必ずあります。5章は、その間も壊れないようにデータを詰める方法の話です。</p>
+
+<div class="box key">
+<span class="lab">ひとことで</span>
+<p>データをバイト列に詰める形式を選ぶことは、「あとからどれだけ楽に変更できるか」を選ぶことです。合言葉は2つ。<b>後方互換性</b>（新しいコードが古いデータを読める）と、<b>前方互換性</b>（古いコードが新しいデータを読める）。</p>
+</div>
+
+<figure class="fig" id="fig-map"><div class="canvas"><svg viewBox="0 0 340 340" role="img" aria-label="この章の地図。5.1はデータの詰め方で、言語固有、テキスト、Protocol Buffers、Avroの4つ。5.2はデータの流れ方で、データベース、サービス、ワークフロー、イベントの4つ"><text x="8" y="18" class="ts c-mute" text-anchor="start">5.1 どう詰めるか（エンコーディング形式）</text><rect x="8" y="28" width="158" height="62" rx="6" class="f-panel"/><text x="87" y="54.5" class="t" text-anchor="middle">言語固有</text><text x="87" y="73.5" class="ts c-mute" text-anchor="middle">pickle など</text><rect x="174" y="28" width="158" height="62" rx="6" class="f-panel"/><text x="253" y="54.5" class="t" text-anchor="middle">テキスト</text><text x="253" y="73.5" class="ts c-mute" text-anchor="middle">JSON・XML・CSV</text><rect x="8" y="98" width="158" height="62" rx="6" class="f-sch"/><text x="87" y="124.5" class="tb" text-anchor="middle">Protocol Buffers</text><text x="87" y="143.5" class="ts" text-anchor="middle">タグ番号で見分ける</text><rect x="174" y="98" width="158" height="62" rx="6" class="f-sch"/><text x="253" y="124.5" class="tb" text-anchor="middle">Avro</text><text x="253" y="143.5" class="ts" text-anchor="middle">スキーマを2つ使う</text><text x="8" y="190" class="ts c-mute" text-anchor="start">5.2 どこを流れるか（データフロー）</text><rect x="8" y="200" width="158" height="62" rx="6" class="f-panel"/><text x="87" y="226.5" class="t" text-anchor="middle">データベース</text><text x="87" y="245.5" class="ts c-mute" text-anchor="middle">未来の自分へ</text><rect x="174" y="200" width="158" height="62" rx="6" class="f-panel"/><text x="253" y="226.5" class="t" text-anchor="middle">サービス</text><text x="253" y="245.5" class="ts c-mute" text-anchor="middle">REST・RPC</text><rect x="8" y="270" width="158" height="62" rx="6" class="f-panel"/><text x="87" y="296.5" class="t" text-anchor="middle">ワークフロー</text><text x="87" y="315.5" class="ts c-mute" text-anchor="middle">耐久性のある実行</text><rect x="174" y="270" width="158" height="62" rx="6" class="f-panel"/><text x="253" y="296.5" class="t" text-anchor="middle">イベント</text><text x="253" y="315.5" class="ts c-mute" text-anchor="middle">メッセージブローカー</text></svg></div><figcaption>この章の地図。前半は詰め方、後半は流れ方です。</figcaption></figure>
+
+<p>色の約束です。<b class="old">琥珀</b>は古いもの、<b class="new">青緑</b>は新しいもの、<b class="sch">藤色</b>はスキーマ（データの設計図）とその目印、<b class="bad">朱</b>は問題。最後まで同じ意味で使います。</p>
+
+<nav class="toc" aria-label="目次">
+<p>目次</p>
+<ol>
+<li><a href="#s50"><span class="num">5.0</span>なぜ新旧が混ざるのか</a></li>
+<li><a href="#s51"><span class="num">5.1</span>データのエンコーディング形式</a></li>
+<li><a href="#s511"><span class="num">5.1.1</span>言語固有のフォーマット</a></li>
+<li><a href="#s512"><span class="num">5.1.2</span>JSON・XML・CSV</a></li>
+<li><a href="#s513"><span class="num">5.1.3</span>Protocol Buffers</a></li>
+<li><a href="#s514"><span class="num">5.1.4</span>Avro</a></li>
+<li><a href="#s515"><span class="num">5.1.5</span>スキーマの利点</a></li>
+<li><a href="#s52"><span class="num">5.2</span>データフローのモード</a></li>
+<li><a href="#s521"><span class="num">5.2.1</span>データベース</a></li>
+<li><a href="#s522"><span class="num">5.2.2</span>サービス：RESTとRPC</a></li>
+<li><a href="#s523"><span class="num">5.2.3</span>耐久性のある実行</a></li>
+<li><a href="#s524"><span class="num">5.2.4</span>イベント駆動</a></li>
+<li><a href="#s53"><span class="num">5.3</span>まとめと確認問題</a></li>
+</ol>
+</nav>
+</header>
+
+<!-- ===================================================== 導入 -->
+<h2 id="s50"><span class="num">5.0</span>なぜ新旧が混ざるのか</h2>
+
+<h3>コードは一瞬では入れ替わらない</h3>
+<p>データの形を変えると、たいていコードも変えます。たとえばレコードにフィールドを1つ足して、コードがそれを読み書きし始める、という具合です。</p>
+<p>ところが大きなアプリでは、コードの入れ替えは一瞬では終わりません。本は理由を2つ挙げています。</p>
+<ul>
+<li><b>サーバー側：逐次更新をするから。</b>新しいバージョンを数台ずつ入れて、問題がないか見ながら広げていきます。サービスを止めずにリリースできるので、こまめに出せるようになります。</li>
+<li><b>クライアント側：ユーザーしだいだから。</b>アップデートを入れるかどうかはユーザーが決めます。古いアプリがしばらく残ります。</li>
+</ul>
+
+<figure class="fig" id="fig-rolling"><div class="canvas"><svg viewBox="0 0 340 238" role="img" aria-label="逐次更新の4段階。全部v1、1台だけv2、3台がv2、全部v2。途中の2段階は新旧が混在する"><rect x="72" y="64" width="258" height="102" rx="10" class="zone"/><text x="8" y="45" class="ts c-mute" text-anchor="start">開始</text><rect x="82" y="22" width="50" height="36" rx="6" class="f-old"/><text x="107" y="45" class="tm" text-anchor="middle">v1</text><rect x="144" y="22" width="50" height="36" rx="6" class="f-old"/><text x="169" y="45" class="tm" text-anchor="middle">v1</text><rect x="206" y="22" width="50" height="36" rx="6" class="f-old"/><text x="231" y="45" class="tm" text-anchor="middle">v1</text><rect x="268" y="22" width="50" height="36" rx="6" class="f-old"/><text x="293" y="45" class="tm" text-anchor="middle">v1</text><text x="8" y="95" class="ts c-mute" text-anchor="start">途中</text><rect x="82" y="72" width="50" height="36" rx="6" class="f-new"/><text x="107" y="95" class="tm" text-anchor="middle">v2</text><rect x="144" y="72" width="50" height="36" rx="6" class="f-old"/><text x="169" y="95" class="tm" text-anchor="middle">v1</text><rect x="206" y="72" width="50" height="36" rx="6" class="f-old"/><text x="231" y="95" class="tm" text-anchor="middle">v1</text><rect x="268" y="72" width="50" height="36" rx="6" class="f-old"/><text x="293" y="95" class="tm" text-anchor="middle">v1</text><text x="8" y="145" class="ts c-mute" text-anchor="start">途中</text><rect x="82" y="122" width="50" height="36" rx="6" class="f-new"/><text x="107" y="145" class="tm" text-anchor="middle">v2</text><rect x="144" y="122" width="50" height="36" rx="6" class="f-new"/><text x="169" y="145" class="tm" text-anchor="middle">v2</text><rect x="206" y="122" width="50" height="36" rx="6" class="f-new"/><text x="231" y="145" class="tm" text-anchor="middle">v2</text><rect x="268" y="122" width="50" height="36" rx="6" class="f-old"/><text x="293" y="145" class="tm" text-anchor="middle">v1</text><text x="8" y="195" class="ts c-mute" text-anchor="start">完了</text><rect x="82" y="172" width="50" height="36" rx="6" class="f-new"/><text x="107" y="195" class="tm" text-anchor="middle">v2</text><rect x="144" y="172" width="50" height="36" rx="6" class="f-new"/><text x="169" y="195" class="tm" text-anchor="middle">v2</text><rect x="206" y="172" width="50" height="36" rx="6" class="f-new"/><text x="231" y="195" class="tm" text-anchor="middle">v2</text><rect x="268" y="172" width="50" height="36" rx="6" class="f-new"/><text x="293" y="195" class="tm" text-anchor="middle">v2</text><text x="8" y="228" class="ts c-mute" text-anchor="start">点線の中：古いコードと新しいコードが同時に動く</text></svg></div><figcaption>逐次更新（ローリングアップグレード）。止めずに入れ替えられますが、途中は新旧が混ざります。</figcaption></figure>
+
+<h3>互換性は2方向ある</h3>
+<p>新旧が混ざっても動き続けるには、2つの向きの互換性が要ります。</p>
+
+<figure class="fig" id="fig-compat"><div class="canvas"><svg viewBox="0 0 340 190" role="img" aria-label="後方互換性は古いコードが書いた古いデータを新しいコードが読めること。前方互換性は新しいコードが書いた新しいデータを古いコードが読めること"><text x="8" y="18" class="tb" text-anchor="start">後方互換性</text><text x="332" y="18" class="ts c-mute" text-anchor="end">わりと簡単</text><rect x="8" y="30" width="96" height="52" rx="6" class="f-old"/><text x="56" y="51.5" class="ts" text-anchor="middle">古いコード</text><text x="56" y="70.5" class="ts c-mute" text-anchor="middle">が書いた</text><rect x="122" y="30" width="96" height="52" rx="6" class="f-old"/><text x="170" y="61" class="ts" text-anchor="middle">古いデータ</text><rect x="236" y="30" width="96" height="52" rx="6" class="f-new"/><text x="284" y="51.5" class="ts" text-anchor="middle">新しいコード</text><text x="284" y="70.5" class="ts c-mute" text-anchor="middle">が読める</text><polygon points="122.0,56.0 114.0,60.0 114.0,52.0" class="hd-old"/><line x1="104" y1="56" x2="115" y2="56" class="ln-old"/><polygon points="236.0,56.0 228.0,60.0 228.0,52.0" class="hd-new"/><line x1="218" y1="56" x2="229" y2="56" class="ln-new"/><text x="8" y="122" class="tb" text-anchor="start">前方互換性</text><text x="332" y="122" class="ts c-bad" text-anchor="end">こっちが難しい</text><rect x="8" y="134" width="96" height="52" rx="6" class="f-new"/><text x="56" y="155.5" class="ts" text-anchor="middle">新しいコード</text><text x="56" y="174.5" class="ts c-mute" text-anchor="middle">が書いた</text><rect x="122" y="134" width="96" height="52" rx="6" class="f-new"/><text x="170" y="165" class="ts" text-anchor="middle">新しいデータ</text><rect x="236" y="134" width="96" height="52" rx="6" class="f-old"/><text x="284" y="155.5" class="ts" text-anchor="middle">古いコード</text><text x="284" y="174.5" class="ts c-mute" text-anchor="middle">が読める</text><polygon points="122.0,160.0 114.0,164.0 114.0,156.0" class="hd-new"/><line x1="104" y1="160" x2="115" y2="160" class="ln-new"/><polygon points="236.0,160.0 228.0,164.0 228.0,156.0" class="hd-old"/><line x1="218" y1="160" x2="229" y2="160" class="ln-old"/></svg></div><figcaption>2つの互換性。どちらも「読む側が読めるか」の話です。</figcaption></figure>
+
+<p><b>後方互換性</b>は、ふつうそれほど難しくありません。新しいコードを書く人は、古いデータの形を知っているからです。最悪、古いデータを読むための古いコードを残しておけば済みます。</p>
+<p><b>前方互換性</b>は厄介です。古いコードは、未来に何が足されるかを知りようがありません。「知らない部分は無視する」ように、最初から作っておく必要があります。</p>
+
+<div class="box extra">
+<span class="lab">補足（覚え方。本にはない）</span>
+<p>主語はどちらも「読む側のコード」です。<b>後方</b>は後ろ、つまり過去を向いています。過去のデータが読める。<b>前方</b>は前、つまり未来。未来のデータが読める。こう覚えると混ざりません。</p>
+</div>
+
+<h4>APIではどうなるか</h4>
+<p>APIでは、リクエストとレスポンスで「書く人」と「読む人」が入れ替わります。古いクライアントが新しいサービスを呼ぶ場合はこうです。</p>
+
+<figure class="fig" id="fig-apicompat"><div class="canvas"><svg viewBox="0 0 340 206" role="img" aria-label="古いクライアントが新しいサービスを呼ぶ。リクエストは古いコードが書いて新しいコードが読むので後方互換性、レスポンスは新しいコードが書いて古いコードが読むので前方互換性が要る"><text x="8" y="18" class="ts c-mute" text-anchor="start">書く人 → 読む人 で考える</text><rect x="8" y="40" width="100" height="110" rx="6" class="f-old"/><text x="58" y="90.5" class="t" text-anchor="middle">古い</text><text x="58" y="109.5" class="ts" text-anchor="middle">クライアント</text><rect x="232" y="40" width="100" height="110" rx="6" class="f-new"/><text x="282" y="90.5" class="t" text-anchor="middle">新しい</text><text x="282" y="109.5" class="ts" text-anchor="middle">サービス</text><text x="170" y="60" class="ts" text-anchor="middle">リクエスト</text><polygon points="232.0,70.0 224.0,74.0 224.0,66.0" class="hd-old"/><line x1="108" y1="70" x2="225" y2="70" class="ln-old"/><text x="170" y="90" class="ts c-mute" text-anchor="middle">後方互換性</text><text x="170" y="114" class="ts" text-anchor="middle">レスポンス</text><polygon points="108.0,124.0 116.0,120.0 116.0,128.0" class="hd-new"/><line x1="232" y1="124" x2="115" y2="124" class="ln-new"/><text x="170" y="144" class="ts c-mute" text-anchor="middle">前方互換性</text><text x="8" y="176" class="ts c-mute" text-anchor="start">リクエスト：古いコードが書き、新しいコードが読む</text><text x="8" y="196" class="ts c-mute" text-anchor="start">レスポンス：新しいコードが書き、古いコードが読む</text></svg></div><figcaption>古いクライアントが新しいサービスを呼ぶ場合。「誰が書いて、誰が読むか」で決まります。</figcaption></figure>
+
+<p>逆に、新しいクライアントが古いサービスを呼ぶなら、リクエストに前方互換性、レスポンスに後方互換性が要ります。</p>
+
+<h3>知らないフィールドを消してしまう事故</h3>
+<p>前方互換性には、もう1つ落とし穴があります。古いコードが「読むだけ」でなく「読んで、直して、書き戻す」ときです。</p>
+
+<figure class="fig" id="fig-loss"><div class="canvas"><svg viewBox="0 0 340 274" role="img" aria-label="新しいコードがphotoURL付きのレコードを書く。古いコードはphotoURLを知らないまま読み、名前だけ直して書き戻す。結果、データベースからphotoURLが消える"><text x="8" y="18" class="ts c-new" text-anchor="start">① 新しいコードが書く</text><rect x="8" y="26" width="150" height="34" rx="6" class="f-panel"/><text x="83" y="48" class="tm" text-anchor="middle">name: Aiko</text><rect x="162" y="26" width="170" height="34" rx="6" class="f-new"/><text x="247" y="48" class="tm" text-anchor="middle">photoURL: a.png</text><text x="8" y="86" class="ts c-old" text-anchor="start">② 古いコードが読む（photoURLを知らない）</text><rect x="8" y="94" width="150" height="34" rx="6" class="f-panel"/><text x="83" y="116" class="tm" text-anchor="middle">name: Aiko</text><rect x="162" y="94" width="170" height="34" rx="6" class="pg-off"/><text x="247" y="116" class="ts c-bad" text-anchor="middle">受け皿がない</text><text x="8" y="154" class="ts c-old" text-anchor="start">③ 古いコードが名前を直して書き戻す</text><rect x="8" y="162" width="150" height="34" rx="6" class="f-old"/><text x="83" y="184" class="tm" text-anchor="middle">name: Aiko T.</text><rect x="162" y="162" width="170" height="34" rx="6" class="pg-off"/><text x="247" y="184" class="ts c-mute" text-anchor="middle">（なにもない）</text><text x="8" y="222" class="ts c-bad" text-anchor="start">④ データベースに残ったもの</text><rect x="8" y="230" width="150" height="34" rx="6" class="f-panel"/><text x="83" y="252" class="tm" text-anchor="middle">name: Aiko T.</text><rect x="162" y="230" width="170" height="34" rx="6" class="f-bad"/><text x="247" y="252" class="ts" text-anchor="middle">photoURL が消えた</text></svg></div><figcaption>本の図5-1にあたる図です（フィールド名と値は説明用）。古いコードは悪気なく、知らないフィールドを消してしまいます。</figcaption></figure>
+
+<p>望ましいのは、古いコードが意味のわからないフィールドも<b>そのまま持ち続けて、書き戻すときに返す</b>ことです。レコードを、知らないフィールドを持てない入れ物（決まったプロパティだけのオブジェクトなど）に移し替えると、この事故が起きます。</p>
+
+<div class="box key">
+<span class="lab">この章で見ていくこと</span>
+<p>JSON、XML、Protocol Buffers、Avroなどの形式が、それぞれスキーマの変更をどう扱うか。そして、その形式がデータベース、サービス、ワークフロー、メッセージングでどう使われるか。この2本立てです。</p>
+</div>
+
+<!-- ===================================================== 5.1 -->
+<h2 id="s51"><span class="num">5.1</span>データのエンコーディング形式</h2>
+
+<p>プログラムは、データを少なくとも2つの姿で扱います。</p>
+<ul>
+<li><b>メモリの中。</b>オブジェクト、配列、ハッシュテーブル、ツリーなど。CPUが速く触れるように作られていて、ふつうポインタでつながっています。</li>
+<li><b>ファイルやネットワークの上。</b>それだけで完結した、ひと続きのバイト列。ポインタは別のプロセスにとって意味がないので、メモリの中とはかなり違う形になります。</li>
+</ul>
+
+<figure class="fig" id="fig-encdec"><div class="canvas"><svg viewBox="0 0 340 160" role="img" aria-label="メモリの中ではオブジェクトがポインタでつながっている。エンコードするとひと続きのバイト列になり、デコードするとメモリ上の形に戻る"><text x="8" y="18" class="ts c-mute" text-anchor="start">メモリの中</text><rect x="30" y="28" width="86" height="32" rx="6" class="f-panel"/><text x="73" y="49" class="ts" text-anchor="middle">オブジェクト</text><rect x="8" y="96" width="60" height="30" rx="6" class="f-panel"/><text x="38" y="116" class="ts" text-anchor="middle">文字列</text><rect x="76" y="96" width="60" height="30" rx="6" class="f-panel"/><text x="106" y="116" class="ts" text-anchor="middle">配列</text><polygon points="40.0,96.0 40.4,87.1 47.4,90.9" class="hd"/><line x1="60" y1="60" x2="43.3995" y2="89.8809" class="ln"/><polygon points="104.0,96.0 96.8,90.6 104.0,87.1" class="hd"/><line x1="86" y1="60" x2="100.87" y2="89.739" class="ln"/><text x="72" y="146" class="ts c-mute" text-anchor="middle">ポインタでつながる</text><text x="273" y="18" class="ts c-mute" text-anchor="middle">ファイル／通信</text><rect x="214" y="56" width="118" height="40" rx="6" class="f-panel"/><text x="273" y="81" class="tm" text-anchor="middle">7b 22 75 73 …</text><text x="273" y="116" class="ts c-mute" text-anchor="middle">ひと続きのバイト列</text><text x="176" y="50" class="ts" text-anchor="middle">エンコード</text><polygon points="206.0,60.0 198.0,64.0 198.0,56.0" class="hd-tx"/><line x1="146" y1="60" x2="199" y2="60" class="ln-tx"/><polygon points="146.0,92.0 154.0,88.0 154.0,96.0" class="hd-tx"/><line x1="206" y1="92" x2="153" y2="92" class="ln-tx"/><text x="176" y="112" class="ts" text-anchor="middle">デコード</text></svg></div><figcaption>データの2つの姿。行き来するたびに変換が要ります。</figcaption></figure>
+
+<div class="box">
+<span class="lab">用語：呼び名がたくさんある</span>
+<p>メモリ → バイト列は、<b>エンコーディング</b>、シリアライゼーション、マーシャリング。全部同じ意味です。逆のバイト列 → メモリは、<b>デコーディング</b>、パース、デシリアライゼーション、アンマーシャリング。</p>
+<p>「シリアライゼーション」はトランザクションの章（8章）でまったく別の意味で出てきます。まぎらわしいので、本は「エンコーディング」で統一しています。</p>
+</div>
+
+<div class="box extra">
+<span class="lab">補足（本にはない例）</span>
+<p>JavaScriptなら、<code>JSON.stringify()</code> がエンコード、<code>JSON.parse()</code> がデコードです。毎日やっているあれです。</p>
+</div>
+
+<p>変換がいらない場合もあります。データベースが圧縮したままのデータを直接あつかう場合（4章）や、Cap'n Proto、FlatBuffersのような<b>ゼロコピー</b>の形式です。これらはメモリの中でもディスクの上でも同じ形で使えるように作られています。でも、ほとんどのシステムでは変換が要ります。</p>
+
+<!-- ----------------------------------------------------- 5.1.1 -->
+<h3 id="s511"><span class="num">5.1.1</span>言語固有のフォーマット</h3>
+<p>多くの言語には、オブジェクトをそのままバイト列にする機能が最初から付いています。Javaの <code>java.io.Serializable</code>、Pythonの <code>pickle</code>、Rubyの <code>Marshal</code> などです。数行書くだけで保存と復元ができて便利です。でも、深刻な問題が4つあります。</p>
+
+<figure class="fig" id="fig-langlock"><div class="canvas"><svg viewBox="0 0 340 180" role="img" aria-label="Pythonのpickleで作ったバイト列はJavaでは読めない。また細工されたバイト列をデコードすると、好きなコードを実行されるおそれがある"><text x="8" y="18" class="ts c-mute" text-anchor="start">問題1：ほかの言語で読めない</text><rect x="8" y="28" width="90" height="52" rx="6" class="f-panel"/><text x="53" y="49.5" class="t" text-anchor="middle">Python</text><text x="53" y="68.5" class="tm c-mute" text-anchor="middle">pickle</text><rect x="125" y="28" width="90" height="52" rx="6" class="f-panel"/><text x="170" y="59" class="t" text-anchor="middle">バイト列</text><rect x="242" y="28" width="90" height="52" rx="6" class="f-bad"/><text x="287" y="49.5" class="t" text-anchor="middle">Java</text><text x="287" y="68.5" class="ts c-bad" text-anchor="middle">読めない</text><polygon points="125.0,54.0 117.0,58.0 117.0,50.0" class="hd"/><line x1="98" y1="54" x2="118" y2="54" class="ln"/><polygon points="242.0,54.0 234.0,58.0 234.0,50.0" class="hd-bad"/><line x1="215" y1="54" x2="235" y2="54" class="ln-bad"/><text x="8" y="110" class="ts c-mute" text-anchor="start">問題2：デコードが攻撃の入口になる</text><rect x="8" y="120" width="130" height="52" rx="6" class="f-bad"/><text x="73" y="141.5" class="ts" text-anchor="middle">細工された</text><text x="73" y="160.5" class="ts" text-anchor="middle">バイト列</text><rect x="202" y="120" width="130" height="52" rx="6" class="f-bad"/><text x="267" y="141.5" class="ts" text-anchor="middle">好きなコードを</text><text x="267" y="160.5" class="ts" text-anchor="middle">実行される</text><text x="170" y="136" class="ts c-bad" text-anchor="middle">デコード</text><polygon points="202.0,146.0 194.0,150.0 194.0,142.0" class="hd-bad"/><line x1="138" y1="146" x2="195" y2="146" class="ln-bad"/></svg></div><figcaption>言語固有の形式の問題のうち、とくに痛い2つ。</figcaption></figure>
+
+<ol>
+<li><b>その言語に縛られる。</b>別の言語から読むのが難しくなります。この形式で保存すると、長いあいだ今の言語から離れられません。他の組織のシステムともつなぎにくくなります。</li>
+<li><b>セキュリティの穴になる。</b>元と同じ型で復元するには、デコードする側が好きなクラスを生成できる必要があります。攻撃者が細工したバイト列を読ませれば、好きなクラスを動かせます。リモートからコードを実行される攻撃につながります。</li>
+<li><b>バージョン管理が後回し。</b>手軽さが目的なので、前方・後方互換性はないがしろにされがちです。</li>
+<li><b>効率も後回し。</b>Javaの組み込みシリアライゼーションは、遅くてサイズが大きいことで悪名高いです。</li>
+</ol>
+
+<div class="box bad">
+<span class="lab">本の結論</span>
+<p>言語に組み込みのエンコーディングは、ごく一時的な用途以外では使わないほうがよい。</p>
+</div>
+
+<!-- ----------------------------------------------------- 5.1.2 -->
+<h3 id="s512"><span class="num">5.1.2</span>JSON、XML、CSV</h3>
+<p>どの言語からも読み書きできる標準の形式といえば、JSONとXMLです。CSVも人気ですが、入れ子のない表の形しか表せません。3つともテキストなので、人間もいちおう読めます。</p>
+<p>見た目の好みは別として、中身の問題がいくつかあります。</p>
+
+<h4>問題1：数値があいまい</h4>
+<p>XMLとCSVは、「数値」と「たまたま数字だけの文字列」を区別できません。JSONは文字列と数値を区別しますが、整数と小数は区別しません。精度も決めていません。</p>
+<p>これは大きな数で事故になります。2<sup>53</sup>より大きい整数は、倍精度の浮動小数点数では正確に表せません。JavaScriptのように数値をすべて浮動小数点数で持つ言語でパースすると、値がずれます。</p>
+
+<figure class="fig" id="fig-bignum"><div class="canvas"><svg viewBox="0 0 340 256" role="img" aria-label="JSONの数値9007199254740993をJavaScriptでパースすると9007199254740992になり1ずれる。Xは同じIDを数値と文字列の両方で返して対策している"><text x="8" y="18" class="ts c-mute" text-anchor="start">サーバーが送ったJSON</text><rect x="8" y="26" width="324" height="36" rx="6" class="f-panel"/><text x="170" y="49" class="tm" text-anchor="middle">{&quot;id&quot;: 9007199254740993}</text><polygon points="170.0,96.0 166.0,88.0 174.0,88.0" class="hd"/><line x1="170" y1="62" x2="170" y2="89" class="ln"/><text x="182" y="84" class="tm c-mute" text-anchor="start">JSON.parse</text><text x="8" y="116" class="ts c-mute" text-anchor="start">JavaScriptが受け取った値</text><rect x="8" y="124" width="324" height="36" rx="6" class="f-bad"/><text x="20" y="147" class="tm" text-anchor="start">9007199254740992</text><text x="322" y="147" class="ts c-bad" text-anchor="end">1ずれた</text><text x="8" y="186" class="ts c-mute" text-anchor="start">Xの対策：同じIDを文字列でも入れる</text><rect x="8" y="194" width="324" height="56" rx="6" class="f-new"/><text x="20" y="216" class="tm" text-anchor="start">&quot;id&quot;: 9007199254740993,</text><text x="20" y="238" class="tm" text-anchor="start">&quot;id_str&quot;: &quot;9007199254740993&quot;</text></svg></div><figcaption>2の53乗より大きい整数は、JavaScriptの数値（倍精度浮動小数点数）では正確に表せません。図の数値は説明用です。</figcaption></figure>
+
+<p>X（旧Twitter）の投稿IDは64ビットの数値です。そこでXのAPIは、同じIDをJSONの数値として1回、10進数の文字列として1回、合計2回入れて返します。JavaScriptのアプリは文字列のほうを使えば、ずれません。</p>
+
+<h4>問題2：バイナリを入れられない</h4>
+<p>JSONとXMLは、人間が読む文字列（Unicode）は得意です。でも、画像のような生のバイト列は入れられません。そこで、Base64でバイナリをテキストに変えて入れるのが定番です。動きはしますが、場当たり的で、サイズも増えます。</p>
+
+<figure class="fig" id="fig-base64"><div class="canvas"><svg viewBox="0 0 340 176" role="img" aria-label="3バイトのバイナリをBase64にすると4文字のテキストになり、サイズが約33パーセント増える"><text x="8" y="18" class="ts c-mute" text-anchor="start">もとのバイナリ：3バイト</text><rect x="8" y="26" width="60" height="36" rx="6" class="f-panel"/><text x="38" y="49" class="tm" text-anchor="middle">4d</text><rect x="72" y="26" width="60" height="36" rx="6" class="f-panel"/><text x="102" y="49" class="tm" text-anchor="middle">61</text><rect x="136" y="26" width="60" height="36" rx="6" class="f-panel"/><text x="166" y="49" class="tm" text-anchor="middle">6e</text><polygon points="98.0,104.0 94.0,96.0 102.0,96.0" class="hd"/><line x1="98" y1="62" x2="98" y2="97" class="ln"/><text x="110" y="88" class="tm c-mute" text-anchor="start">Base64</text><rect x="8" y="104" width="60" height="36" rx="6" class="f-bad"/><text x="38" y="127" class="tm" text-anchor="middle">T</text><rect x="72" y="104" width="60" height="36" rx="6" class="f-bad"/><text x="102" y="127" class="tm" text-anchor="middle">W</text><rect x="136" y="104" width="60" height="36" rx="6" class="f-bad"/><text x="166" y="127" class="tm" text-anchor="middle">F</text><rect x="200" y="104" width="60" height="36" rx="6" class="f-bad"/><text x="230" y="127" class="tm" text-anchor="middle">u</text><text x="8" y="164" class="ts c-bad" text-anchor="start">テキストにすると4文字（約33%増）</text></svg></div><figcaption>Base64は、バイナリ3バイトを文字4つに置き換えます。そのぶんデータが約3分の1ふくらみます。</figcaption></figure>
+
+<h4>問題3：スキーマが複雑か、そもそも無い</h4>
+<p>XML SchemaとJSON Schemaは強力ですが、そのぶん覚えるのも実装するのも大変です。使わない場合は、正しい読み方をアプリのコードに直接書くことになります。</p>
+<p>CSVにはスキーマがありません。各行、各列の意味はアプリが決めます。列が増えたら手で対応します。エスケープのルールは仕様があるのに、正しく実装していないパーサーもあります。</p>
+
+<div class="box key">
+<span class="lab">それでも使われ続ける</span>
+<p>欠点はあっても、JSON、XML、CSVは多くの用途に十分です。とくに組織と組織のあいだでデータを渡す形式としては、これからも人気でしょう。そういう場面では、形式のきれいさや効率よりも、<b>相手と何か1つに合意できること</b>のほうがずっと難しくて大事だからです。</p>
+</div>
+
+<h4><span class="num">5.1.2.1</span>JSON Schema</h4>
+<p>JSON Schemaは、JSONの形を決めるためのスキーマ言語です。いろいろな場所で使われています。</p>
+<ul>
+<li>WebサービスのAPI定義（OpenAPIの一部として）</li>
+<li>スキーマレジストリ（ConfluentのSchema Registry、Red HatのApicurio Registry）</li>
+<li>データベース（PostgreSQLのpg_jsonschema拡張、MongoDBの <code>$jsonSchema</code>）</li>
+</ul>
+<p>string、number、integer、object、array、boolean、nullといった基本の型に加えて、値の制約も書けます。たとえば「<code>port</code> は1以上65535以下」です。</p>
+<p>知っておくべきは、<b>スキーマに書いていないフィールドの扱い</b>です。</p>
+
+<figure class="fig" id="fig-openclosed"><div class="canvas"><svg viewBox="0 0 340 206" role="img" aria-label="スキーマにないnickフィールドを持つデータ。オープンコンテンツモデルでは通り、クローズドコンテンツモデルでははじかれる"><text x="8" y="18" class="ts c-mute" text-anchor="start">スキーマにあるのは name だけ</text><rect x="8" y="26" width="324" height="36" rx="6" class="f-panel"/><text x="170" y="49" class="tm" text-anchor="middle">{&quot;name&quot;:&quot;Aiko&quot;,&quot;nick&quot;:&quot;ai&quot;}</text><polygon points="87.0,96.0 83.0,88.0 91.0,88.0" class="hd-new"/><line x1="87" y1="62" x2="87" y2="89" class="ln-new"/><polygon points="253.0,96.0 249.0,88.0 257.0,88.0" class="hd-bad"/><line x1="253" y1="62" x2="253" y2="89" class="ln-bad"/><rect x="8" y="96" width="158" height="64" rx="6" class="f-new"/><text x="87" y="123.5" class="tb" text-anchor="middle">オープン</text><text x="87" y="142.5" class="ts" text-anchor="middle">nick も通す</text><rect x="174" y="96" width="158" height="64" rx="6" class="f-bad"/><text x="253" y="123.5" class="tb" text-anchor="middle">クローズド</text><text x="253" y="142.5" class="ts" text-anchor="middle">nick ははじく</text><text x="87" y="180" class="ts c-mute" text-anchor="middle">既定はこちら</text><text x="253" y="180" class="tn c-mute" text-anchor="middle">additionalProperties</text><text x="253" y="196" class="tn c-mute" text-anchor="middle">: false のとき</text></svg></div><figcaption>スキーマに書いていないフィールドが来たときの扱い。JSON Schemaは、何も指定しなければ「通す」です。</figcaption></figure>
+
+<p>既定はオープンです。なのでJSON Schemaはふつう、「定義したフィールドに変な値が入るのを<b>禁じる</b>」ものです。「何が入ってよいか」を全部決めるものではありません。</p>
+<p>次は本の例です。「整数のIDから文字列へのマップ」を表したい。でもJSONのキーは必ず文字列です。そこで「キーは数字だけ、値は文字列だけ、それ以外は不可」と制約をかけます。</p>
+<pre><code>{
+  "$schema":
+    "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "patternProperties": {
+    "^[0-9]+$": { "type": "string" }
+  },
+  "additionalProperties": false
+}</code></pre>
+<p>ほかにも、条件分岐、名前つきの型、別の場所にあるスキーマへの参照など、機能は豊富です。そのぶん定義が扱いにくくなりがちで、互換性を保ったままスキーマを変えていくのが難しいことがあります。XML Schemaも同じです。</p>
+
+<h4><span class="num">5.1.2.2</span>バイナリのJSON</h4>
+<p>JSONはバイナリ形式に比べて場所を取ります。そこで、JSONをバイナリにした形式がたくさん作られました。MessagePack、CBOR、BSONなどです。</p>
+<p>ここから先、本は次のレコードをいろいろな形式に詰めて、大きさを比べます。空白を取ると、テキストのJSONで<b>81バイト</b>です。</p>
+<pre><code>{
+  "userName": "Martin",
+  "favoriteNumber": 1337,
+  "interests": ["daydreaming", "hacking"]
+}</code></pre>
+<p>MessagePackで詰めてみます。まず先頭の2バイトの読み方です。</p>
+
+<figure class="fig" id="fig-mphead"><div class="canvas"><svg viewBox="0 0 340 158" role="img" aria-label="先頭バイト83は上位4ビットがオブジェクト、下位4ビットがフィールド数3を表す。次のバイトa8は上位4ビットが文字列、下位4ビットが長さ8を表す"><rect x="8" y="12" width="44" height="36" rx="6" class="f-panel"/><text x="30" y="35" class="tm" text-anchor="middle">83</text><text x="68" y="35" class="ts c-mute" text-anchor="middle">＝</text><rect x="86" y="12" width="100" height="36" rx="6" class="f-sch"/><text x="136" y="35" class="tm" text-anchor="middle">1000</text><rect x="194" y="12" width="100" height="36" rx="6" class="f-panel"/><text x="244" y="35" class="tm" text-anchor="middle">0011</text><text x="136" y="66" class="ts c-sch" text-anchor="middle">オブジェクト</text><text x="244" y="66" class="ts" text-anchor="middle">フィールド3つ</text><rect x="8" y="92" width="44" height="36" rx="6" class="f-panel"/><text x="30" y="115" class="tm" text-anchor="middle">a8</text><text x="68" y="115" class="ts c-mute" text-anchor="middle">＝</text><rect x="86" y="92" width="100" height="36" rx="6" class="f-sch"/><text x="136" y="115" class="tm" text-anchor="middle">1010</text><rect x="194" y="92" width="100" height="36" rx="6" class="f-panel"/><text x="244" y="115" class="tm" text-anchor="middle">1000</text><text x="136" y="146" class="ts c-sch" text-anchor="middle">文字列</text><text x="244" y="146" class="ts" text-anchor="middle">長さ8バイト</text></svg></div><figcaption>最初の2バイトの読み方。1バイトの前半が「種類」、後半が「数」です。</figcaption></figure>
+
+<p>長さを先に書くので、文字列の終わりを示す記号やエスケープがいりません。全体はこうなります。</p>
+
+<figure class="fig" id="fig-msgpack"><div class="canvas"><svg viewBox="0 0 340 300" role="img" aria-label="MessagePackでエンコードした66バイト。フィールド名userName、favoriteNumber、interestsがそのまま入っていて、31バイトを占める"><text x="8" y="18" class="ts c-mute" text-anchor="start">MessagePack：66バイト</text><rect x="11" y="29" width="27" height="36" rx="4" class="f-sch"/><text x="24.5" y="44" class="tmx" text-anchor="middle">83</text><rect x="40" y="29" width="27" height="36" rx="4" class="f-sch"/><text x="53.5" y="44" class="tmx" text-anchor="middle">a8</text><rect x="69" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="82.5" y="44" class="tmx" text-anchor="middle">75</text><text x="82.5" y="58" class="tn c-mute" text-anchor="middle">u</text><rect x="98" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="111.5" y="44" class="tmx" text-anchor="middle">73</text><text x="111.5" y="58" class="tn c-mute" text-anchor="middle">s</text><rect x="127" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="140.5" y="44" class="tmx" text-anchor="middle">65</text><text x="140.5" y="58" class="tn c-mute" text-anchor="middle">e</text><rect x="156" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="169.5" y="44" class="tmx" text-anchor="middle">72</text><text x="169.5" y="58" class="tn c-mute" text-anchor="middle">r</text><rect x="185" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="198.5" y="44" class="tmx" text-anchor="middle">4e</text><text x="198.5" y="58" class="tn c-mute" text-anchor="middle">N</text><rect x="214" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="227.5" y="44" class="tmx" text-anchor="middle">61</text><text x="227.5" y="58" class="tn c-mute" text-anchor="middle">a</text><rect x="243" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="256.5" y="44" class="tmx" text-anchor="middle">6d</text><text x="256.5" y="58" class="tn c-mute" text-anchor="middle">m</text><rect x="272" y="29" width="27" height="36" rx="4" class="f-bad"/><text x="285.5" y="44" class="tmx" text-anchor="middle">65</text><text x="285.5" y="58" class="tn c-mute" text-anchor="middle">e</text><rect x="301" y="29" width="27" height="36" rx="4" class="f-sch"/><text x="314.5" y="44" class="tmx" text-anchor="middle">a6</text><rect x="11" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="24.5" y="82" class="tmx" text-anchor="middle">4d</text><text x="24.5" y="96" class="tn c-mute" text-anchor="middle">M</text><rect x="40" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="53.5" y="82" class="tmx" text-anchor="middle">61</text><text x="53.5" y="96" class="tn c-mute" text-anchor="middle">a</text><rect x="69" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="82.5" y="82" class="tmx" text-anchor="middle">72</text><text x="82.5" y="96" class="tn c-mute" text-anchor="middle">r</text><rect x="98" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="111.5" y="82" class="tmx" text-anchor="middle">74</text><text x="111.5" y="96" class="tn c-mute" text-anchor="middle">t</text><rect x="127" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="82" class="tmx" text-anchor="middle">69</text><text x="140.5" y="96" class="tn c-mute" text-anchor="middle">i</text><rect x="156" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="82" class="tmx" text-anchor="middle">6e</text><text x="169.5" y="96" class="tn c-mute" text-anchor="middle">n</text><rect x="185" y="67" width="27" height="36" rx="4" class="f-sch"/><text x="198.5" y="82" class="tmx" text-anchor="middle">ae</text><rect x="214" y="67" width="27" height="36" rx="4" class="f-bad"/><text x="227.5" y="82" class="tmx" text-anchor="middle">66</text><text x="227.5" y="96" class="tn c-mute" text-anchor="middle">f</text><rect x="243" y="67" width="27" height="36" rx="4" class="f-bad"/><text x="256.5" y="82" class="tmx" text-anchor="middle">61</text><text x="256.5" y="96" class="tn c-mute" text-anchor="middle">a</text><rect x="272" y="67" width="27" height="36" rx="4" class="f-bad"/><text x="285.5" y="82" class="tmx" text-anchor="middle">76</text><text x="285.5" y="96" class="tn c-mute" text-anchor="middle">v</text><rect x="301" y="67" width="27" height="36" rx="4" class="f-bad"/><text x="314.5" y="82" class="tmx" text-anchor="middle">6f</text><text x="314.5" y="96" class="tn c-mute" text-anchor="middle">o</text><rect x="11" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="24.5" y="120" class="tmx" text-anchor="middle">72</text><text x="24.5" y="134" class="tn c-mute" text-anchor="middle">r</text><rect x="40" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="53.5" y="120" class="tmx" text-anchor="middle">69</text><text x="53.5" y="134" class="tn c-mute" text-anchor="middle">i</text><rect x="69" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="82.5" y="120" class="tmx" text-anchor="middle">74</text><text x="82.5" y="134" class="tn c-mute" text-anchor="middle">t</text><rect x="98" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="111.5" y="120" class="tmx" text-anchor="middle">65</text><text x="111.5" y="134" class="tn c-mute" text-anchor="middle">e</text><rect x="127" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="140.5" y="120" class="tmx" text-anchor="middle">4e</text><text x="140.5" y="134" class="tn c-mute" text-anchor="middle">N</text><rect x="156" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="169.5" y="120" class="tmx" text-anchor="middle">75</text><text x="169.5" y="134" class="tn c-mute" text-anchor="middle">u</text><rect x="185" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="198.5" y="120" class="tmx" text-anchor="middle">6d</text><text x="198.5" y="134" class="tn c-mute" text-anchor="middle">m</text><rect x="214" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="227.5" y="120" class="tmx" text-anchor="middle">62</text><text x="227.5" y="134" class="tn c-mute" text-anchor="middle">b</text><rect x="243" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="256.5" y="120" class="tmx" text-anchor="middle">65</text><text x="256.5" y="134" class="tn c-mute" text-anchor="middle">e</text><rect x="272" y="105" width="27" height="36" rx="4" class="f-bad"/><text x="285.5" y="120" class="tmx" text-anchor="middle">72</text><text x="285.5" y="134" class="tn c-mute" text-anchor="middle">r</text><rect x="301" y="105" width="27" height="36" rx="4" class="f-sch"/><text x="314.5" y="120" class="tmx" text-anchor="middle">cd</text><rect x="11" y="143" width="27" height="36" rx="4" class="f-panel"/><text x="24.5" y="158" class="tmx" text-anchor="middle">05</text><rect x="40" y="143" width="27" height="36" rx="4" class="f-panel"/><text x="53.5" y="158" class="tmx" text-anchor="middle">39</text><rect x="69" y="143" width="27" height="36" rx="4" class="f-sch"/><text x="82.5" y="158" class="tmx" text-anchor="middle">a9</text><rect x="98" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="111.5" y="158" class="tmx" text-anchor="middle">69</text><text x="111.5" y="172" class="tn c-mute" text-anchor="middle">i</text><rect x="127" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="140.5" y="158" class="tmx" text-anchor="middle">6e</text><text x="140.5" y="172" class="tn c-mute" text-anchor="middle">n</text><rect x="156" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="169.5" y="158" class="tmx" text-anchor="middle">74</text><text x="169.5" y="172" class="tn c-mute" text-anchor="middle">t</text><rect x="185" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="198.5" y="158" class="tmx" text-anchor="middle">65</text><text x="198.5" y="172" class="tn c-mute" text-anchor="middle">e</text><rect x="214" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="227.5" y="158" class="tmx" text-anchor="middle">72</text><text x="227.5" y="172" class="tn c-mute" text-anchor="middle">r</text><rect x="243" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="256.5" y="158" class="tmx" text-anchor="middle">65</text><text x="256.5" y="172" class="tn c-mute" text-anchor="middle">e</text><rect x="272" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="285.5" y="158" class="tmx" text-anchor="middle">73</text><text x="285.5" y="172" class="tn c-mute" text-anchor="middle">s</text><rect x="301" y="143" width="27" height="36" rx="4" class="f-bad"/><text x="314.5" y="158" class="tmx" text-anchor="middle">74</text><text x="314.5" y="172" class="tn c-mute" text-anchor="middle">t</text><rect x="11" y="181" width="27" height="36" rx="4" class="f-bad"/><text x="24.5" y="196" class="tmx" text-anchor="middle">73</text><text x="24.5" y="210" class="tn c-mute" text-anchor="middle">s</text><rect x="40" y="181" width="27" height="36" rx="4" class="f-sch"/><text x="53.5" y="196" class="tmx" text-anchor="middle">92</text><rect x="69" y="181" width="27" height="36" rx="4" class="f-sch"/><text x="82.5" y="196" class="tmx" text-anchor="middle">ab</text><rect x="98" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="111.5" y="196" class="tmx" text-anchor="middle">64</text><text x="111.5" y="210" class="tn c-mute" text-anchor="middle">d</text><rect x="127" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="196" class="tmx" text-anchor="middle">61</text><text x="140.5" y="210" class="tn c-mute" text-anchor="middle">a</text><rect x="156" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="196" class="tmx" text-anchor="middle">79</text><text x="169.5" y="210" class="tn c-mute" text-anchor="middle">y</text><rect x="185" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="196" class="tmx" text-anchor="middle">64</text><text x="198.5" y="210" class="tn c-mute" text-anchor="middle">d</text><rect x="214" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="227.5" y="196" class="tmx" text-anchor="middle">72</text><text x="227.5" y="210" class="tn c-mute" text-anchor="middle">r</text><rect x="243" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="256.5" y="196" class="tmx" text-anchor="middle">65</text><text x="256.5" y="210" class="tn c-mute" text-anchor="middle">e</text><rect x="272" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="285.5" y="196" class="tmx" text-anchor="middle">61</text><text x="285.5" y="210" class="tn c-mute" text-anchor="middle">a</text><rect x="301" y="181" width="27" height="36" rx="4" class="f-panel"/><text x="314.5" y="196" class="tmx" text-anchor="middle">6d</text><text x="314.5" y="210" class="tn c-mute" text-anchor="middle">m</text><rect x="11" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="24.5" y="234" class="tmx" text-anchor="middle">69</text><text x="24.5" y="248" class="tn c-mute" text-anchor="middle">i</text><rect x="40" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="53.5" y="234" class="tmx" text-anchor="middle">6e</text><text x="53.5" y="248" class="tn c-mute" text-anchor="middle">n</text><rect x="69" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="82.5" y="234" class="tmx" text-anchor="middle">67</text><text x="82.5" y="248" class="tn c-mute" text-anchor="middle">g</text><rect x="98" y="219" width="27" height="36" rx="4" class="f-sch"/><text x="111.5" y="234" class="tmx" text-anchor="middle">a7</text><rect x="127" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="234" class="tmx" text-anchor="middle">68</text><text x="140.5" y="248" class="tn c-mute" text-anchor="middle">h</text><rect x="156" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="234" class="tmx" text-anchor="middle">61</text><text x="169.5" y="248" class="tn c-mute" text-anchor="middle">a</text><rect x="185" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="234" class="tmx" text-anchor="middle">63</text><text x="198.5" y="248" class="tn c-mute" text-anchor="middle">c</text><rect x="214" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="227.5" y="234" class="tmx" text-anchor="middle">6b</text><text x="227.5" y="248" class="tn c-mute" text-anchor="middle">k</text><rect x="243" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="256.5" y="234" class="tmx" text-anchor="middle">69</text><text x="256.5" y="248" class="tn c-mute" text-anchor="middle">i</text><rect x="272" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="285.5" y="234" class="tmx" text-anchor="middle">6e</text><text x="285.5" y="248" class="tn c-mute" text-anchor="middle">n</text><rect x="301" y="219" width="27" height="36" rx="4" class="f-panel"/><text x="314.5" y="234" class="tmx" text-anchor="middle">67</text><text x="314.5" y="248" class="tn c-mute" text-anchor="middle">g</text><rect x="8" y="268" width="14" height="14" rx="3" class="f-sch"/><text x="28" y="280" class="ts" text-anchor="start">種類と長さ</text><rect x="112" y="268" width="14" height="14" rx="3" class="f-bad"/><text x="132" y="280" class="ts" text-anchor="start">フィールド名</text><rect x="238" y="268" width="14" height="14" rx="3" class="f-panel"/><text x="258" y="280" class="ts" text-anchor="start">値</text></svg></div><figcaption>本の図5-2にあたる図です。上段が16進数、下段がその文字。朱色のマスが全部フィールド名で、66バイトのうち31バイトを占めます。</figcaption></figure>
+
+<p>66バイト。81バイトから少し減っただけです。理由は図のとおりで、スキーマを持たない形式は<b>フィールド名を毎回データの中に入れる</b>しかないからです。</p>
+<p>この程度の節約のために人間が読めなくなるのは、割に合うか微妙です。次は、同じレコードを半分のバイト数にする方法を見ます。</p>
+
+<!-- ----------------------------------------------------- 5.1.3 -->
+<h3 id="s513"><span class="num">5.1.3</span>Protocol Buffers</h3>
+<p><b>Protocol Buffers</b>（protobuf）は、Googleが作ったバイナリ形式です。Facebook生まれのApache Thriftとよく似ていて、ここでの話はほぼThriftにも当てはまります。</p>
+<p>Protocol Buffersでは、先に<b class="sch">スキーマ</b>を書きます。</p>
+<pre><code>syntax = "proto3";
+
+message Person {
+  string user_name = 1;
+  int64 favorite_number = 2;
+  repeated string interests = 3;
+}</code></pre>
+<p>このスキーマをツールに渡すと、いろいろな言語用のクラスを生成してくれます。アプリはそのクラスを呼んで、エンコードとデコードをします。書けるのはフィールドと型だけで、JSON Schemaのような値の制約は書けません。そのぶんシンプルです。</p>
+<p>さっきのレコードを詰めると、<b>33バイト</b>になります。</p>
+
+<figure class="fig" id="fig-pbbytes"><div class="canvas"><svg viewBox="0 0 340 186" role="img" aria-label="Protocol Buffersでエンコードした33バイト。フィールド名はなく、タグ番号と型を詰めた1バイトが各フィールドの先頭にある"><text x="8" y="18" class="ts c-mute" text-anchor="start">Protocol Buffers：33バイト</text><rect x="11" y="29" width="27" height="36" rx="4" class="f-sch"/><text x="24.5" y="44" class="tmx" text-anchor="middle">0a</text><rect x="40" y="29" width="27" height="36" rx="4" class="f-none"/><text x="53.5" y="44" class="tmx" text-anchor="middle">06</text><rect x="69" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="82.5" y="44" class="tmx" text-anchor="middle">4d</text><text x="82.5" y="58" class="tn c-mute" text-anchor="middle">M</text><rect x="98" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="111.5" y="44" class="tmx" text-anchor="middle">61</text><text x="111.5" y="58" class="tn c-mute" text-anchor="middle">a</text><rect x="127" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="44" class="tmx" text-anchor="middle">72</text><text x="140.5" y="58" class="tn c-mute" text-anchor="middle">r</text><rect x="156" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="44" class="tmx" text-anchor="middle">74</text><text x="169.5" y="58" class="tn c-mute" text-anchor="middle">t</text><rect x="185" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="44" class="tmx" text-anchor="middle">69</text><text x="198.5" y="58" class="tn c-mute" text-anchor="middle">i</text><rect x="214" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="227.5" y="44" class="tmx" text-anchor="middle">6e</text><text x="227.5" y="58" class="tn c-mute" text-anchor="middle">n</text><rect x="243" y="29" width="27" height="36" rx="4" class="f-sch"/><text x="256.5" y="44" class="tmx" text-anchor="middle">10</text><rect x="272" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="285.5" y="44" class="tmx" text-anchor="middle">b9</text><rect x="301" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="314.5" y="44" class="tmx" text-anchor="middle">0a</text><rect x="11" y="67" width="27" height="36" rx="4" class="f-sch"/><text x="24.5" y="82" class="tmx" text-anchor="middle">1a</text><rect x="40" y="67" width="27" height="36" rx="4" class="f-none"/><text x="53.5" y="82" class="tmx" text-anchor="middle">0b</text><rect x="69" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="82.5" y="82" class="tmx" text-anchor="middle">64</text><text x="82.5" y="96" class="tn c-mute" text-anchor="middle">d</text><rect x="98" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="111.5" y="82" class="tmx" text-anchor="middle">61</text><text x="111.5" y="96" class="tn c-mute" text-anchor="middle">a</text><rect x="127" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="82" class="tmx" text-anchor="middle">79</text><text x="140.5" y="96" class="tn c-mute" text-anchor="middle">y</text><rect x="156" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="82" class="tmx" text-anchor="middle">64</text><text x="169.5" y="96" class="tn c-mute" text-anchor="middle">d</text><rect x="185" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="82" class="tmx" text-anchor="middle">72</text><text x="198.5" y="96" class="tn c-mute" text-anchor="middle">r</text><rect x="214" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="227.5" y="82" class="tmx" text-anchor="middle">65</text><text x="227.5" y="96" class="tn c-mute" text-anchor="middle">e</text><rect x="243" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="256.5" y="82" class="tmx" text-anchor="middle">61</text><text x="256.5" y="96" class="tn c-mute" text-anchor="middle">a</text><rect x="272" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="285.5" y="82" class="tmx" text-anchor="middle">6d</text><text x="285.5" y="96" class="tn c-mute" text-anchor="middle">m</text><rect x="301" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="314.5" y="82" class="tmx" text-anchor="middle">69</text><text x="314.5" y="96" class="tn c-mute" text-anchor="middle">i</text><rect x="11" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="24.5" y="120" class="tmx" text-anchor="middle">6e</text><text x="24.5" y="134" class="tn c-mute" text-anchor="middle">n</text><rect x="40" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="53.5" y="120" class="tmx" text-anchor="middle">67</text><text x="53.5" y="134" class="tn c-mute" text-anchor="middle">g</text><rect x="69" y="105" width="27" height="36" rx="4" class="f-sch"/><text x="82.5" y="120" class="tmx" text-anchor="middle">1a</text><rect x="98" y="105" width="27" height="36" rx="4" class="f-none"/><text x="111.5" y="120" class="tmx" text-anchor="middle">07</text><rect x="127" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="120" class="tmx" text-anchor="middle">68</text><text x="140.5" y="134" class="tn c-mute" text-anchor="middle">h</text><rect x="156" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="120" class="tmx" text-anchor="middle">61</text><text x="169.5" y="134" class="tn c-mute" text-anchor="middle">a</text><rect x="185" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="120" class="tmx" text-anchor="middle">63</text><text x="198.5" y="134" class="tn c-mute" text-anchor="middle">c</text><rect x="214" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="227.5" y="120" class="tmx" text-anchor="middle">6b</text><text x="227.5" y="134" class="tn c-mute" text-anchor="middle">k</text><rect x="243" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="256.5" y="120" class="tmx" text-anchor="middle">69</text><text x="256.5" y="134" class="tn c-mute" text-anchor="middle">i</text><rect x="272" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="285.5" y="120" class="tmx" text-anchor="middle">6e</text><text x="285.5" y="134" class="tn c-mute" text-anchor="middle">n</text><rect x="301" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="314.5" y="120" class="tmx" text-anchor="middle">67</text><text x="314.5" y="134" class="tn c-mute" text-anchor="middle">g</text><rect x="8" y="154" width="14" height="14" rx="3" class="f-sch"/><text x="28" y="166" class="ts" text-anchor="start">タグ番号＋型</text><rect x="138" y="154" width="14" height="14" rx="3" class="f-none"/><text x="158" y="166" class="ts" text-anchor="start">長さ</text><rect x="238" y="154" width="14" height="14" rx="3" class="f-panel"/><text x="258" y="166" class="ts" text-anchor="start">値</text></svg></div><figcaption>本の図5-3にあたる図です。フィールド名が消えて、藤色の1バイト（タグ番号＋型）に置き換わりました。</figcaption></figure>
+
+<p>MessagePackとの違いは1つ。フィールド名（<code>userName</code> など）がありません。代わりに、スキーマに書いた <code>= 1</code>、<code>= 2</code>、<code>= 3</code> の番号が入っています。これが<b class="sch">フィールドタグ</b>です。</p>
+
+<div class="box extra">
+<span class="lab">補足（本にはないたとえ）</span>
+<p>タグ番号は、スポーツ選手の背番号のようなものです。データには背番号しか書いてありません。「7番は誰か」は、選手名簿（スキーマ）を見ればわかります。</p>
+</div>
+
+<figure class="fig" id="fig-pbtag"><div class="canvas"><svg viewBox="0 0 340 238" role="img" aria-label="タグバイトの内訳。0aはタグ番号1と型2、10はタグ番号2と型0、1aはタグ番号3と型2"><rect x="8" y="12" width="44" height="36" rx="6" class="f-panel"/><text x="30" y="35" class="tm" text-anchor="middle">0a</text><text x="68" y="35" class="ts c-mute" text-anchor="middle">＝</text><rect x="86" y="12" width="110" height="36" rx="6" class="f-sch"/><text x="141" y="35" class="tm" text-anchor="middle">00001</text><rect x="204" y="12" width="110" height="36" rx="6" class="f-panel"/><text x="259" y="35" class="tm" text-anchor="middle">010</text><text x="141" y="66" class="ts c-sch" text-anchor="middle">タグ番号 1</text><text x="259" y="66" class="ts" text-anchor="middle">型2：長さつき</text><rect x="8" y="92" width="44" height="36" rx="6" class="f-panel"/><text x="30" y="115" class="tm" text-anchor="middle">10</text><text x="68" y="115" class="ts c-mute" text-anchor="middle">＝</text><rect x="86" y="92" width="110" height="36" rx="6" class="f-sch"/><text x="141" y="115" class="tm" text-anchor="middle">00010</text><rect x="204" y="92" width="110" height="36" rx="6" class="f-panel"/><text x="259" y="115" class="tm" text-anchor="middle">000</text><text x="141" y="146" class="ts c-sch" text-anchor="middle">タグ番号 2</text><text x="259" y="146" class="ts" text-anchor="middle">型0：可変長整数</text><rect x="8" y="172" width="44" height="36" rx="6" class="f-panel"/><text x="30" y="195" class="tm" text-anchor="middle">1a</text><text x="68" y="195" class="ts c-mute" text-anchor="middle">＝</text><rect x="86" y="172" width="110" height="36" rx="6" class="f-sch"/><text x="141" y="195" class="tm" text-anchor="middle">00011</text><rect x="204" y="172" width="110" height="36" rx="6" class="f-panel"/><text x="259" y="195" class="tm" text-anchor="middle">010</text><text x="141" y="226" class="ts c-sch" text-anchor="middle">タグ番号 3</text><text x="259" y="226" class="ts" text-anchor="middle">型2：長さつき</text></svg></div><figcaption>藤色の1バイトの中身。前の5ビットがタグ番号、後ろの3ビットが型です。</figcaption></figure>
+
+<p>数値の詰め方にも工夫があります。<b>可変長整数</b>です。</p>
+
+<figure class="fig" id="fig-varint"><div class="canvas"><svg viewBox="0 0 340 246" role="img" aria-label="1337を2進数にして7ビットずつに切り、下位の7ビットを先に置く。各バイトの先頭ビットは続きがあるかを表し、結果はb9と0aの2バイトになる"><text x="8" y="18" class="ts c-mute" text-anchor="start">1337 を2進数にする</text><rect x="8" y="26" width="324" height="34" rx="6" class="f-panel"/><text x="170" y="48" class="tm" text-anchor="middle">10100111001</text><text x="8" y="86" class="ts c-mute" text-anchor="start">後ろから7ビットずつに切る</text><rect x="8" y="94" width="158" height="34" rx="6" class="f-panel"/><text x="87" y="116" class="tm" text-anchor="middle">0001010</text><rect x="174" y="94" width="158" height="34" rx="6" class="f-panel"/><text x="253" y="116" class="tm" text-anchor="middle">0111001</text><text x="87" y="146" class="ts c-mute" text-anchor="middle">前の7ビット</text><text x="253" y="146" class="ts c-mute" text-anchor="middle">後ろの7ビット</text><text x="8" y="178" class="ts c-mute" text-anchor="start">後ろを先に置き、頭に「続きある？」を1ビット足す</text><rect x="8" y="186" width="30" height="34" rx="6" class="f-sch"/><text x="23" y="208" class="tm" text-anchor="middle">1</text><rect x="40" y="186" width="126" height="34" rx="6" class="f-panel"/><text x="103" y="208" class="tm" text-anchor="middle">0111001</text><rect x="174" y="186" width="30" height="34" rx="6" class="f-sch"/><text x="189" y="208" class="tm" text-anchor="middle">0</text><rect x="206" y="186" width="126" height="34" rx="6" class="f-panel"/><text x="269" y="208" class="tm" text-anchor="middle">0001010</text><text x="87" y="238" class="ts" text-anchor="middle">b9：まだ続く</text><text x="253" y="238" class="ts" text-anchor="middle">0a：ここで終わり</text></svg></div><figcaption>可変長整数のしくみ。小さい数は少ないバイトで済みます。1337は2バイトです。</figcaption></figure>
+
+<p>もう1つ。Protocol Buffersには「リスト」という型がありません。<code>repeated</code> と書いたフィールドは、<b>同じタグ番号を何度もくり返す</b>ことでリストを表します。上の33バイトの図で、<code>1a</code>（タグ番号3）が2回出てくるのがそれです。</p>
+
+<h4><span class="num">5.1.3.1</span>タグ番号とスキーマの進化</h4>
+<p>スキーマは時間とともに変わります。これを<b>スキーマの進化</b>と呼びます。Protocol Buffersは、互換性を保ったまま、どう変更を受け止めるのでしょうか。</p>
+<p>エンコードされたレコードは、フィールドを順につなげただけのものです。各フィールドは<b>タグ番号</b>で見分けます。値が入っていないフィールドは、単に省略されます。ここから大事なルールが出てきます。</p>
+
+<div class="box key">
+<span class="lab">いちばん大事なルール</span>
+<p>フィールドの<b>名前は変えてよい</b>。データに名前は入っていないからです。フィールドの<b>タグ番号は変えてはいけない</b>。変えると、これまでに書いたデータが全部読めなくなります。</p>
+</div>
+
+<p><b>フィールドを足すとき</b>は、新しいタグ番号を付けます。</p>
+
+<figure class="fig" id="fig-pbforward"><div class="canvas"><svg viewBox="0 0 340 212" role="img" aria-label="新しいコードがタグ4を足したデータを、古いコードが読む。タグ1から3はわかり、知らないタグ4は読みとばして保持する"><text x="8" y="18" class="ts c-new" text-anchor="start">新しいコードが書いたデータ</text><rect x="8" y="26" width="77" height="40" rx="6" class="f-panel"/><text x="46.5" y="51" class="ts" text-anchor="middle">タグ1</text><rect x="89" y="26" width="77" height="40" rx="6" class="f-panel"/><text x="127.5" y="51" class="ts" text-anchor="middle">タグ2</text><rect x="170" y="26" width="77" height="40" rx="6" class="f-panel"/><text x="208.5" y="51" class="ts" text-anchor="middle">タグ3</text><rect x="251" y="26" width="77" height="40" rx="6" class="f-new"/><text x="289.5" y="51" class="ts" text-anchor="middle">タグ4</text><text x="8" y="92" class="ts c-old" text-anchor="start">古いコードが読むと</text><rect x="8" y="100" width="77" height="40" rx="6" class="f-old"/><text x="46.5" y="125" class="ts" text-anchor="middle">わかる</text><rect x="89" y="100" width="77" height="40" rx="6" class="f-old"/><text x="127.5" y="125" class="ts" text-anchor="middle">わかる</text><rect x="170" y="100" width="77" height="40" rx="6" class="f-old"/><text x="208.5" y="125" class="ts" text-anchor="middle">わかる</text><rect x="251" y="100" width="77" height="40" rx="6" class="pg-off"/><text x="289.5" y="125" class="ts c-mute" text-anchor="middle">とばす</text><text x="8" y="172" class="ts c-mute" text-anchor="start">型の目印で長さがわかるので、正しくとばせる。</text><text x="8" y="194" class="ts c-mute" text-anchor="start">とばした中身は、捨てずに持っておける。</text></svg></div><figcaption>フィールドを足したとき（前方互換性）。古いコードは、知らないタグ番号を読みとばします。</figcaption></figure>
+
+<p>図5-1の「知らないフィールドが消える」事故も、これで避けられます。</p>
+
+<figure class="fig" id="fig-pbbackward"><div class="canvas"><svg viewBox="0 0 340 176" role="img" aria-label="古いコードが書いたタグ1から3だけのデータを、新しいコードが読む。データにないタグ4はデフォルト値で埋める"><text x="8" y="18" class="ts c-old" text-anchor="start">古いコードが書いたデータ</text><rect x="8" y="26" width="77" height="40" rx="6" class="f-old"/><text x="46.5" y="51" class="ts" text-anchor="middle">タグ1</text><rect x="89" y="26" width="77" height="40" rx="6" class="f-old"/><text x="127.5" y="51" class="ts" text-anchor="middle">タグ2</text><rect x="170" y="26" width="77" height="40" rx="6" class="f-old"/><text x="208.5" y="51" class="ts" text-anchor="middle">タグ3</text><rect x="251" y="26" width="77" height="40" rx="6" class="pg-off"/><text x="289.5" y="51" class="ts c-mute" text-anchor="middle">（ない）</text><text x="8" y="92" class="ts c-new" text-anchor="start">新しいコードが読むと</text><rect x="8" y="100" width="77" height="40" rx="6" class="f-new"/><text x="46.5" y="125" class="ts" text-anchor="middle">わかる</text><rect x="89" y="100" width="77" height="40" rx="6" class="f-new"/><text x="127.5" y="125" class="ts" text-anchor="middle">わかる</text><rect x="170" y="100" width="77" height="40" rx="6" class="f-new"/><text x="208.5" y="125" class="ts" text-anchor="middle">わかる</text><rect x="251" y="100" width="77" height="40" rx="6" class="f-new"/><text x="289.5" y="125" class="ts" text-anchor="middle">既定値</text><text x="8" y="166" class="ts c-mute" text-anchor="start">タグ番号の意味が変わらないので、いつでも読める。</text></svg></div><figcaption>フィールドを足したとき（後方互換性）。古いデータにないフィールドは、デフォルト値（空文字列や0）で埋めます。</figcaption></figure>
+
+<p><b>フィールドを消すとき</b>は、足すときの逆です。気をつけるのは、<b>消したタグ番号を二度と使わない</b>こと。その番号の入った古いデータがどこかに残っているかもしれないからです。うっかり再利用しないよう、スキーマに「予約済み」と書いておけます。</p>
+<p><b>型を変えるとき</b>は、できる組み合わせもありますが、値が切り捨てられる危険があります。</p>
+
+<figure class="fig" id="fig-truncate"><div class="canvas"><svg viewBox="0 0 340 140" role="img" aria-label="新しいコードが64ビットで50億を書く。古いコードは32ビットの変数で受けるので上のビットが切れて705032704になる"><text x="8" y="18" class="ts c-new" text-anchor="start">新しいコード：64ビットで書く</text><rect x="8" y="26" width="324" height="34" rx="6" class="f-new"/><text x="20" y="48" class="tm" text-anchor="start">5000000000</text><text x="8" y="86" class="ts c-old" text-anchor="start">古いコード：32ビットの変数で受ける</text><rect x="8" y="94" width="324" height="34" rx="6" class="f-old"/><text x="20" y="116" class="tm" text-anchor="start">705032704</text><text x="322" y="116" class="ts c-bad" text-anchor="end">上のビットが切れた</text></svg></div><figcaption>32ビット整数を64ビットに変えたとき。古いコードが読むと、値が切り捨てられることがあります（数値は説明用）。</figcaption></figure>
+
+<p>逆向き、つまり新しいコードが古い32ビットのデータを読むのは問題ありません。足りない上のビットを0で埋めればよいからです。</p>
+
+<!-- ----------------------------------------------------- 5.1.4 -->
+<h3 id="s514"><span class="num">5.1.4</span>Avro</h3>
+<p><b>Apache Avro</b>も、スキーマを使うバイナリ形式です。2009年にHadoopのサブプロジェクトとして始まりました。Protocol BuffersがHadoopの使い方に合わなかったためです。</p>
+<p>スキーマの書き方は2つあります。人間が書きやすいAvro IDLと、機械が読みやすいJSON形式です。IDLで書くとこうなります。</p>
+<pre><code>record Person {
+  string userName;
+  union { null, long } favoriteNumber = null;
+  array&lt;string&gt; interests;
+}</code></pre>
+<p>Protocol Buffersと見比べてください。<b>タグ番号がありません</b>。このスキーマで同じレコードを詰めると、<b>32バイト</b>。ここまでで最小です。</p>
+
+<figure class="fig" id="fig-avrobytes"><div class="canvas"><svg viewBox="0 0 340 186" role="img" aria-label="Avroでエンコードした32バイト。フィールド名もタグ番号も型もなく、長さと値だけが並ぶ"><text x="8" y="18" class="ts c-mute" text-anchor="start">Avro：32バイト</text><rect x="11" y="29" width="27" height="36" rx="4" class="f-none"/><text x="24.5" y="44" class="tmx" text-anchor="middle">0c</text><rect x="40" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="53.5" y="44" class="tmx" text-anchor="middle">4d</text><text x="53.5" y="58" class="tn c-mute" text-anchor="middle">M</text><rect x="69" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="82.5" y="44" class="tmx" text-anchor="middle">61</text><text x="82.5" y="58" class="tn c-mute" text-anchor="middle">a</text><rect x="98" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="111.5" y="44" class="tmx" text-anchor="middle">72</text><text x="111.5" y="58" class="tn c-mute" text-anchor="middle">r</text><rect x="127" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="44" class="tmx" text-anchor="middle">74</text><text x="140.5" y="58" class="tn c-mute" text-anchor="middle">t</text><rect x="156" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="44" class="tmx" text-anchor="middle">69</text><text x="169.5" y="58" class="tn c-mute" text-anchor="middle">i</text><rect x="185" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="44" class="tmx" text-anchor="middle">6e</text><text x="198.5" y="58" class="tn c-mute" text-anchor="middle">n</text><rect x="214" y="29" width="27" height="36" rx="4" class="f-none"/><text x="227.5" y="44" class="tmx" text-anchor="middle">02</text><rect x="243" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="256.5" y="44" class="tmx" text-anchor="middle">f2</text><rect x="272" y="29" width="27" height="36" rx="4" class="f-panel"/><text x="285.5" y="44" class="tmx" text-anchor="middle">14</text><rect x="301" y="29" width="27" height="36" rx="4" class="f-none"/><text x="314.5" y="44" class="tmx" text-anchor="middle">04</text><rect x="11" y="67" width="27" height="36" rx="4" class="f-none"/><text x="24.5" y="82" class="tmx" text-anchor="middle">16</text><rect x="40" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="53.5" y="82" class="tmx" text-anchor="middle">64</text><text x="53.5" y="96" class="tn c-mute" text-anchor="middle">d</text><rect x="69" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="82.5" y="82" class="tmx" text-anchor="middle">61</text><text x="82.5" y="96" class="tn c-mute" text-anchor="middle">a</text><rect x="98" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="111.5" y="82" class="tmx" text-anchor="middle">79</text><text x="111.5" y="96" class="tn c-mute" text-anchor="middle">y</text><rect x="127" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="82" class="tmx" text-anchor="middle">64</text><text x="140.5" y="96" class="tn c-mute" text-anchor="middle">d</text><rect x="156" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="82" class="tmx" text-anchor="middle">72</text><text x="169.5" y="96" class="tn c-mute" text-anchor="middle">r</text><rect x="185" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="82" class="tmx" text-anchor="middle">65</text><text x="198.5" y="96" class="tn c-mute" text-anchor="middle">e</text><rect x="214" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="227.5" y="82" class="tmx" text-anchor="middle">61</text><text x="227.5" y="96" class="tn c-mute" text-anchor="middle">a</text><rect x="243" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="256.5" y="82" class="tmx" text-anchor="middle">6d</text><text x="256.5" y="96" class="tn c-mute" text-anchor="middle">m</text><rect x="272" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="285.5" y="82" class="tmx" text-anchor="middle">69</text><text x="285.5" y="96" class="tn c-mute" text-anchor="middle">i</text><rect x="301" y="67" width="27" height="36" rx="4" class="f-panel"/><text x="314.5" y="82" class="tmx" text-anchor="middle">6e</text><text x="314.5" y="96" class="tn c-mute" text-anchor="middle">n</text><rect x="11" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="24.5" y="120" class="tmx" text-anchor="middle">67</text><text x="24.5" y="134" class="tn c-mute" text-anchor="middle">g</text><rect x="40" y="105" width="27" height="36" rx="4" class="f-none"/><text x="53.5" y="120" class="tmx" text-anchor="middle">0e</text><rect x="69" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="82.5" y="120" class="tmx" text-anchor="middle">68</text><text x="82.5" y="134" class="tn c-mute" text-anchor="middle">h</text><rect x="98" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="111.5" y="120" class="tmx" text-anchor="middle">61</text><text x="111.5" y="134" class="tn c-mute" text-anchor="middle">a</text><rect x="127" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="140.5" y="120" class="tmx" text-anchor="middle">63</text><text x="140.5" y="134" class="tn c-mute" text-anchor="middle">c</text><rect x="156" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="169.5" y="120" class="tmx" text-anchor="middle">6b</text><text x="169.5" y="134" class="tn c-mute" text-anchor="middle">k</text><rect x="185" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="198.5" y="120" class="tmx" text-anchor="middle">69</text><text x="198.5" y="134" class="tn c-mute" text-anchor="middle">i</text><rect x="214" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="227.5" y="120" class="tmx" text-anchor="middle">6e</text><text x="227.5" y="134" class="tn c-mute" text-anchor="middle">n</text><rect x="243" y="105" width="27" height="36" rx="4" class="f-panel"/><text x="256.5" y="120" class="tmx" text-anchor="middle">67</text><text x="256.5" y="134" class="tn c-mute" text-anchor="middle">g</text><rect x="272" y="105" width="27" height="36" rx="4" class="f-none"/><text x="285.5" y="120" class="tmx" text-anchor="middle">00</text><rect x="8" y="154" width="14" height="14" rx="3" class="f-none"/><text x="28" y="166" class="ts" text-anchor="start">長さ・個数など</text><rect x="238" y="154" width="14" height="14" rx="3" class="f-panel"/><text x="258" y="166" class="ts" text-anchor="start">値</text></svg></div><figcaption>本の図5-4にあたる図です。藤色のマスが1つもありません。フィールドを見分ける目印がデータの中にないのです。</figcaption></figure>
+
+<p>値を順番につなげただけです。文字列は「長さ、そのあと中身」と並んでいますが、それが文字列だという印はどこにもありません。整数かもしれないし、別の何かかもしれません。</p>
+<p>では、どうやって読むのか。答えは「スキーマを見ながら読む」です。</p>
+
+<figure class="fig" id="fig-avroparse"><div class="canvas"><svg viewBox="0 0 340 196" role="img" aria-label="Avroのデコード。スキーマに書かれた順番にフィールドをたどり、バイト列の先頭から順に、1つめは文字列、2つめは数、3つめは配列と解釈する"><text x="8" y="18" class="ts c-sch" text-anchor="start">スキーマ（読む順番）</text><text x="180" y="18" class="ts c-mute" text-anchor="start">バイト列</text><rect x="8" y="28" width="150" height="38" rx="6" class="f-sch"/><text x="83" y="52" class="tm" text-anchor="middle">userName</text><rect x="180" y="28" width="152" height="38" rx="6" class="f-panel"/><text x="256" y="52" class="tm" text-anchor="middle">0c 4d 61 72 …</text><polygon points="180.0,47.0 172.0,51.0 172.0,43.0" class="hd-sch"/><line x1="158" y1="47" x2="173" y2="47" class="ln-sch"/><rect x="8" y="74" width="150" height="38" rx="6" class="f-sch"/><text x="83" y="98" class="tm" text-anchor="middle">favoriteNumber</text><rect x="180" y="74" width="152" height="38" rx="6" class="f-panel"/><text x="256" y="98" class="tm" text-anchor="middle">02 f2 14</text><polygon points="180.0,93.0 172.0,97.0 172.0,89.0" class="hd-sch"/><line x1="158" y1="93" x2="173" y2="93" class="ln-sch"/><rect x="8" y="120" width="150" height="38" rx="6" class="f-sch"/><text x="83" y="144" class="tm" text-anchor="middle">interests</text><rect x="180" y="120" width="152" height="38" rx="6" class="f-panel"/><text x="256" y="144" class="tm" text-anchor="middle">04 16 64 61 …</text><polygon points="180.0,139.0 172.0,143.0 172.0,135.0" class="hd-sch"/><line x1="158" y1="139" x2="173" y2="139" class="ln-sch"/><text x="8" y="186" class="ts c-mute" text-anchor="start">1つめは文字列、2つめは数…と、スキーマが教える</text></svg></div><figcaption>Avroの読み方。スキーマの順番どおりに、バイト列を前から切り分けます。</figcaption></figure>
+
+<div class="box bad">
+<span class="lab">ここが弱点に見える</span>
+<p>読む側が、書いた側と<b>まったく同じスキーマ</b>を知らないと、正しく読めません。少しでも食い違うと、でたらめな値になります。</p>
+</div>
+
+<div class="box extra">
+<span class="lab">補足（本にはないたとえ）</span>
+<p>答えだけを順番に書いた解答用紙のようなものです。問題用紙（スキーマ）がなければ、「Martin」が何の質問への答えなのかわかりません。</p>
+</div>
+
+<p>これでどうやってスキーマを変えていくのでしょうか。</p>
+
+<h4><span class="num">5.1.4.1</span>書き手のスキーマと読み手のスキーマ</h4>
+<p>Avroは、スキーマを2つ使い分けます。</p>
+<ul>
+<li><b class="new">ライタースキーマ</b>（書き手のスキーマ）：データを詰めたときに使ったスキーマ。</li>
+<li><b class="old">リーダースキーマ</b>（読み手のスキーマ）：読むアプリが「こういうフィールドがほしい」と思っているスキーマ。</li>
+</ul>
+<p>読むときは、この<b>両方</b>を使います。書き手のスキーマでバイト列を正しく切り分けて、それを読み手のスキーマの形に変換します。</p>
+
+<figure class="fig" id="fig-twoschemas"><div class="canvas"><svg viewBox="0 0 340 248" role="img" aria-label="Protocol Buffersはエンコードとデコードで別の版のスキーマを1つずつ使う。Avroはデコードのとき、書き手のスキーマと読み手のスキーマの2つを使う"><text x="8" y="18" class="tb" text-anchor="start">Protocol Buffers</text><rect x="8" y="28" width="96" height="56" rx="6" class="f-new"/><text x="56" y="51.5" class="ts" text-anchor="middle">エンコード</text><text x="56" y="70.5" class="ts c-mute" text-anchor="middle">スキーマv2</text><rect x="122" y="28" width="96" height="56" rx="6" class="f-panel"/><text x="170" y="61" class="ts" text-anchor="middle">バイト列</text><rect x="236" y="28" width="96" height="56" rx="6" class="f-old"/><text x="284" y="51.5" class="ts" text-anchor="middle">デコード</text><text x="284" y="70.5" class="ts c-mute" text-anchor="middle">スキーマv1</text><polygon points="122.0,56.0 114.0,60.0 114.0,52.0" class="hd"/><line x1="104" y1="56" x2="115" y2="56" class="ln"/><polygon points="236.0,56.0 228.0,60.0 228.0,52.0" class="hd"/><line x1="218" y1="56" x2="229" y2="56" class="ln"/><text x="8" y="122" class="tb" text-anchor="start">Avro</text><rect x="8" y="132" width="96" height="56" rx="6" class="f-new"/><text x="56" y="155.5" class="ts" text-anchor="middle">エンコード</text><text x="56" y="174.5" class="ts c-mute" text-anchor="middle">スキーマv2</text><rect x="122" y="132" width="96" height="56" rx="6" class="f-panel"/><text x="170" y="165" class="ts" text-anchor="middle">バイト列</text><rect x="236" y="132" width="96" height="78" rx="6" class="f-old"/><text x="284" y="157" class="ts" text-anchor="middle">デコード</text><text x="284" y="176" class="ts c-new" text-anchor="middle">書き手のv2</text><text x="284" y="195" class="ts c-old" text-anchor="middle">＋読み手のv1</text><polygon points="122.0,160.0 114.0,164.0 114.0,156.0" class="hd"/><line x1="104" y1="160" x2="115" y2="160" class="ln"/><polygon points="236.0,160.0 228.0,164.0 228.0,156.0" class="hd"/><line x1="218" y1="160" x2="229" y2="160" class="ln"/><text x="8" y="238" class="ts c-mute" text-anchor="start">Avroは「書いた人のスキーマ」も手元に置いて読む</text></svg></div><figcaption>本の図5-5にあたる図です。Avroは読むときにスキーマを2つ使います。</figcaption></figure>
+
+<p>2つが同じなら、そのまま読むだけです。違うときは、Avroが2つを見比べて、差を埋めてくれます。</p>
+
+<figure class="fig" id="fig-resolve"><div class="canvas"><svg viewBox="0 0 340 232" role="img" aria-label="書き手のスキーマはuserName、favoriteNumber、photoURL。読み手のスキーマはuserID、userName、favoriteNumber。名前で対応づけ、読み手にないphotoURLは無視し、書き手にないuserIDはデフォルト値で埋める"><text x="8" y="18" class="ts c-new" text-anchor="start">書き手のスキーマ</text><text x="332" y="18" class="ts c-old" text-anchor="end">読み手のスキーマ</text><rect x="8" y="28" width="130" height="34" rx="6" class="f-new"/><text x="73" y="50" class="tm" text-anchor="middle">userName</text><rect x="8" y="72" width="130" height="34" rx="6" class="f-new"/><text x="73" y="94" class="tm" text-anchor="middle">favoriteNumber</text><rect x="8" y="116" width="130" height="34" rx="6" class="pg-off"/><text x="73" y="138" class="tm" text-anchor="middle">photoURL</text><rect x="202" y="28" width="130" height="34" rx="6" class="f-sch"/><text x="267" y="50" class="tm" text-anchor="middle">userID</text><rect x="202" y="72" width="130" height="34" rx="6" class="f-old"/><text x="267" y="94" class="tm" text-anchor="middle">userName</text><rect x="202" y="116" width="130" height="34" rx="6" class="f-old"/><text x="267" y="138" class="tm" text-anchor="middle">favoriteNumber</text><polygon points="202.0,89.0 193.1,87.8 197.7,81.2" class="hd-tx"/><line x1="138" y1="45" x2="196.232" y2="85.0343" class="ln-tx"/><polygon points="202.0,133.0 193.1,131.8 197.7,125.2" class="hd-tx"/><line x1="138" y1="89" x2="196.232" y2="129.034" class="ln-tx"/><text x="8" y="178" class="ts c-mute" text-anchor="start">photoURL：読み手にない → 無視する</text><text x="8" y="200" class="ts c-sch" text-anchor="start">userID：書き手にない → デフォルト値で埋める</text><text x="8" y="222" class="ts c-mute" text-anchor="start">順番が違っても平気。名前で対応づけるから。</text></svg></div><figcaption>本の図5-6にあたる図です（フィールドは説明用）。Avroは2つのスキーマを見比べて、名前で対応づけます。</figcaption></figure>
+
+<h4><span class="num">5.1.4.2</span>スキーマの進化のルール</h4>
+<p>Avroでは、互換性をこう言い換えられます。<b>前方互換性</b>は、書き手のスキーマが読み手より新しくてもよいこと。<b>後方互換性</b>は、書き手のスキーマが読み手より古くてもよいこと。</p>
+
+<figure class="fig" id="fig-avrorules"><div class="canvas"><svg viewBox="0 0 340 244" role="img" aria-label="デフォルト値つきのフィールドなら追加も削除もできる。デフォルト値なしで追加すると後方互換性が壊れ、デフォルト値なしで削除すると前方互換性が壊れる"><rect x="8" y="8" width="324" height="56" rx="6" class="f-new"/><text x="20" y="32" class="tb" text-anchor="start">デフォルト値つきなら</text><text x="20" y="52" class="ts" text-anchor="start">追加しても削除しても、両方向で読める</text><rect x="8" y="74" width="324" height="76" rx="6" class="f-bad"/><text x="20" y="98" class="tb" text-anchor="start">デフォルト値なしで追加</text><text x="20" y="118" class="ts" text-anchor="start">新しい読み手が、古いデータを読めない</text><text x="20" y="138" class="ts c-bad" text-anchor="start">→ 後方互換性が壊れる</text><rect x="8" y="160" width="324" height="76" rx="6" class="f-bad"/><text x="20" y="184" class="tb" text-anchor="start">デフォルト値なしで削除</text><text x="20" y="204" class="ts" text-anchor="start">古い読み手が、新しいデータを読めない</text><text x="20" y="224" class="ts c-bad" text-anchor="start">→ 前方互換性が壊れる</text></svg></div><figcaption>Avroのルール。追加・削除してよいのは、デフォルト値を持つフィールドだけです。</figcaption></figure>
+
+<p>細かい注意がいくつかあります。</p>
+<ul>
+<li><b>nullは勝手には入らない。</b>nullを許したいフィールドは、<code>union { null, long }</code> のように<b>ユニオン型</b>で書きます。少し面倒ですが、何がnullになりうるかがはっきりして、バグが減ります。nullをデフォルト値にできるのは、nullがユニオンの最初に書いてあるときだけです。</li>
+<li><b>型の変更</b>は、Avroが変換できる組み合わせなら可能です。</li>
+<li><b>名前の変更</b>は、読み手のスキーマに別名（エイリアス）を書けばできます。ただし後方互換だけで、前方互換にはなりません。</li>
+<li><b>ユニオンに選択肢を足す</b>のも、後方互換だけです。</li>
+</ul>
+
+<h4><span class="num">5.1.4.3</span>書き手のスキーマをどうやって知るのか</h4>
+<p>ここまで、大事な疑問を飛ばしていました。読む側は、そのデータを書いたときのスキーマをどうやって手に入れるのでしょうか。</p>
+<p>レコードごとにスキーマを丸ごと付けるのは論外です。スキーマのほうがデータより大きくなって、せっかくの節約が消えます。答えは、使う場面によって変わります。</p>
+
+<figure class="fig" id="fig-whereschema"><div class="canvas"><svg viewBox="0 0 340 252" role="img" aria-label="書き手のスキーマの伝え方3つ。大きなファイルは先頭に1回だけ書く。データベースは各レコードに版番号を付けてスキーマ一覧を引く。通信は接続するときに版を相談する"><text x="8" y="18" class="ts c-mute" text-anchor="start">① 大きなファイル：先頭に1回だけ書く</text><rect x="8" y="26" width="90" height="36" rx="6" class="f-sch"/><text x="53" y="49" class="ts" text-anchor="middle">スキーマ</text><rect x="102" y="26" width="230" height="36" rx="6" class="f-panel"/><text x="217" y="49" class="ts" text-anchor="middle">レコード × 数百万</text><text x="8" y="90" class="ts c-mute" text-anchor="start">② データベース：各レコードに版番号</text><rect x="8" y="98" width="40" height="36" rx="6" class="f-sch"/><text x="28" y="121" class="tm" text-anchor="middle">v2</text><rect x="50" y="98" width="110" height="36" rx="6" class="f-panel"/><text x="105" y="121" class="ts" text-anchor="middle">レコード</text><polygon points="204.0,116.0 196.0,120.0 196.0,112.0" class="hd-sch"/><line x1="160" y1="116" x2="197" y2="116" class="ln-sch"/><rect x="204" y="98" width="128" height="56" rx="6" class="f-sch"/><text x="268" y="120" class="ts" text-anchor="middle">v1 のスキーマ</text><text x="268" y="142" class="ts" text-anchor="middle">v2 のスキーマ</text><text x="8" y="154" class="ts c-mute" text-anchor="start">版番号で一覧を引く</text><text x="8" y="192" class="ts c-mute" text-anchor="start">③ 通信：つなぐときに決める</text><rect x="8" y="200" width="90" height="44" rx="6" class="f-panel"/><text x="53" y="227" class="ts" text-anchor="middle">プロセスA</text><rect x="242" y="200" width="90" height="44" rx="6" class="f-panel"/><text x="287" y="227" class="ts" text-anchor="middle">プロセスB</text><text x="170" y="214" class="ts c-sch" text-anchor="middle">版を相談</text><polygon points="242.0,226.0 234.0,230.0 234.0,222.0" class="hd-sch"/><polygon points="98.0,226.0 106.0,222.0 106.0,230.0" class="hd-sch"/><line x1="105" y1="226" x2="235" y2="226" class="ln-sch"/></svg></div><figcaption>書き手のスキーマを読み手に伝える3つの方法。毎レコードにスキーマを丸ごと付けたりはしません。</figcaption></figure>
+
+<ol>
+<li><b>大きなファイル。</b>同じスキーマのレコードが何百万件も入ったファイルなら、先頭に1回書けば済みます。Avroはそのためのファイル形式（オブジェクトコンテナファイル）を決めています。</li>
+<li><b>データベース。</b>レコードごとに書いた時期が違い、スキーマも違うかもしれません。そこで各レコードの頭に版番号を付け、版ごとのスキーマの一覧を別に持ちます。ConfluentのKafka用スキーマレジストリや、LinkedInのEspressoがこの方式です。</li>
+<li><b>ネットワーク接続。</b>つないだときに、使うスキーマの版を相談して決めます。あとは切れるまでそれを使います。Avro RPCがこの方式です。</li>
+</ol>
+<p>スキーマの版の一覧は、どのみち持っておくと便利です。ドキュメントになりますし、互換性を機械的にチェックできます。版番号は、連番でも、スキーマのハッシュでもかまいません。</p>
+
+<h4><span class="num">5.1.4.4</span>動的に作るスキーマ</h4>
+<p>タグ番号がないことは、何がうれしいのでしょうか。答えは、<b>スキーマを機械に作らせやすい</b>ことです。</p>
+<p>たとえば、リレーショナルデータベースの中身をファイルに書き出したいとします。</p>
+
+<figure class="fig" id="fig-dynamic"><div class="canvas"><svg viewBox="0 0 340 184" role="img" aria-label="データベースのテーブル定義から、列名をそのままフィールド名にしてAvroスキーマを自動で作る"><text x="8" y="18" class="ts c-mute" text-anchor="start">テーブル定義</text><text x="202" y="18" class="ts c-sch" text-anchor="start">Avroスキーマ</text><rect x="8" y="28" width="130" height="96" rx="6" class="f-panel"/><rect x="202" y="28" width="130" height="96" rx="6" class="f-sch"/><text x="22" y="52" class="tm" text-anchor="start">id</text><text x="216" y="52" class="tm" text-anchor="start">id</text><text x="22" y="80" class="tm" text-anchor="start">name</text><text x="216" y="80" class="tm" text-anchor="start">name</text><text x="22" y="108" class="tm" text-anchor="start">email</text><text x="216" y="108" class="tm" text-anchor="start">email</text><text x="170" y="66" class="ts c-mute" text-anchor="middle">自動</text><polygon points="202.0,76.0 194.0,80.0 194.0,72.0" class="hd-sch"/><line x1="138" y1="76" x2="195" y2="76" class="ln-sch"/><text x="8" y="150" class="ts c-mute" text-anchor="start">列名がそのままフィールド名になる。</text><text x="8" y="172" class="ts c-mute" text-anchor="start">列が増減しても、作り直すだけ。</text></svg></div><figcaption>テーブル定義からAvroスキーマを機械的に作れます。Protocol Buffersだと、列ごとのタグ番号を誰かが管理し続ける必要があります。</figcaption></figure>
+
+<p>テーブルの列が1つ増えて1つ減っても、新しいテーブル定義から新しいAvroスキーマを作って書き出すだけです。書き出す処理は、スキーマが変わったことを気にしなくてかまいません。読む側は名前で対応づけるので、古い読み手のスキーマとも照合できます。</p>
+<p>動的に作るスキーマは、Avroが最初から想定していた使い方です。Protocol Buffersの設計目標には入っていませんでした。</p>
+
+<!-- ----------------------------------------------------- 5.1.5 -->
+<h3 id="s515"><span class="num">5.1.5</span>スキーマの利点</h3>
+
+<figure class="fig" id="fig-sizes"><div class="canvas"><svg viewBox="0 0 340 182" role="img" aria-label="同じレコードのサイズ比較。JSONテキスト81バイト、MessagePack66バイト、Protocol Buffers33バイト、Avro32バイト"><text x="8" y="32" class="tmx" text-anchor="start">JSON</text><rect x="100" y="12" width="162" height="30" rx="4" class="f-panel"/><text x="270" y="32" class="ts" text-anchor="start">81バイト</text><text x="8" y="74" class="tmx" text-anchor="start">MessagePack</text><rect x="100" y="54" width="132" height="30" rx="4" class="f-panel"/><text x="240" y="74" class="ts" text-anchor="start">66バイト</text><text x="8" y="116" class="tmx" text-anchor="start">Protobuf</text><rect x="100" y="96" width="66" height="30" rx="4" class="f-sch"/><text x="174" y="116" class="ts" text-anchor="start">33バイト</text><text x="8" y="158" class="tmx" text-anchor="start">Avro</text><rect x="100" y="138" width="64" height="30" rx="4" class="f-sch"/><text x="172" y="158" class="ts" text-anchor="start">32バイト</text></svg></div><figcaption>同じレコードを詰めたときの大きさ。スキーマを使う形式（藤色）は、フィールド名を入れないので半分以下になります。</figcaption></figure>
+
+<p>Protocol BuffersとAvroのスキーマ言語は、XML SchemaやJSON Schemaよりずっとシンプルです。値の細かい制約は書けませんが、そのぶん実装しやすく、多くの言語で使えるようになりました。</p>
+<p>スキーマを使うバイナリ形式には、小ささ以外にも良いところがあります。</p>
+<ol>
+<li><b>コンパクト。</b>フィールド名を入れなくてよいので、「バイナリのJSON」よりずっと小さくなります。</li>
+<li><b>腐らないドキュメント。</b>スキーマがないとデコードできないので、スキーマは必ず最新です。人が手で書いた説明書は、すぐ現実とずれます。</li>
+<li><b>デプロイ前に互換性を調べられる。</b>スキーマの一覧を持っておけば、変更が前方・後方互換かを機械で確かめられます。</li>
+<li><b>型チェックが効く。</b>スキーマからコードを生成できるので、静的型付けの言語ならコンパイル時に間違いを見つけられます。</li>
+</ol>
+
+<div class="cmp">
+<div class="side sch">
+<span class="tag">Protocol Buffers</span>
+<ul>
+<li>フィールドは<b>タグ番号</b>で見分ける</li>
+<li>データに目印が入っている</li>
+<li>番号は人が管理する</li>
+</ul>
+</div>
+<div class="side sch">
+<span class="tag">Avro</span>
+<ul>
+<li>フィールドは<b>名前</b>で対応づける</li>
+<li>データに目印は入っていない</li>
+<li>スキーマを機械で作りやすい</li>
+</ul>
+</div>
+</div>
+
+<p>ちなみに、この考え方は新しくありません。1984年に標準化されたASN.1というスキーマ言語がすでに、タグ番号によるスキーマの進化を持っていました。SSL証明書（X.509）のエンコードに今も使われています。ただし複雑で資料も乏しく、新しく使うものではないと本は言います。</p>
+<p>また、多くのデータベースは独自のバイナリ形式を持っています。クエリと結果をやり取りするネットワークプロトコルがそれで、ドライバ（ODBCやJDBC）がデコードしてくれています。</p>
+
+<div class="box key">
+<span class="lab">5.1のまとめ</span>
+<p>スキーマの進化は、スキーマレスなJSONデータベースと同じ種類の柔軟さをくれます。そのうえ、データについての確かな保証と、よい道具も付いてきます。ただし運用を楽にするため、同時に使うスキーマ形式の数は最小限にしよう、と本は勧めています。</p>
+</div>
+
+<!-- ===================================================== 5.2 -->
+<h2 id="s52"><span class="num">5.2</span>データフローのモード</h2>
+
+<p>互換性とは、<b>データを詰めるプロセス</b>と<b>それを開けるプロセス</b>のあいだの関係です。では実際には、誰が詰めて、誰が開けるのでしょうか。データの流れ方ごとに見ていきます。</p>
+
+<figure class="fig" id="fig-flows"><div class="canvas"><svg viewBox="0 0 340 246" role="img" aria-label="データの流れ方3つ。データベース経由では書くプロセスから読むプロセスへ。サービスではクライアントとサーバーが行き来。イベントでは送り手からブローカーを通って受け手へ"><text x="8" y="18" class="ts c-mute" text-anchor="start">データベース経由</text><rect x="8" y="26" width="96" height="44" rx="6" class="f-panel"/><text x="56" y="53" class="ts" text-anchor="middle">書くプロセス</text><rect x="122" y="26" width="96" height="44" rx="6" class="f-sch"/><text x="170" y="53" class="ts" text-anchor="middle">データベース</text><rect x="236" y="26" width="96" height="44" rx="6" class="f-panel"/><text x="284" y="53" class="ts" text-anchor="middle">読むプロセス</text><polygon points="122.0,48.0 114.0,52.0 114.0,44.0" class="hd-tx"/><line x1="104" y1="48" x2="115" y2="48" class="ln-tx"/><polygon points="236.0,48.0 228.0,52.0 228.0,44.0" class="hd-tx"/><line x1="218" y1="48" x2="229" y2="48" class="ln-tx"/><text x="8" y="100" class="ts c-mute" text-anchor="start">サービス呼び出し（REST・RPC）</text><rect x="8" y="108" width="96" height="44" rx="6" class="f-panel"/><text x="56" y="135" class="ts" text-anchor="middle">クライアント</text><rect x="122" y="108" width="96" height="44" rx="6" class="f-sch"/><text x="170" y="135" class="ts" text-anchor="middle">ネットワーク</text><rect x="236" y="108" width="96" height="44" rx="6" class="f-panel"/><text x="284" y="135" class="ts" text-anchor="middle">サーバー</text><polygon points="122.0,130.0 114.0,134.0 114.0,126.0" class="hd-tx"/><polygon points="104.0,130.0 112.0,126.0 112.0,134.0" class="hd-tx"/><line x1="111" y1="130" x2="115" y2="130" class="ln-tx"/><polygon points="236.0,130.0 228.0,134.0 228.0,126.0" class="hd-tx"/><polygon points="218.0,130.0 226.0,126.0 226.0,134.0" class="hd-tx"/><line x1="225" y1="130" x2="229" y2="130" class="ln-tx"/><text x="8" y="182" class="ts c-mute" text-anchor="start">イベント（非同期メッセージ）</text><rect x="8" y="190" width="96" height="44" rx="6" class="f-panel"/><text x="56" y="217" class="ts" text-anchor="middle">送り手</text><rect x="122" y="190" width="96" height="44" rx="6" class="f-sch"/><text x="170" y="217" class="ts" text-anchor="middle">ブローカー</text><rect x="236" y="190" width="96" height="44" rx="6" class="f-panel"/><text x="284" y="217" class="ts" text-anchor="middle">受け手</text><polygon points="122.0,212.0 114.0,216.0 114.0,208.0" class="hd-tx"/><line x1="104" y1="212" x2="115" y2="212" class="ln-tx"/><polygon points="236.0,212.0 228.0,216.0 228.0,208.0" class="hd-tx"/><line x1="218" y1="212" x2="229" y2="212" class="ln-tx"/></svg></div><figcaption>どの流れ方でも、誰かがエンコードして、別の誰かがデコードします。</figcaption></figure>
+
+<p>本はこの3つに加えて、サービス呼び出しをいくつもつなげる「ワークフロー」も取り上げます。順番に行きます。</p>
+
+<!-- ----------------------------------------------------- 5.2.1 -->
+<h3 id="s521"><span class="num">5.2.1</span>データベースを介したデータフロー</h3>
+<p>データベースでは、書くプロセスが詰めて、読むプロセスが開けます。プロセスが1つしかない場合でも、読むのは「あとの時点の自分」です。</p>
+
+<figure class="fig" id="fig-futureself"><div class="canvas"><svg viewBox="0 0 340 122" role="img" aria-label="今の自分であるバージョン1がデータベースに書き、未来の自分であるバージョン2が読む"><text x="170" y="18" class="ts c-mute" text-anchor="middle">書いてから読むまでに時間がたつ</text><rect x="8" y="30" width="96" height="52" rx="6" class="f-old"/><text x="56" y="51.5" class="ts" text-anchor="middle">今の自分</text><text x="56" y="70.5" class="tm c-mute" text-anchor="middle">v1</text><rect x="122" y="30" width="96" height="52" rx="6" class="f-panel"/><text x="170" y="61" class="ts" text-anchor="middle">データベース</text><rect x="236" y="30" width="96" height="52" rx="6" class="f-new"/><text x="284" y="51.5" class="ts" text-anchor="middle">未来の自分</text><text x="284" y="70.5" class="tm c-mute" text-anchor="middle">v2</text><polygon points="122.0,56.0 114.0,60.0 114.0,52.0" class="hd-old"/><line x1="104" y1="56" x2="115" y2="56" class="ln-old"/><polygon points="236.0,56.0 228.0,60.0 228.0,52.0" class="hd-new"/><line x1="218" y1="56" x2="229" y2="56" class="ln-new"/><text x="8" y="110" class="ts c-mute" text-anchor="start">未来の自分が読めないと困る → 後方互換性</text></svg></div><figcaption>データベースに保存するのは、未来の自分にメッセージを送るのと同じです。</figcaption></figure>
+
+<p>ただし、ふつうはデータベースを使うプロセスは1つではありません。同じサービスが何台も並んで動いています。逐次更新の途中なら、新しいコードの台と古いコードの台が混ざっています。</p>
+
+<figure class="fig" id="fig-dbmixed"><div class="canvas"><svg viewBox="0 0 340 222" role="img" aria-label="逐次更新の途中、新しいインスタンスがデータベースに書いた値を、まだ古いインスタンスが読む"><rect x="8" y="20" width="110" height="44" rx="6" class="f-new"/><text x="63" y="47" class="ts" text-anchor="middle">新インスタンス</text><rect x="222" y="20" width="110" height="44" rx="6" class="f-old"/><text x="277" y="47" class="ts" text-anchor="middle">旧インスタンス</text><rect x="115" y="118" width="110" height="50" rx="6" class="f-panel"/><text x="170" y="148" class="ts" text-anchor="middle">データベース</text><polygon points="138.0,118.0 129.2,116.6 133.8,110.1" class="hd-new"/><line x1="63" y1="64" x2="132.319" y2="113.91" class="ln-new"/><polygon points="277.0,64.0 272.8,71.9 268.2,65.4" class="hd-old"/><line x1="202" y1="118" x2="271.319" y2="68.0901" class="ln-old"/><text x="56" y="104" class="ts c-new" text-anchor="start">① 書く</text><text x="248" y="104" class="ts c-old" text-anchor="start">② 読む</text><text x="8" y="194" class="ts c-mute" text-anchor="start">古いコードが、新しいデータを読むことになる</text><text x="8" y="214" class="ts c-mute" text-anchor="start">→ 前方互換性も要る</text></svg></div><figcaption>逐次更新の途中では、新しいコードが書いた値を古いコードが読むことがあります。</figcaption></figure>
+
+<p>つまりデータベースでは、後方互換性も前方互換性も、両方要ることが多いのです。図5-1の「知らないフィールドを消す事故」が起きるのも、この場面です。</p>
+
+<h4><span class="num">5.2.1.1</span>データはコードより長生きする</h4>
+<p>データベースの中には、5ミリ秒前に書いた値もあれば、5年前に書いた値もあります。</p>
+
+<figure class="fig" id="fig-outlive"><div class="canvas"><svg viewBox="0 0 340 246" role="img" aria-label="コードはv1からv5へ次々入れ替わるが、データはv1の頃に書いた行から今の行まで全部が残り続ける"><text x="8" y="18" class="ts c-mute" text-anchor="start">コード：すぐ入れ替わる。動いているのは最新だけ</text><rect x="8" y="26" width="61" height="30" rx="6" class="f-none dim"/><text x="38.5" y="46" class="tm" text-anchor="middle">v1</text><rect x="73" y="26" width="61" height="30" rx="6" class="f-none dim"/><text x="103.5" y="46" class="tm" text-anchor="middle">v2</text><rect x="138" y="26" width="61" height="30" rx="6" class="f-none dim"/><text x="168.5" y="46" class="tm" text-anchor="middle">v3</text><rect x="203" y="26" width="61" height="30" rx="6" class="f-none dim"/><text x="233.5" y="46" class="tm" text-anchor="middle">v4</text><rect x="268" y="26" width="61" height="30" rx="6" class="f-new"/><text x="298.5" y="46" class="tm" text-anchor="middle">v5</text><text x="8" y="86" class="ts c-mute" text-anchor="start">データ：書き換えない限り、そのまま残る</text><rect x="8" y="96" width="324" height="18" rx="3" class="f-old"/><text x="14" y="109" class="tn" text-anchor="start">v1</text><rect x="73" y="120" width="259" height="18" rx="3" class="f-old"/><text x="79" y="133" class="tn" text-anchor="start">v2</text><rect x="138" y="144" width="194" height="18" rx="3" class="f-old"/><text x="144" y="157" class="tn" text-anchor="start">v3</text><rect x="203" y="168" width="129" height="18" rx="3" class="f-old"/><text x="209" y="181" class="tn" text-anchor="start">v4</text><rect x="268" y="192" width="64" height="18" rx="3" class="f-new"/><text x="274" y="205" class="tn" text-anchor="start">v5</text><text x="8" y="238" class="ts c-mute" text-anchor="start">5年前</text><text x="332" y="238" class="ts c-mute" text-anchor="end">いま</text><polygon points="296.0,234.0 288.0,238.0 288.0,230.0" class="hd"/><line x1="56" y1="234" x2="289" y2="234" class="ln"/></svg></div><figcaption>「データはコードより長生きする」。コードは数分で入れ替わっても、5年前に書いた行はそのままの形で残ります。</figcaption></figure>
+
+<p>全部のデータを新しいスキーマに書き直す（<b>マイグレーション</b>する）こともできます。でもデータが大きいと高くつきます。そこで多くのデータベースは、書き直しを先延ばしにします。</p>
+<ul>
+<li>LSMツリーのストレージエンジン（4章）は、コンパクションのついでに最新の形式で書き直します。</li>
+<li>多くのリレーショナルデータベースは、「デフォルトがnullの列を足す」程度の変更なら、既存の行に触りません。</li>
+</ul>
+
+<figure class="fig" id="fig-lazynull"><div class="canvas"><svg viewBox="0 0 340 250" role="img" aria-label="ディスク上の古い行には新しい列がない。読むときにデータベースがnullを埋めるので、全部の行が同じスキーマに見える"><text x="8" y="18" class="ts c-mute" text-anchor="start">ディスク上の行（古い行は書き換えていない）</text><rect x="8" y="26" width="100" height="34" rx="6" class="f-old"/><text x="58" y="48" class="tm" text-anchor="middle">id=1</text><rect x="112" y="26" width="100" height="34" rx="6" class="f-old"/><text x="162" y="48" class="tm" text-anchor="middle">Aiko</text><rect x="216" y="26" width="116" height="34" rx="6" class="pg-off"/><text x="274" y="48" class="ts c-mute" text-anchor="middle">（列がない）</text><rect x="8" y="66" width="100" height="34" rx="6" class="f-new"/><text x="58" y="88" class="tm" text-anchor="middle">id=2</text><rect x="112" y="66" width="100" height="34" rx="6" class="f-new"/><text x="162" y="88" class="tm" text-anchor="middle">Ken</text><rect x="216" y="66" width="116" height="34" rx="6" class="f-new"/><text x="274" y="88" class="tm" text-anchor="middle">a.png</text><text x="8" y="130" class="ts c-mute" text-anchor="start">読むとき：データベースが穴を埋める</text><rect x="8" y="138" width="100" height="34" rx="6" class="f-panel"/><text x="58" y="160" class="tm" text-anchor="middle">id=1</text><rect x="112" y="138" width="100" height="34" rx="6" class="f-panel"/><text x="162" y="160" class="tm" text-anchor="middle">Aiko</text><rect x="216" y="138" width="116" height="34" rx="6" class="f-sch"/><text x="274" y="160" class="tm" text-anchor="middle">null</text><rect x="8" y="178" width="100" height="34" rx="6" class="f-panel"/><text x="58" y="200" class="tm" text-anchor="middle">id=2</text><rect x="112" y="178" width="100" height="34" rx="6" class="f-panel"/><text x="162" y="200" class="tm" text-anchor="middle">Ken</text><rect x="216" y="178" width="116" height="34" rx="6" class="f-panel"/><text x="274" y="200" class="tm" text-anchor="middle">a.png</text><text x="8" y="240" class="ts c-mute" text-anchor="start">外からは、全部が同じスキーマに見える</text></svg></div><figcaption>列を足しても、古い行は書き換えません。読むときにデータベースがnullを埋めて、つじつまを合わせます。</figcaption></figure>
+
+<p>これもスキーマの進化の一種です。ディスクの上にはいろいろな時代の形式が混ざっていても、データベース全体が1つのスキーマでできているように見せられます。</p>
+
+<div class="box extra">
+<span class="lab">補足（本にはない話）</span>
+<p>PostgreSQLで、NULLを許す列を <code>ALTER TABLE … ADD COLUMN</code> で足すと、巨大なテーブルでもすぐ終わります。行を書き換えていないからです。</p>
+</div>
+
+<p>もっと込み入った変更、たとえば「1つの値だった属性を複数の値にする」「一部のデータを別のテーブルに移す」は、やはりデータの書き直しが要ります。多くはアプリ側でやることになります。</p>
+
+<h4><span class="num">5.2.1.2</span>アーカイブストレージ</h4>
+<p>バックアップやデータウェアハウスへの取り込みのために、データベースのスナップショットを取ることがあります。このとき、元のデータベースにいろいろな時代の形式が混ざっていても、書き出すデータはふつう<b>最新のスキーマにそろえます</b>。どうせ全部コピーするのだから、そろえたほうが合理的です。</p>
+<p>書き出したデータは、一度に書かれて、あとは変わりません。なので、Avroのオブジェクトコンテナファイルがよく合います。Parquetのような分析向けの列指向形式（4章）にする良い機会でもあります。</p>
+
+<!-- ----------------------------------------------------- 5.2.2 -->
+<h3 id="s522"><span class="num">5.2.2</span>サービスを介したデータフロー：RESTとRPC</h3>
+<p>ネットワーク越しの通信でいちばんよくある形は、役割を2つに分けることです。<b>サーバー</b>がAPIを公開し、<b>クライアント</b>がそこへリクエストを送ります。サーバーが公開するAPIを<b>サービス</b>と呼びます。Webがまさにこの形です。</p>
+<p>サービスはデータベースに少し似ています。データを送れて、問い合わせもできます。違いは自由度です。データベースはクエリ言語で好きな問い合わせができます。サービスは、<b>あらかじめ決めた入力と出力しか受け付けません</b>。この制限のおかげで、クライアントにできることを細かく決められます（カプセル化）。</p>
+<p>マイクロサービスの大事な目標は、サービスを<b>別々にデプロイして、別々に変えていける</b>ことです。1つのサービスは1つのチームが持ち、他のチームと相談せずにどんどんリリースできるのが理想です。ということは、新旧のサーバーとクライアントが同時に動いているのが当たり前です。だからAPIのバージョン間の互換性が要ります。</p>
+
+<h4><span class="num">5.2.2.1</span>Webサービス</h4>
+<p>サービスとの通信にHTTPを使うとき、それを<b>Webサービス</b>と呼びます。</p>
+
+<figure class="fig" id="fig-webkinds"><div class="canvas"><svg viewBox="0 0 340 224" role="img" aria-label="Webサービスが使われる3つの場面。ユーザーの端末からサービスへ、同じ組織のサービスどうし、ほかの組織のサービスへ"><text x="8" y="18" class="ts c-mute" text-anchor="start">① ユーザーの端末から（インターネット経由）</text><rect x="8" y="26" width="124" height="40" rx="6" class="f-panel"/><text x="70" y="51" class="ts" text-anchor="middle">スマホ・ブラウザ</text><rect x="208" y="26" width="124" height="40" rx="6" class="f-panel"/><text x="270" y="51" class="ts" text-anchor="middle">サービス</text><polygon points="208.0,46.0 200.0,50.0 200.0,42.0" class="hd-tx"/><line x1="132" y1="46" x2="201" y2="46" class="ln-tx"/><text x="8" y="92" class="ts c-mute" text-anchor="start">② 同じ組織のサービスどうし（社内ネットワーク）</text><rect x="8" y="100" width="124" height="40" rx="6" class="f-panel"/><text x="70" y="125" class="ts" text-anchor="middle">サービスA</text><rect x="208" y="100" width="124" height="40" rx="6" class="f-panel"/><text x="270" y="125" class="ts" text-anchor="middle">サービスB</text><polygon points="208.0,120.0 200.0,124.0 200.0,116.0" class="hd-tx"/><line x1="132" y1="120" x2="201" y2="120" class="ln-tx"/><text x="8" y="166" class="ts c-mute" text-anchor="start">③ ほかの組織のサービスへ（公開APIなど）</text><rect x="8" y="174" width="124" height="40" rx="6" class="f-panel"/><text x="70" y="199" class="ts" text-anchor="middle">自社のサービス</text><rect x="208" y="174" width="124" height="40" rx="6" class="f-panel"/><text x="270" y="199" class="ts" text-anchor="middle">他社のサービス</text><polygon points="208.0,194.0 200.0,198.0 200.0,190.0" class="hd-tx"/><line x1="132" y1="194" x2="201" y2="194" class="ln-tx"/></svg></div><figcaption>Webサービスが使われる3つの場面。「Web」と付いていますが、ブラウザ相手だけではありません。</figcaption></figure>
+
+<p>いちばん人気のある設計の考え方が<b>REST</b>です。HTTPの原則に乗っかります。シンプルなデータ形式を使い、リソースをURLで指し、キャッシュ制御や認証にHTTPの機能をそのまま使います。この原則に沿ったAPIを<b>RESTful</b>と呼びます。</p>
+<p>サービスを呼ぶ側は、どのエンドポイントに、どんな形式で送り、何が返るかを知らなければなりません。それを書き表すのが<b>インターフェース定義言語（IDL）</b>です。人気があるのは2つです。</p>
+<ul>
+<li><b>OpenAPI</b>（Swaggerとも呼ぶ）：JSONをやり取りするWebサービス向け。</li>
+<li><b>Protocol Buffers</b>：gRPCサービス向け。5.1.3で見たスキーマをそのまま使います。</li>
+</ul>
+<p>OpenAPIの定義は、JSONかYAMLで書きます。本の例を短くするとこうです。</p>
+<pre><code>openapi: 3.0.0
+info:
+  title: Ping, Pong
+  version: 1.0.0
+paths:
+  /ping:
+    get:
+      summary: Given a ping, returns a pong
+      responses:
+        '200':
+          description: A pong
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string</code></pre>
+<p>API呼び出しを受けるコードは、Spring Boot、FastAPI、gRPCといった<b>サービスフレームワーク</b>で書くのがふつうです。ルーティング、メトリクス、キャッシュ、認証などはフレームワークが受け持ち、開発者は各エンドポイントの処理に集中できます。</p>
+
+<figure class="fig" id="fig-idl"><div class="canvas"><svg viewBox="0 0 340 242" role="img" aria-label="サービス定義とコードの関係。コードを先に書いて定義を自動生成する方法と、定義を先に書いてコードのひな形を生成する方法がある。どちらでも定義からクライアントSDKを生成できる"><text x="8" y="18" class="ts c-mute" text-anchor="start">コードが先（FastAPIなど）</text><rect x="8" y="26" width="124" height="40" rx="6" class="f-panel"/><text x="70" y="51" class="ts" text-anchor="middle">サーバーのコード</text><rect x="208" y="26" width="124" height="40" rx="6" class="f-sch"/><text x="270" y="51" class="ts" text-anchor="middle">サービス定義</text><text x="170" y="38" class="ts c-mute" text-anchor="middle">生成</text><polygon points="208.0,48.0 200.0,52.0 200.0,44.0" class="hd-sch"/><line x1="132" y1="48" x2="201" y2="48" class="ln-sch"/><text x="8" y="100" class="ts c-mute" text-anchor="start">定義が先（gRPCなど）</text><rect x="8" y="108" width="124" height="40" rx="6" class="f-sch"/><text x="70" y="133" class="ts" text-anchor="middle">サービス定義</text><rect x="208" y="108" width="124" height="40" rx="6" class="f-panel"/><text x="270" y="133" class="ts" text-anchor="middle">コードのひな形</text><text x="170" y="120" class="ts c-mute" text-anchor="middle">生成</text><polygon points="208.0,130.0 200.0,134.0 200.0,126.0" class="hd-sch"/><line x1="132" y1="130" x2="201" y2="130" class="ln-sch"/><text x="8" y="182" class="ts c-mute" text-anchor="start">どちらの場合でも</text><rect x="8" y="190" width="124" height="40" rx="6" class="f-sch"/><text x="70" y="215" class="ts" text-anchor="middle">サービス定義</text><rect x="208" y="190" width="124" height="40" rx="6" class="f-panel"/><text x="270" y="215" class="ts" text-anchor="middle">クライアントSDK</text><text x="170" y="202" class="ts c-mute" text-anchor="middle">生成</text><polygon points="208.0,212.0 200.0,216.0 200.0,208.0" class="hd-sch"/><line x1="132" y1="212" x2="201" y2="212" class="ln-sch"/></svg></div><figcaption>サービス定義（IDL）とコードは、どちらか片方を書けばもう片方を機械が作ってくれます。</figcaption></figure>
+
+<p>IDLの道具は、コード生成のほかに、ドキュメントの生成、スキーマ変更の互換性チェック、ブラウザから試し打ちできる画面の提供もしてくれます。</p>
+
+<h4><span class="num">5.2.2.2</span>リモートプロシージャコール（RPC）の問題点</h4>
+<p>Webサービスは、ネットワーク越しにAPIを呼ぶ技術の、長い歴史のいちばん新しい姿です。昔の技術には深刻な問題がありました。</p>
+<ul>
+<li>EJBとRMI：Javaでしか使えない。</li>
+<li>DCOM：Microsoftのプラットフォームでしか使えない。</li>
+<li>CORBA：複雑すぎるうえ、前方互換も後方互換もない。</li>
+<li>SOAPとWS-*：ベンダー間でつながることを目指したが、やはり複雑で互換性に苦しんだ。</li>
+</ul>
+<p>これらはみな、1970年代に生まれた<b>RPC</b>のアイデアに基づいています。RPCは、遠くのサービスへのリクエストを、<b>同じプロセス内の関数呼び出しと同じに見せよう</b>とします。この「場所を意識させない」性質を<b>ロケーション透過性</b>と呼びます。</p>
+<p>便利そうですが、根本的に無理があります。ネットワーク越しのリクエストは、ローカルの関数呼び出しとは別物だからです。</p>
+
+<figure class="fig" id="fig-localremote"><div class="canvas"><svg viewBox="0 0 340 232" role="img" aria-label="ローカルの関数呼び出しの結末は、結果が返る、例外が出る、戻ってこないの3つ。ネットワーク越しではさらにタイムアウトがあり、届いたかどうかわからない"><text x="8" y="18" class="ts c-mute" text-anchor="start">ローカルの関数呼び出し</text><text x="182" y="18" class="ts c-mute" text-anchor="start">ネットワーク越し</text><rect x="8" y="26" width="150" height="34" rx="6" class="f-panel"/><text x="83" y="48" class="ts" text-anchor="middle">結果が返る</text><rect x="182" y="26" width="150" height="34" rx="6" class="f-panel"/><text x="257" y="48" class="ts" text-anchor="middle">結果が返る</text><rect x="8" y="68" width="150" height="34" rx="6" class="f-panel"/><text x="83" y="90" class="ts" text-anchor="middle">例外が出る</text><rect x="182" y="68" width="150" height="34" rx="6" class="f-panel"/><text x="257" y="90" class="ts" text-anchor="middle">例外が出る</text><rect x="8" y="110" width="150" height="34" rx="6" class="f-panel"/><text x="83" y="132" class="ts" text-anchor="middle">戻ってこない</text><rect x="182" y="110" width="150" height="34" rx="6" class="f-panel"/><text x="257" y="132" class="ts" text-anchor="middle">戻ってこない</text><rect x="182" y="152" width="150" height="34" rx="6" class="f-bad"/><text x="257" y="174" class="ts" text-anchor="middle">タイムアウト</text><text x="182" y="206" class="ts c-bad" text-anchor="start">届いたかどうか</text><text x="182" y="224" class="ts c-bad" text-anchor="start">わからない</text></svg></div><figcaption>ネットワーク越しの呼び出しには、ローカルにはない4つめの結末があります。</figcaption></figure>
+
+<p>ローカルの関数は、渡した引数しだいで成功か失敗かが決まります。予測できます。ネットワークは違います。リクエストが途中で消える、相手のマシンが遅い、落ちている。どれも自分ではどうにもできません。</p>
+
+<figure class="fig" id="fig-timeout3"><div class="canvas"><svg viewBox="0 0 340 268" role="img" aria-label="返事が来ない原因は3通りある。リクエストが届かなかった、サーバーが処理中に落ちた、処理は成功したが返事だけ消えた。クライアントからは区別できない"><text x="12" y="18" class="ts c-mute" text-anchor="start">クライアント側</text><text x="332" y="18" class="ts c-mute" text-anchor="end">サーバー側</text><text x="8" y="46" class="ts" text-anchor="start">① リクエストが届かなかった</text><polygon points="150.0,66.0 142.0,70.0 142.0,62.0" class="hd-bad"/><line x1="12" y1="66" x2="143" y2="66" class="ln-bad"/><line x1="158" y1="60" x2="170" y2="72" class="ln-bad"/><line x1="158" y1="72" x2="170" y2="60" class="ln-bad"/><rect x="270" y="52" width="62" height="28" rx="6" class="f-panel"/><text x="301" y="71" class="ts" text-anchor="middle">サーバー</text><text x="8" y="114" class="ts" text-anchor="start">② サーバーが処理の途中で落ちた</text><polygon points="270.0,134.0 262.0,138.0 262.0,130.0" class="hd-tx"/><line x1="12" y1="134" x2="263" y2="134" class="ln-tx"/><rect x="270" y="120" width="62" height="28" rx="6" class="f-bad"/><text x="301" y="139" class="ts c-bad" text-anchor="middle">落ちた</text><text x="8" y="182" class="ts" text-anchor="start">③ 処理は成功。返事だけ消えた</text><polygon points="270.0,200.0 262.0,204.0 262.0,196.0" class="hd-tx"/><line x1="12" y1="200" x2="263" y2="200" class="ln-tx"/><rect x="270" y="192" width="62" height="28" rx="6" class="f-new"/><text x="301" y="211" class="ts c-new" text-anchor="middle">成功</text><polygon points="150.0,214.0 158.0,210.0 158.0,218.0" class="hd-bad"/><line x1="270" y1="214" x2="157" y2="214" class="ln-bad"/><line x1="130" y1="208" x2="142" y2="220" class="ln-bad"/><line x1="130" y1="220" x2="142" y2="208" class="ln-bad"/><text x="8" y="256" class="ts c-bad" text-anchor="start">クライアントからは、どれも「返事がない」に見える</text></svg></div><figcaption>返事が来ないとき、裏で起きていることは少なくとも3通りあります。クライアントには見分けがつきません。</figcaption></figure>
+
+<p>返事がないからといってリトライすると、別の問題が起きます。</p>
+
+<figure class="fig" id="fig-retry"><div class="canvas"><svg viewBox="0 0 340 232" role="img" aria-label="課金リクエストは成功したが返事が消えた。クライアントがリトライすると、サーバーは2回課金してしまう。同じIDなら2回目を無視する仕組みが冪等性"><text x="42" y="18" class="ts c-mute" text-anchor="middle">クライアント</text><text x="300" y="18" class="ts c-mute" text-anchor="middle">サーバー</text><line x1="40" y1="26" x2="40" y2="196" class="ln thin dash"/><line x1="300" y1="26" x2="300" y2="196" class="ln thin dash"/><text x="170" y="46" class="ts" text-anchor="middle">① 課金して</text><polygon points="300.0,56.0 292.0,60.0 292.0,52.0" class="hd-tx"/><line x1="40" y1="56" x2="293" y2="56" class="ln-tx"/><text x="170" y="76" class="ts c-mute" text-anchor="middle">サーバー：課金した（1回目）</text><text x="232" y="100" class="ts c-bad" text-anchor="middle">② 返事が消える</text><polygon points="176.0,110.0 184.0,106.0 184.0,114.0" class="hd-bad"/><line x1="300" y1="110" x2="183" y2="110" class="ln-bad"/><line x1="156" y1="104" x2="168" y2="116" class="ln-bad"/><line x1="156" y1="116" x2="168" y2="104" class="ln-bad"/><text x="170" y="146" class="ts" text-anchor="middle">③ 返事がないのでリトライ</text><polygon points="300.0,156.0 292.0,160.0 292.0,152.0" class="hd-tx"/><line x1="40" y1="156" x2="293" y2="156" class="ln-tx"/><text x="170" y="176" class="ts c-bad" text-anchor="middle">サーバー：また課金した（2回目）</text><text x="170" y="222" class="ts c-new" text-anchor="middle">同じIDの2回目を無視する ＝ 冪等性</text></svg></div><figcaption>返事だけが消えたときにリトライすると、同じ処理が2回走ります。</figcaption></figure>
+
+<p>ローカルの関数呼び出しに、こんな心配はありません。違いはまだあります。</p>
+<ul>
+<li><b>かかる時間が読めない。</b>ローカルの関数は毎回ほぼ同じ時間で終わります。ネットワークは、調子がよければ1ミリ秒未満、混んでいれば同じ処理に数秒かかります。</li>
+<li><b>ポインタを渡せない。</b>ローカルならメモリ上のオブジェクトへの参照を渡すだけです。ネットワーク越しでは、引数を全部バイト列に詰めて送ります。数値や短い文字列ならよいのですが、大きなデータや書き換えられるオブジェクトではすぐ困ります。</li>
+<li><b>言語が違うかもしれない。</b>クライアントとサービスが別の言語なら、型を変換しなければなりません。JavaScriptが2<sup>53</sup>より大きい数を扱えない、あの問題がここでも出ます。</li>
+</ul>
+
+<div class="box key">
+<span class="lab">本の結論</span>
+<p>遠くのサービスを、手元のオブジェクトのように見せかけても意味がありません。根本的に違うものだからです。RESTが好まれる理由の1つは、ネットワーク越しのやり取りを、関数呼び出しとは<b>別物として正直に扱う</b>ところにあります。</p>
+</div>
+
+<div class="box extra">
+<span class="lab">補足（本にはないたとえ）</span>
+<p>ローカルの関数呼び出しは、隣の席の人に声をかけるようなものです。聞こえたかどうかは見ればわかります。ネットワーク越しは、手紙です。返事が来ないとき、届かなかったのか、相手が読んで動いたのに返事が迷子になったのか、こちらからはわかりません。</p>
+</div>
+
+<h4><span class="num">5.2.2.3</span>ロードバランサー、サービスディスカバリ、サービスメッシュ</h4>
+<p>サービスを呼ぶには、相手のアドレスを知らなければなりません。これを<b>サービスディスカバリ</b>の問題と呼びます。</p>
+<p>いちばん単純なのは、クライアントの設定にIPアドレスとポートを直接書くことです。動きはします。でも、サーバーが落ちたり、別のマシンに移ったり、混んだりするたびに、手で書き直すことになります。</p>
+<p>実際には、同じサービスを何台ものマシンで動かして、リクエストを振り分けます。これが<b>負荷分散</b>です。方法がいくつかあります。</p>
+
+<figure class="fig" id="fig-lb"><div class="canvas"><svg viewBox="0 0 340 184" role="img" aria-label="クライアントはロードバランサー1か所につなぐ。ロードバランサーが動いているサーバーに振り分け、故障したサーバーには送らない"><rect x="8" y="70" width="84" height="44" rx="6" class="f-panel"/><text x="50" y="97" class="ts" text-anchor="middle">クライアント</text><rect x="128" y="70" width="84" height="44" rx="6" class="f-sch"/><text x="170" y="87.5" class="ts" text-anchor="middle">ロード</text><text x="170" y="106.5" class="ts" text-anchor="middle">バランサー</text><rect x="248" y="14" width="84" height="40" rx="6" class="f-panel"/><text x="290" y="39" class="ts" text-anchor="middle">サーバー1</text><rect x="248" y="72" width="84" height="40" rx="6" class="f-panel"/><text x="290" y="97" class="ts" text-anchor="middle">サーバー2</text><rect x="248" y="130" width="84" height="40" rx="6" class="f-bad"/><text x="290" y="155" class="ts c-bad" text-anchor="middle">故障中</text><polygon points="128.0,92.0 120.0,96.0 120.0,88.0" class="hd-tx"/><line x1="92" y1="92" x2="121" y2="92" class="ln-tx"/><polygon points="248.0,40.0 246.0,48.7 239.8,43.7" class="hd-sch"/><line x1="212" y1="84" x2="243.567" y2="45.4177" class="ln-sch"/><polygon points="248.0,92.0 240.0,96.0 240.0,88.0" class="hd-sch"/><line x1="212" y1="92" x2="241" y2="92" class="ln-sch"/><line x1="212" y1="100" x2="226" y2="122" class="ln-bad dash"/><line x1="227" y1="127" x2="237" y2="137" class="ln-bad"/><line x1="227" y1="137" x2="237" y2="127" class="ln-bad"/></svg></div><figcaption>ロードバランサー。クライアントは1か所だけ知っていればよく、壊れたサーバーは自動で外されます。</figcaption></figure>
+
+<ul>
+<li><b>ハードウェアロードバランサー。</b>データセンターに置く専用の機器です。</li>
+<li><b>ソフトウェアロードバランサー。</b>NGINXやHAProxyなど。やることはほぼ同じですが、専用の機器がいらず、ふつうのマシンに入れて使えます。</li>
+<li><b>DNS。</b>1つのドメイン名に複数のIPアドレスを結びつけて、振り分けます。弱点は、DNSがもともと「変更をゆっくり広める」「結果をキャッシュする」作りであること。サーバーの入れ替わりが激しいと、クライアントがもう存在しない古いIPアドレスを見てしまいます。</li>
+</ul>
+
+<p><b>サービスディスカバリシステム</b>は、DNSの代わりに、etcdやApache ZooKeeperのような名簿係（レジストリ）を使います。</p>
+
+<figure class="fig" id="fig-discovery"><div class="canvas"><svg viewBox="0 0 340 192" role="img" aria-label="サービスディスカバリ。各インスタンスがレジストリに登録して生存報告を送る。クライアントはレジストリに一覧をきいてから、インスタンスに直接つなぐ"><rect x="110" y="10" width="120" height="46" rx="6" class="f-sch"/><text x="170" y="28.5" class="ts" text-anchor="middle">レジストリ</text><text x="170" y="47.5" class="ts c-mute" text-anchor="middle">etcd など</text><rect x="8" y="122" width="96" height="44" rx="6" class="f-panel"/><text x="56" y="149" class="ts" text-anchor="middle">クライアント</text><rect x="236" y="96" width="96" height="36" rx="6" class="f-panel"/><text x="284" y="119" class="ts" text-anchor="middle">インスタンス1</text><rect x="236" y="144" width="96" height="36" rx="6" class="f-panel"/><text x="284" y="167" class="ts" text-anchor="middle">インスタンス2</text><polygon points="226.0,56.0 234.7,58.2 229.4,64.3" class="hd-sch"/><line x1="272" y1="96" x2="231.282" y2="60.5933" class="ln-sch"/><text x="332" y="62" class="ts c-mute" text-anchor="end">① 登録と</text><text x="332" y="80" class="ts c-mute" text-anchor="end">生存報告</text><polygon points="114.0,56.0 111.7,64.6 105.7,59.4" class="hd-tx"/><line x1="56" y1="122" x2="109.379" y2="61.2582" class="ln-tx"/><text x="8" y="80" class="ts c-mute" text-anchor="start">② 一覧をきく</text><polygon points="236.0,116.0 228.8,121.4 227.4,113.5" class="hd-tx"/><line x1="104" y1="140" x2="229.113" y2="117.252" class="ln-tx"/><text x="160" y="156" class="ts c-mute" text-anchor="middle">③ 直接つなぐ</text></svg></div><figcaption>サービスディスカバリ。「いま誰が生きているか」の名簿を1か所に置きます。</figcaption></figure>
+
+<p>DNSに比べて、インスタンスが頻繁に入れ替わる環境に強くなります。名簿には、データセンターの場所などの追加情報も載せられます。クライアントはそれを見て、より賢く接続先を選べます。</p>
+
+<p><b>サービスメッシュ</b>は、ソフトウェアロードバランサーとサービスディスカバリを組み合わせた、手の込んだ方式です。</p>
+
+<figure class="fig" id="fig-mesh"><div class="canvas"><svg viewBox="0 0 340 192" role="img" aria-label="サービスメッシュ。クライアントのアプリは同じマシンのサイドカーに話し、サイドカーどうしが暗号化してつなぎ、サーバー側のサイドカーがサーバーのアプリに渡す"><text x="8" y="18" class="ts c-mute" text-anchor="start">クライアント側</text><text x="182" y="18" class="ts c-mute" text-anchor="start">サーバー側</text><rect x="8" y="28" width="150" height="112" rx="10" class="zone"/><rect x="182" y="28" width="150" height="112" rx="10" class="zone"/><rect x="18" y="40" width="130" height="34" rx="6" class="f-panel"/><text x="83" y="62" class="ts" text-anchor="middle">アプリ</text><rect x="18" y="96" width="130" height="34" rx="6" class="f-sch"/><text x="83" y="118" class="ts" text-anchor="middle">サイドカー</text><rect x="192" y="40" width="130" height="34" rx="6" class="f-panel"/><text x="257" y="62" class="ts" text-anchor="middle">アプリ</text><rect x="192" y="96" width="130" height="34" rx="6" class="f-sch"/><text x="257" y="118" class="ts" text-anchor="middle">サイドカー</text><polygon points="83.0,96.0 79.0,88.0 87.0,88.0" class="hd-tx"/><line x1="83" y1="74" x2="83" y2="89" class="ln-tx"/><polygon points="192.0,113.0 184.0,117.0 184.0,109.0" class="hd-sch"/><line x1="148" y1="113" x2="185" y2="113" class="ln-sch"/><polygon points="257.0,74.0 261.0,82.0 253.0,82.0" class="hd-tx"/><line x1="257" y1="96" x2="257" y2="81" class="ln-tx"/><text x="170" y="162" class="ts c-sch" text-anchor="middle">サイドカーどうしが暗号化してつなぐ</text><text x="170" y="182" class="ts c-mute" text-anchor="middle">アプリは隣のサイドカーに話すだけ</text></svg></div><figcaption>サービスメッシュ。アプリの隣に、通信係（サイドカー）を1つずつ置きます。</figcaption></figure>
+
+<p>複雑ですが、見返りがあります。アプリとサイドカーのあいだは同じマシン内の接続なので、通信の暗号化はサイドカーに任せきりにできます。アプリは証明書やTLSを気にしなくて済みます。どのサービスがどのサービスを呼んでいるか、どこで失敗しているかも、メッシュがまとめて見せてくれます。</p>
+
+<dl class="pick">
+<div><dt>Kubernetesなどで、入れ替わりの激しい環境</dt><dd>サービスメッシュ（Istio、Linkerdなど）を選ぶことが多い</dd></div>
+<div><dt>データベースやメッセージングなど特殊な基盤</dt><dd>専用に作られたロードバランサーが要ることがある</dd></div>
+<div><dt>もっとシンプルな構成</dt><dd>ソフトウェアロードバランサーが最適</dd></div>
+</dl>
+
+<h4><span class="num">5.2.2.4</span>RPCでのエンコーディングと進化</h4>
+<p>サービスの場合、データベースより話が少し単純になります。「<b>サーバーを全部先に更新して、クライアントはあとから更新する</b>」と決めてしまえるからです。</p>
+
+<figure class="fig" id="fig-rpcorder"><div class="canvas"><svg viewBox="0 0 340 210" role="img" aria-label="まずサーバーを全部v2にして、あとからクライアントをv2にする。途中は旧クライアントが新サーバーを呼ぶ形だけになる"><text x="8" y="18" class="ts c-mute" text-anchor="start">① 先にサーバーを全部 v2 にする</text><rect x="8" y="26" width="130" height="40" rx="6" class="f-old"/><text x="73" y="51" class="ts" text-anchor="middle">旧クライアント</text><rect x="202" y="26" width="130" height="40" rx="6" class="f-new"/><text x="267" y="51" class="ts" text-anchor="middle">新サーバー</text><polygon points="202.0,46.0 194.0,50.0 194.0,42.0" class="hd-tx"/><polygon points="138.0,46.0 146.0,42.0 146.0,50.0" class="hd-tx"/><line x1="145" y1="46" x2="195" y2="46" class="ln-tx"/><text x="8" y="100" class="ts c-mute" text-anchor="start">② あとからクライアントを v2 にする</text><rect x="8" y="108" width="130" height="40" rx="6" class="f-new"/><text x="73" y="133" class="ts" text-anchor="middle">新クライアント</text><rect x="202" y="108" width="130" height="40" rx="6" class="f-new"/><text x="267" y="133" class="ts" text-anchor="middle">新サーバー</text><polygon points="202.0,128.0 194.0,132.0 194.0,124.0" class="hd-tx"/><polygon points="138.0,128.0 146.0,124.0 146.0,132.0" class="hd-tx"/><line x1="145" y1="128" x2="195" y2="128" class="ln-tx"/><text x="8" y="180" class="ts c-mute" text-anchor="start">①の間だけ乗り切ればいい：</text><text x="8" y="200" class="ts" text-anchor="start">リクエストは後方、レスポンスは前方</text></svg></div><figcaption>サービスでは「サーバーが先、クライアントが後」と決めてしまえます。考える組み合わせが1つ減ります。</figcaption></figure>
+
+<p>互換性の性質は、使っているエンコーディングからそのまま引き継がれます。</p>
+<ul>
+<li><b>gRPC</b>（Protocol Buffers）と<b>Avro RPC</b>は、それぞれの形式のルールに従って進化させられます。</li>
+<li><b>RESTful API</b>は、たいていJSONです。「省略できるリクエストパラメータを足す」「レスポンスに新しいフィールドを足す」は、ふつう互換性を壊さない変更とされます。</li>
+</ul>
+<p>難しいのは、<b>組織の境界をまたぐとき</b>です。サービスを出す側は、よその会社のクライアントにアップグレードを強制できません。だから互換性を長いあいだ、ことによると無期限に保つことになります。どうしても壊す変更が要るときは、APIの複数のバージョンを並べて動かし続けることになりがちです。</p>
+<p>クライアントが「どのバージョンを使いたいか」を伝える方法に、決まった正解はありません。RESTful APIでは、URLかHTTPの <code>Accept</code> ヘッダーにバージョン番号を入れるのが一般的です。APIキーでクライアントを見分けるサービスなら、クライアントごとの希望バージョンをサーバー側に保存しておく手もあります。</p>
+
+<!-- ----------------------------------------------------- 5.2.3 -->
+<h3 id="s523"><span class="num">5.2.3</span>耐久性のある実行とワークフロー</h3>
+<p>サービスを分けると、1つの仕事をするのに、いくつものサービスを順番に呼ぶことになります。本の例は決済です。</p>
+
+<figure class="fig" id="fig-workflow"><div class="canvas"><svg viewBox="0 0 340 300" role="img" aria-label="決済のワークフロー。不正チェックをして、不正なら中止。問題なければカードから引き落とし、銀行口座に入金して完了"><rect x="120" y="8" width="100" height="34" rx="17" class="f-none"/><text x="170" y="30" class="ts" text-anchor="middle">決済の依頼</text><polygon points="170.0,62.0 166.0,54.0 174.0,54.0" class="hd"/><line x1="170" y1="42" x2="170" y2="55" class="ln"/><rect x="95" y="62" width="150" height="38" rx="6" class="f-panel"/><text x="170" y="86" class="ts" text-anchor="middle">不正チェック</text><polygon points="268.0,81.0 260.0,85.0 260.0,77.0" class="hd-bad"/><line x1="245" y1="81" x2="261" y2="81" class="ln-bad"/><text x="256" y="52" class="ts c-bad" text-anchor="middle">不正</text><rect x="268" y="62" width="64" height="38" rx="6" class="f-bad"/><text x="300" y="86" class="ts c-bad" text-anchor="middle">中止</text><polygon points="170.0,134.0 166.0,126.0 174.0,126.0" class="hd"/><line x1="170" y1="100" x2="170" y2="127" class="ln"/><text x="180" y="122" class="ts c-mute" text-anchor="start">問題なし</text><rect x="95" y="134" width="150" height="38" rx="6" class="f-panel"/><text x="170" y="158" class="ts" text-anchor="middle">カードから引き落とし</text><polygon points="170.0,196.0 166.0,188.0 174.0,188.0" class="hd"/><line x1="170" y1="172" x2="170" y2="189" class="ln"/><rect x="95" y="196" width="150" height="38" rx="6" class="f-panel"/><text x="170" y="220" class="ts" text-anchor="middle">銀行口座に入金</text><polygon points="170.0,258.0 166.0,250.0 174.0,250.0" class="hd"/><line x1="170" y1="234" x2="170" y2="251" class="ln"/><rect x="120" y="258" width="100" height="34" rx="17" class="f-none"/><text x="170" y="280" class="ts" text-anchor="middle">完了</text></svg></div><figcaption>本の図5-7にあたる図です。箱1つがタスク、全体がワークフローです。</figcaption></figure>
+
+<div class="box">
+<span class="lab">用語</span>
+<p>この一連のステップを<b>ワークフロー</b>、1つ1つのステップを<b>タスク</b>と呼びます。タスクの呼び名は製品によって違います。Temporalでは<b>アクティビティ</b>、ほかに<b>耐久関数</b>と呼ぶものもあります。中身は同じです。</p>
+</div>
+
+<p>ワークフローを動かすのが<b>ワークフローエンジン</b>です。どのタスクを、いつ、どのマシンで動かすか。失敗したらどうするか。いくつ並列で動かすか。それを決めます。</p>
+
+<figure class="fig" id="fig-engine"><div class="canvas"><svg viewBox="0 0 340 206" role="img" aria-label="ワークフローエンジンの構成。時刻、Webサービス、人間がきっかけになり、オーケストレーターがいつ何を動かすか決め、エグゼキューターがタスクを実際に動かす"><text x="8" y="14" class="ts c-mute" text-anchor="start">きっかけ</text><rect x="8" y="22" width="100" height="30" rx="6" class="f-panel"/><text x="58" y="42" class="ts" text-anchor="middle">時刻</text><rect x="8" y="60" width="100" height="30" rx="6" class="f-panel"/><text x="58" y="80" class="ts" text-anchor="middle">Webサービス</text><rect x="8" y="98" width="100" height="30" rx="6" class="f-panel"/><text x="58" y="118" class="ts" text-anchor="middle">人間</text><rect x="150" y="44" width="182" height="58" rx="6" class="f-sch"/><text x="241" y="68.5" class="t" text-anchor="middle">オーケストレーター</text><text x="241" y="87.5" class="ts c-mute" text-anchor="middle">いつ何を動かすか決める</text><polygon points="150.0,60.0 141.1,59.7 144.9,52.6" class="hd"/><line x1="108" y1="37" x2="143.86" y2="56.6378" class="ln"/><polygon points="150.0,73.0 142.2,77.4 141.8,69.4" class="hd"/><line x1="108" y1="75" x2="143.008" y2="73.333" class="ln"/><polygon points="150.0,88.0 145.2,95.5 141.1,88.7" class="hd"/><line x1="108" y1="113" x2="143.985" y2="91.5804" class="ln"/><polygon points="241.0,140.0 237.0,132.0 245.0,132.0" class="hd-sch"/><line x1="241" y1="102" x2="241" y2="133" class="ln-sch"/><rect x="150" y="140" width="182" height="58" rx="6" class="f-panel"/><text x="241" y="164.5" class="t" text-anchor="middle">エグゼキューター</text><text x="241" y="183.5" class="ts c-mute" text-anchor="middle">タスクを実際に動かす</text></svg></div><figcaption>ワークフローエンジンの中身。「決める係」と「動かす係」に分かれています。</figcaption></figure>
+
+<p>ワークフローエンジンにはいろいろな種類があります。</p>
+<ul>
+<li><b>Airflow、Dagster、Prefect</b>：データシステムとつながって、ETLの処理を順に動かす。</li>
+<li><b>Camunda、Orkes</b>：図で描く記法（BPMN）があり、エンジニアでなくてもワークフローを作れる。</li>
+<li><b>Temporal、Restate</b>：<b>耐久性のある実行</b>（durable execution）を提供する。</li>
+</ul>
+
+<h4>なぜ「耐久性」が要るのか</h4>
+<p>決済は、1件につき<b>ちょうど1回だけ</b>処理したいものです。ところが途中で落ちると、こうなります。</p>
+
+<figure class="fig" id="fig-crash"><div class="canvas"><svg viewBox="0 0 340 196" role="img" aria-label="不正チェックとカード引き落としは済んだが、その直後にクラッシュして銀行口座への入金が実行されていない"><rect x="8" y="10" width="220" height="34" rx="6" class="f-new"/><text x="118" y="32" class="ts" text-anchor="middle">不正チェック</text><text x="240" y="32" class="ts c-new" text-anchor="start">済み</text><rect x="8" y="52" width="220" height="34" rx="6" class="f-new"/><text x="118" y="74" class="ts" text-anchor="middle">カードから引き落とし</text><text x="240" y="74" class="ts c-new" text-anchor="start">済み</text><line x1="8" y1="100" x2="332" y2="100" class="ln-bad dash"/><text x="8" y="122" class="tb c-bad" text-anchor="start">ここでクラッシュ</text><rect x="8" y="134" width="220" height="34" rx="6" class="pg-off"/><text x="118" y="156" class="ts c-mute" text-anchor="middle">銀行口座に入金</text><text x="240" y="156" class="ts c-bad" text-anchor="start">まだ</text><text x="8" y="188" class="ts c-bad" text-anchor="start">お金は引いたのに、入金されていない</text></svg></div><figcaption>途中で落ちると、「引き落としたのに入金していない」という中途半端な状態が残ります。</figcaption></figure>
+
+<p>1つのデータベースの中なら、2つの処理をトランザクションで包めば済みます。でもサービスが分かれていると、それができません。相手が自分たちで管理できない外部の決済サービスのこともあります。</p>
+<p>耐久性のある実行のフレームワークは、ワークフローに<b>厳密に1回のセマンティクス</b>（exactly-once）を与える道具です。しくみはこうです。フレームワークが、すべてのRPC呼び出しと状態の変更を、消えないログに記録しておきます。タスクが失敗したら最初からやり直しますが、ログに残っている呼び出しは実行しません。</p>
+
+<figure class="fig" id="fig-replay"><div class="canvas"><svg viewBox="0 0 340 218" role="img" aria-label="耐久性のある実行の再実行。済んだ不正チェックと引き落としは実行せずログの結果を返す。まだログにない入金だけを実際に実行して記録する"><text x="8" y="18" class="ts c-mute" text-anchor="start">やり直しで呼ぶもの</text><text x="190" y="18" class="ts c-sch" text-anchor="start">ログ（消えない）</text><rect x="8" y="28" width="150" height="38" rx="6" class="f-panel"/><text x="83" y="52" class="tm" text-anchor="middle">check_fraud</text><rect x="190" y="28" width="142" height="38" rx="6" class="f-sch"/><text x="261" y="52" class="tm" text-anchor="middle">結果: false</text><polygon points="158.0,47.0 166.0,43.0 166.0,51.0" class="hd-sch"/><line x1="190" y1="47" x2="165" y2="47" class="ln-sch"/><rect x="8" y="76" width="150" height="38" rx="6" class="f-panel"/><text x="83" y="100" class="tm" text-anchor="middle">debit_card</text><rect x="190" y="76" width="142" height="38" rx="6" class="f-sch"/><text x="261" y="100" class="tm" text-anchor="middle">結果: ok</text><polygon points="158.0,95.0 166.0,91.0 166.0,99.0" class="hd-sch"/><line x1="190" y1="95" x2="165" y2="95" class="ln-sch"/><rect x="8" y="124" width="150" height="38" rx="6" class="f-new"/><text x="83" y="148" class="tm" text-anchor="middle">deposit</text><rect x="190" y="124" width="142" height="38" rx="6" class="pg-off"/><text x="261" y="148" class="ts c-mute" text-anchor="middle">（まだない）</text><polygon points="190.0,143.0 182.0,147.0 182.0,139.0" class="hd-new"/><line x1="158" y1="143" x2="183" y2="143" class="ln-new"/><text x="8" y="186" class="ts c-sch" text-anchor="start">上の2つ：実行しない。ログの結果を返すだけ</text><text x="8" y="208" class="ts c-new" text-anchor="start">3つめ：ここではじめて実際に実行し、記録する</text></svg></div><figcaption>耐久性のある実行。やり直すとき、済んだ呼び出しは実行せず、ログに残した結果をそのまま返します。</figcaption></figure>
+
+<p>Temporalでは、ワークフローをふつうのコードとして書きます。本の例を短くするとこうです。<code>execute_activity</code> の呼び出し1つ1つが、ログに記録される単位です。</p>
+<pre><code>@workflow.defn
+class PaymentWorkflow:
+  @workflow.run
+  async def run(self, payment):
+    is_fraud = await workflow.execute_activity(
+      check_fraud, payment, ...)
+    if is_fraud:
+      return PaymentResultFraudulent
+    resp = await workflow.execute_activity(
+      debit_credit_card, payment, ...)
+    # ...</code></pre>
+
+<h4>気をつけること</h4>
+<p>便利ですが、落とし穴もあります。</p>
+<ul>
+<li><b>外のサービスは冪等でないといけない。</b>外部の決済サービスのような相手には、同じ依頼が2回届くことがありえます。呼ぶ側が一意のIDを付け忘れないようにする必要があります。</li>
+<li><b>コードの変更に弱い。</b>フレームワークは、やり直しのときも「同じ呼び出しが、同じ順番で」行われると期待しています。</li>
+</ul>
+
+<figure class="fig" id="fig-determinism"><div class="canvas"><svg viewBox="0 0 340 174" role="img" aria-label="ログにはcheck_fraud、debit_cardの順で残っている。コードを直して呼ぶ順番を入れ替えると、やり直しのときログと食い違う"><text x="8" y="18" class="ts c-sch" text-anchor="start">ログに残っている順番</text><rect x="8" y="26" width="158" height="34" rx="6" class="f-sch"/><text x="87" y="48" class="tm" text-anchor="middle">1. check_fraud</text><rect x="174" y="26" width="158" height="34" rx="6" class="f-sch"/><text x="253" y="48" class="tm" text-anchor="middle">2. debit_card</text><text x="8" y="90" class="ts c-mute" text-anchor="start">直したコードが呼ぶ順番</text><rect x="8" y="98" width="158" height="34" rx="6" class="f-bad"/><text x="87" y="120" class="tm" text-anchor="middle">1. debit_card</text><rect x="174" y="98" width="158" height="34" rx="6" class="f-bad"/><text x="253" y="120" class="tm" text-anchor="middle">2. check_fraud</text><text x="8" y="162" class="ts c-bad" text-anchor="start">1つめから食い違う。何が起きるかわからない</text></svg></div><figcaption>ログは「呼んだ順番」で残っています。コードを直して順番が変わると、やり直しのときに食い違います。</figcaption></figure>
+
+<p>だから、動いている途中のワークフローのコードを書き換えるより、<b>新しいバージョンを別にデプロイする</b>ほうが安全です。すでに始まっているワークフローのやり直しは古いコードのまま、新しく始まるものだけが新しいコードを使います。これも「新旧が混ざる」の一例です。</p>
+<ul>
+<li><b>毎回同じ結果になるコードでないといけない。</b>同じ入力なら同じ出力になること（決定的）が前提です。乱数や現在時刻を直接使うと、やり直しのたびに結果が変わって壊れます。フレームワークが用意している「決定的な版」の関数を使います。こうした間違いを見つける静的解析ツールもあります（TemporalのWorkflow Checkなど）。</li>
+</ul>
+
+<!-- ----------------------------------------------------- 5.2.4 -->
+<h3 id="s524"><span class="num">5.2.4</span>イベント駆動アーキテクチャ</h3>
+<p>最後の流れ方です。ここでは、送るものをリクエストではなく<b>イベント</b>または<b>メッセージ</b>と呼びます。RPCと違う点が2つあります。送り手は、受け手が処理し終わるのを待ちません。そして、直接つながずに<b>メッセージブローカー</b>という仲介役を通します。</p>
+
+<figure class="fig" id="fig-rpcbroker"><div class="canvas"><svg viewBox="0 0 340 206" role="img" aria-label="RPCでは送り手が受け手に直接つなぎ、返事を待つ。ブローカー経由では送り手はブローカーに渡したら待たず、ブローカーが一時保管して受け手に届ける"><text x="8" y="18" class="ts c-mute" text-anchor="start">RPC：直接つないで、返事を待つ</text><rect x="8" y="26" width="96" height="48" rx="6" class="f-panel"/><text x="56" y="55" class="ts" text-anchor="middle">送り手</text><rect x="236" y="26" width="96" height="48" rx="6" class="f-panel"/><text x="284" y="55" class="ts" text-anchor="middle">受け手</text><polygon points="236.0,42.0 228.0,46.0 228.0,38.0" class="hd-tx"/><line x1="104" y1="42" x2="229" y2="42" class="ln-tx"/><polygon points="104.0,60.0 112.0,56.0 112.0,64.0" class="hd-tx"/><line x1="236" y1="60" x2="111" y2="60" class="ln-tx"/><text x="8" y="116" class="ts c-mute" text-anchor="start">ブローカー経由：渡したら待たない</text><rect x="8" y="124" width="84" height="48" rx="6" class="f-panel"/><text x="50" y="153" class="ts" text-anchor="middle">送り手</text><rect x="128" y="124" width="84" height="48" rx="6" class="f-sch"/><text x="170" y="143.5" class="ts" text-anchor="middle">ブローカー</text><text x="170" y="162.5" class="ts c-mute" text-anchor="middle">一時保管</text><rect x="248" y="124" width="84" height="48" rx="6" class="f-panel"/><text x="290" y="153" class="ts" text-anchor="middle">受け手</text><polygon points="128.0,148.0 120.0,152.0 120.0,144.0" class="hd-tx"/><line x1="92" y1="148" x2="121" y2="148" class="ln-tx"/><polygon points="248.0,148.0 240.0,152.0 240.0,144.0" class="hd-sch"/><line x1="212" y1="148" x2="241" y2="148" class="ln-sch"/><text x="170" y="196" class="ts c-mute" text-anchor="middle">受け手が止まっていても、送り手は困らない</text></svg></div><figcaption>直接呼ぶRPCと、ブローカーを挟むやり方の違い。</figcaption></figure>
+
+<p>ブローカーを挟むと、直接のRPCに比べて良いことがあります。</p>
+<ol>
+<li>受け手が落ちていたり混んでいたりしても、ブローカーがためておいてくれる。</li>
+<li>処理中に落ちたプロセスには、メッセージを自動で届け直してくれる。</li>
+<li>送り手が受け手のIPアドレスを知らなくてよい。サービスディスカバリがいらない。</li>
+<li>同じメッセージを、複数の受け手に送れる。</li>
+<li>送り手と受け手が切り離される。送り手は出すだけで、誰が受け取るかを気にしない。</li>
+</ol>
+<p>この通信は<b>非同期</b>です。送り手は送ったら忘れてかまいません。返事がほしければ、別の通り道で返事を待つ形にして、RPCふうに使うこともできます。</p>
+
+<h4><span class="num">5.2.4.1</span>メッセージブローカー</h4>
+<p>昔は商用の製品が中心でした。その後、RabbitMQ、ActiveMQ、NATS、Redpanda、Apache Kafkaなどのオープンソースが広まりました。最近は、Amazon Kinesis、Azure Service Bus、Google Cloud Pub/Subのようなクラウドのサービスも使われています。くわしい比較は12章です。</p>
+
+<figure class="fig" id="fig-queuetopic"><div class="canvas"><svg viewBox="0 0 340 212" role="img" aria-label="キューでは複数の受け手のうち1つだけがメッセージを受け取る。トピックでは購読者の全員が同じメッセージを受け取る"><text x="8" y="18" class="ts c-mute" text-anchor="start">キュー：どれか1つが受け取る</text><rect x="8" y="42" width="70" height="36" rx="6" class="f-panel"/><text x="43" y="65" class="ts" text-anchor="middle">送り手</text><rect x="112" y="42" width="100" height="36" rx="6" class="f-sch"/><text x="162" y="65" class="ts" text-anchor="middle">キュー</text><rect x="262" y="28" width="70" height="30" rx="6" class="f-new"/><text x="297" y="48" class="ts" text-anchor="middle">受け手A</text><rect x="262" y="64" width="70" height="30" rx="6" class="pg-off"/><text x="297" y="84" class="ts c-mute" text-anchor="middle">受け手B</text><polygon points="112.0,60.0 104.0,64.0 104.0,56.0" class="hd-tx"/><line x1="78" y1="60" x2="105" y2="60" class="ln-tx"/><polygon points="262.0,44.0 255.2,49.8 253.3,42.0" class="hd-new"/><line x1="212" y1="56" x2="255.193" y2="45.6336" class="ln-new"/><text x="8" y="128" class="ts c-mute" text-anchor="start">トピック：全員が受け取る</text><rect x="8" y="152" width="70" height="36" rx="6" class="f-panel"/><text x="43" y="175" class="ts" text-anchor="middle">送り手</text><rect x="112" y="152" width="100" height="36" rx="6" class="f-sch"/><text x="162" y="175" class="ts" text-anchor="middle">トピック</text><rect x="262" y="138" width="70" height="30" rx="6" class="f-new"/><text x="297" y="158" class="ts" text-anchor="middle">購読者A</text><rect x="262" y="174" width="70" height="30" rx="6" class="f-new"/><text x="297" y="194" class="ts" text-anchor="middle">購読者B</text><polygon points="112.0,170.0 104.0,174.0 104.0,166.0" class="hd-tx"/><line x1="78" y1="170" x2="105" y2="170" class="ln-tx"/><polygon points="262.0,154.0 255.2,159.8 253.3,152.0" class="hd-new"/><line x1="212" y1="166" x2="255.193" y2="155.634" class="ln-new"/><polygon points="262.0,188.0 253.2,189.7 255.4,182.0" class="hd-new"/><line x1="212" y1="174" x2="255.259" y2="186.113" class="ln-new"/></svg></div><figcaption>よく使われる2つの配り方。</figcaption></figure>
+
+<p>ブローカーは、ふつう<b>中身の形式に口を出しません</b>。メッセージは、メタデータの付いたただのバイト列です。なので、どのエンコーディングでも使えます。よくあるのは、Protocol Buffers、Avro、JSONのどれかを使い、ブローカーの横に<b>スキーマレジストリ</b>を置くやり方です。有効なスキーマの版を全部しまっておき、互換性をチェックします。メッセージ版のOpenAPIにあたるAsyncAPIで、メッセージのスキーマを書くこともできます。</p>
+<p>メッセージをどれだけ長く持つかは、ブローカーによります。多くはディスクに書いて、落ちても失わないようにします。そして多くは、受け手が受け取ったら消します。ただ、ずっと残す設定にできるものもあります。イベントソーシング（3章）をやりたいなら、それが要ります。</p>
+
+<div class="box bad">
+<span class="lab">ここでも同じ事故に注意</span>
+<p>受け取ったメッセージを別のトピックへ出し直すときは、知らないフィールドを消さずに持ち回る必要があります。図5-1と同じ話です。</p>
+</div>
+
+<h4><span class="num">5.2.4.2</span>分散アクターフレームワーク</h4>
+<p><b>アクターモデル</b>は、もともと1つのプロセスの中で並行処理をするための考え方です。スレッドを直接あつかうと、競合、ロック、デッドロックに悩まされます。そこでロジックを<b>アクター</b>という単位に閉じ込めます。</p>
+<ul>
+<li>アクターは、ほかと共有しない自分だけの状態を持つ。</li>
+<li>ほかのアクターとは、非同期のメッセージだけでやり取りする。</li>
+<li>一度に処理するメッセージは1つだけ。だからスレッドの心配がいらない。</li>
+<li>メッセージが届く保証はない。失われることもある、という前提で作る。</li>
+</ul>
+<p><b>分散アクターフレームワーク</b>（Akka、Orleans、Erlang/OTPなど）は、この考え方を複数のノードに広げたものです。</p>
+
+<figure class="fig" id="fig-actor"><div class="canvas"><svg viewBox="0 0 340 228" role="img" aria-label="アクターはそれぞれ自分の状態と受信箱を持ち、メッセージで話す。同じノード内でも別ノードでも送り方は同じで、ノードをまたぐときだけバイト列にエンコードされる"><text x="8" y="18" class="ts c-mute" text-anchor="start">ノード1</text><text x="182" y="18" class="ts c-mute" text-anchor="start">ノード2</text><rect x="8" y="28" width="150" height="148" rx="10" class="zone"/><rect x="182" y="28" width="150" height="148" rx="10" class="zone"/><rect x="20" y="40" width="126" height="50" rx="6" class="f-panel"/><text x="83" y="60.5" class="ts" text-anchor="middle">アクターA</text><text x="83" y="79.5" class="ts c-mute" text-anchor="middle">状態＋受信箱</text><rect x="20" y="114" width="126" height="50" rx="6" class="f-panel"/><text x="83" y="134.5" class="ts" text-anchor="middle">アクターB</text><text x="83" y="153.5" class="ts c-mute" text-anchor="middle">状態＋受信箱</text><rect x="194" y="76" width="126" height="50" rx="6" class="f-panel"/><text x="257" y="96.5" class="ts" text-anchor="middle">アクターC</text><text x="257" y="115.5" class="ts c-mute" text-anchor="middle">状態＋受信箱</text><polygon points="83.0,114.0 79.0,106.0 87.0,106.0" class="hd-tx"/><line x1="83" y1="90" x2="83" y2="107" class="ln-tx"/><polygon points="194.0,108.0 189.4,115.7 185.1,109.0" class="hd-sch"/><line x1="146" y1="139" x2="188.12" y2="111.798" class="ln-sch"/><text x="170" y="198" class="ts c-sch" text-anchor="middle">ノードをまたぐときだけ、バイト列に詰める</text><text x="170" y="218" class="ts c-mute" text-anchor="middle">送る側のコードは同じ</text></svg></div><figcaption>分散アクター。相手が同じノードにいても別のノードにいても、同じ「メッセージを送る」で済みます。</figcaption></figure>
+
+<p>ロケーション透過性は、RPCよりアクターモデルのほうがうまくいきます。アクターモデルは、同じプロセスの中でさえ「メッセージは失われるかもしれない」と最初から考えているからです。ローカルとリモートの差が、もともと小さいのです。</p>
+<p>ただし、アクターのアプリを逐次更新するなら、やはり互換性が問題になります。新しいノードから古いノードへ、またはその逆へ、メッセージが飛ぶからです。この章で見たエンコーディングのどれかを使えば解決できます。</p>
+
+<!-- ===================================================== 5.3 -->
+<h2 id="s53"><span class="num">5.3</span>まとめと確認問題</h2>
+
+<ol class="sum">
+<li>逐次更新をすると、古いコードと新しいコードが同時に動く。止めずに出せて、まずいリリースを早く見つけて戻せる。そのかわり、流れるデータすべてに互換性が要る。</li>
+<li><b>後方互換性</b>は「新しいコードが古いデータを読める」。<b>前方互換性</b>は「古いコードが新しいデータを読める」。</li>
+<li>言語固有の形式は、1つの言語に縛られ、互換性もたいてい無い。</li>
+<li>JSON、XML、CSVは広く使われる。互換性は使い方しだい。型があいまいなので、大きな数値やバイナリに注意。</li>
+<li>Protocol BuffersやAvroは、スキーマを使ってコンパクトに詰める。互換性のルールがはっきり決まっている。弱点は、デコードしないと人間が読めないこと。</li>
+<li>データの流れ方は、データベース、サービス（RESTとRPC）、イベント駆動の3つが代表。どれも「誰が詰めて、誰が開けるか」を考える。</li>
+</ol>
+
+<dl class="pick">
+<div><dt>データベース</dt><dd>書くプロセスが詰め、読むプロセスが開ける</dd></div>
+<div><dt>RPCとREST API</dt><dd>クライアントがリクエストを詰め、サーバーが開ける。サーバーがレスポンスを詰め、クライアントが開ける</dd></div>
+<div><dt>イベント駆動（ブローカー、アクター）</dt><dd>送り手が詰め、受け手が開ける</dd></div>
+</dl>
+
+<p>本の締めくくりはこうです。少し気をつけるだけで、互換性と逐次更新は十分に実現できる。</p>
+
+<h3>確認問題</h3>
+<p>答えを思い浮かべてから開いてください。</p>
+
+<details>
+<summary>1. 「古いコードが、新しいコードの書いたデータを読める」のは、後方互換性と前方互換性のどちら？</summary>
+<div class="ans"><p><b>前方互換性</b>です。読む側のコードから見て、未来のデータを読めるからです。逆に、新しいコードが古いデータを読めるのが後方互換性です。</p></div>
+</details>
+
+<details>
+<summary>2. 前方互換性のほうが難しいのはなぜ？</summary>
+<div class="ans"><p>古いコードは、あとで何が足されるかを知らないからです。知らない部分を無視できるように、最初から作っておく必要があります。そのうえ、読んで書き戻すときには、知らないフィールドを消さずに持ち続けなければなりません。</p></div>
+</details>
+
+<details>
+<summary>3. MessagePackが、テキストのJSONからあまり小さくならないのはなぜ？</summary>
+<div class="ans"><p>スキーマを持たないので、フィールド名をデータの中に毎回入れるからです。例のレコードでは、66バイトのうち31バイトがフィールド名でした。Protocol BuffersやAvroはスキーマがあるので名前を入れずに済み、33バイトと32バイトになります。</p></div>
+</details>
+
+<details>
+<summary>4. Protocol Buffersで、変えてよいのはフィールドの名前とタグ番号のどちら？</summary>
+<div class="ans"><p><b>名前</b>は変えてかまいません。データに名前は入っていないからです。<b>タグ番号</b>は変えてはいけません。消したフィールドの番号を別の用途で使い回すのも禁止です。</p></div>
+</details>
+
+<details>
+<summary>5. Avroのデータには、フィールドを見分ける目印がない。ではどうやって読む？</summary>
+<div class="ans"><p>書いたときのスキーマ（ライタースキーマ）を使って、順番どおりに切り分けます。そのあと、読むアプリのスキーマ（リーダースキーマ）と名前で対応づけて変換します。読み手にないフィールドは無視し、書き手にないフィールドはデフォルト値で埋めます。</p></div>
+</details>
+
+<details>
+<summary>6. 決済APIを呼んだらタイムアウトした。すぐリトライしてよい？</summary>
+<div class="ans"><p>そのままでは危険です。リクエストは届いて処理も済み、返事だけが消えたのかもしれません。その場合、リトライで二重に課金されます。同じIDの依頼は1回しか実行しないしくみ（冪等性）があれば、安全にリトライできます。</p></div>
+</details>
+
+<details>
+<summary>7. 「データはコードより長生きする」とはどういうこと？ それで何が困る？</summary>
+<div class="ans"><p>コードは数分で新しいバージョンに入れ替えられます。でもデータベースの中の値は、書き換えない限り、何年も前の形式のまま残ります。だから新しいコードは、いちばん古い形式のデータまで読めなければなりません。</p></div>
+</details>
+
+<details>
+<summary>8. メッセージブローカーを挟むと、直接のRPCより何がうれしい？</summary>
+<div class="ans"><p>受け手が落ちていてもブローカーがためてくれます。落ちたプロセスには届け直してくれます。送り手は受け手の居場所を知らなくてよく、1つのメッセージを複数の受け手に配れます。送り手と受け手が切り離されるので、別々に変更しやすくなります。</p></div>
+</details>
+
+<p class="foot">このページは『データ指向アプリケーションデザイン 第2版』5章の内容を、図を中心にまとめ直したものです。本の図はそのまま取り出せないので、図5-1〜5-7は本文と図のタイトルをもとに描き直しています。バイト列の図（MessagePack、Protocol Buffers、Avro）は、本と同じレコードを実際にエンコードして作り、本にある66・33・32バイトと合うことを確かめました。「補足」と書いた囲み、図の中の説明用の値（Aiko、photoURL、IDや50億などの数値）、MessagePackのフィールド名が31バイトという数え上げは、本にはなく、説明のために足したものです。5.0という節番号も本にはなく、章の導入部分に付けた仮の番号です。</p>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

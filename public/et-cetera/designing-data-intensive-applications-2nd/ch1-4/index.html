@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 1.4 データシステムと法律と社会</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 1カラムの読み物。図はスマホ幅(340)を基準に描く。本文21px・行間2。
+     色の役割: 琥珀=ビジネス側の都合 / 青緑=データに写っている人・守る側 / 朱=リスク */
+  --bg:#0f1420;
+  --panel:#171e2e;
+  --panel2:#1f2840;
+  --line:#2f3a5a;
+  --text:#ebe7dc;
+  --mute:#9aa4bb;
+  --biz:#f3b54a;
+  --ppl:#58cfc2;
+  --bad:#ff7d6e;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  --font-label:"M PLUS 1 Code","SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:21px;line-height:2;
+  -webkit-text-size-adjust:100%;
+}
+main{max-width:36em;margin:0 auto;padding:40px 18px 96px}
+h1,h2,h3{line-height:1.5;text-wrap:balance;margin:0}
+.nb{display:inline-block}
+p{margin:0}
+strong{font-weight:900}
+.biz{color:var(--biz)} .ppl{color:var(--ppl)} .bad{color:var(--bad)}
+
+header{display:flex;flex-direction:column;gap:18px;padding-bottom:36px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--font-label);font-size:15px;line-height:1.6;color:var(--mute)}
+h1{font-size:34px;font-weight:900}
+.lead{color:var(--mute)}
+
+section{display:flex;flex-direction:column;gap:24px;padding-top:56px}
+h2{font-size:28px;font-weight:900;padding-left:16px;border-left:6px solid var(--ppl)}
+h3{font-size:23px;font-weight:900}
+
+.gist{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:22px 20px;display:flex;flex-direction:column;gap:8px;
+}
+.tag{
+  align-self:flex-start;font-family:var(--font-label);font-size:14px;line-height:1.4;font-weight:700;
+  padding:4px 10px;border-radius:999px;border:1.5px solid currentColor;
+}
+.tag.t-ppl{color:var(--ppl)} .tag.t-biz{color:var(--biz)} .tag.t-bad{color:var(--bad)} .tag.t-mute{color:var(--mute)}
+
+figure{margin:0;display:flex;flex-direction:column;gap:12px}
+.canvas{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 10px}
+.canvas svg{display:block;width:100%;height:auto;max-width:520px;margin:0 auto}
+figcaption{font-size:17px;line-height:1.8;color:var(--mute)}
+
+svg text{font-family:var(--font-label);font-size:13px;fill:var(--text)}
+svg .sm{font-size:11.5px}
+svg .b{font-weight:700}
+svg .f-mute{fill:var(--mute)} svg .f-biz{fill:var(--biz)} svg .f-ppl{fill:var(--ppl)} svg .f-bad{fill:var(--bad)}
+svg .bx{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+svg .s-biz{stroke:var(--biz)} svg .s-ppl{stroke:var(--ppl)} svg .s-bad{stroke:var(--bad)}
+svg .ln{stroke:var(--mute);stroke-width:2;fill:none}
+svg .ln-bad{stroke:var(--bad);stroke-width:2;fill:none}
+svg .ln-biz{stroke:var(--biz);stroke-width:2;fill:none}
+svg .dash{stroke-dasharray:5 4}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:18px 18px 20px;display:flex;flex-direction:column;gap:6px;
+}
+.card h3{font-size:22px}
+.card.c-biz{border-top:5px solid var(--biz)}
+.card.c-ppl{border-top:5px solid var(--ppl)}
+.card.c-bad{border-top:5px solid var(--bad)}
+
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;counter-reset:s}
+.steps li{
+  counter-increment:s;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px 16px 64px;position:relative;
+}
+.steps li::before{
+  content:counter(s);position:absolute;left:16px;top:18px;width:34px;height:34px;border-radius:50%;
+  background:var(--ppl);color:var(--bg);font-family:var(--font-label);font-weight:700;font-size:18px;
+  line-height:34px;text-align:center;
+}
+
+.formula{
+  background:var(--panel2);border-radius:14px;padding:20px 18px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.formula .row{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.formula .op{font-family:var(--font-label);color:var(--mute)}
+
+.note{
+  border:1.5px dashed var(--line);border-radius:14px;padding:20px 18px;
+  display:flex;flex-direction:column;gap:10px;
+}
+
+.sum{display:flex;flex-direction:column;gap:12px;margin:0}
+.sum div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.sum dt{font-weight:900;color:var(--ppl)}
+.sum dd{margin:0}
+
+code{font-family:var(--font-label);font-size:.9em;background:var(--panel2);padding:2px 6px;border-radius:6px}
+
+details{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+summary{cursor:pointer;font-weight:700}
+summary:focus-visible{outline:3px solid var(--ppl);outline-offset:4px;border-radius:6px}
+details p{padding-top:10px;color:var(--mute)}
+details p b{color:var(--text)}
+
+footer{margin-top:64px;padding-top:28px;border-top:1px solid var(--line);color:var(--mute);font-size:17px;line-height:1.9}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+
+<svg class="defs" aria-hidden="true">
+  <defs>
+    <marker id="ah-m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--mute)"/></marker>
+    <marker id="ah-b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--bad)"/></marker>
+    <marker id="ah-z" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--biz)"/></marker>
+    <pattern id="dots-biz" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="3.6" style="fill:var(--biz)"/></pattern>
+    <pattern id="dots-ppl" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="3.6" style="fill:var(--ppl)"/></pattern>
+  </defs>
+</svg>
+
+<main>
+
+<header>
+  <div class="eyebrow">データ指向アプリケーションデザイン 第2版 ／ 第1章</div>
+  <h1><span class="nb">1.4 データシステム、</span><span class="nb">法律、そして社会</span></h1>
+  <p class="lead">1章はここまで技術のトレードオフを見てきました。この節だけは毛色が違います。テーマは「そのデータを持っていること自体の責任」です。</p>
+  <div class="gist">
+    <span class="tag t-ppl">ひとことで</span>
+    <p>データを持つと、<strong class="bad">持っているだけでリスクと責任が生まれる</strong>。だから設計するときは、技術と売上に加えて、<strong class="ppl">データに写っている人</strong>と法律のことも考える。迷ったら「そもそも保存しない」も立派な選択肢になる。</p>
+  </div>
+</header>
+
+<section>
+  <h2>責任の範囲が広がった</h2>
+  <p>本の主張はシンプルです。エンジニアは<strong class="biz">自社のビジネス</strong>の要求に応えるだけでは足りない。<strong>社会全体に対する責任</strong>も負っている、というものです。</p>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 250" role="img" aria-label="自社のビジネスを、データに写っている人たち、さらに社会全体が包んでいる図">
+        <ellipse class="bx" cx="170" cy="125" rx="162" ry="118"/>
+        <text x="170" y="38" text-anchor="middle" class="b">社会全体</text>
+        <ellipse class="bx s-ppl" cx="170" cy="138" rx="112" ry="84"/>
+        <text x="170" y="94" text-anchor="middle" class="b f-ppl">データに写っている人たち</text>
+        <ellipse class="bx s-biz" cx="170" cy="162" rx="64" ry="38"/>
+        <text x="170" y="167" text-anchor="middle" class="b f-biz">自社のビジネス</text>
+      </svg>
+    </div>
+    <figcaption>考える範囲は内側の円だけでは済まない。特に気をつけるのは、人とその行動を記録するシステム。</figcaption>
+  </figure>
+  <p>とくに問題になるのは、<strong class="ppl">人とその行動についてのデータ</strong>を保存するシステムです。会員情報、購入履歴、閲覧ログ、位置情報。Web開発でふつうに扱っているものが全部あてはまります。</p>
+</section>
+
+<section>
+  <h2>まず法律がある</h2>
+  <p>個人データの扱いは、もう「お行儀」の話ではなく法律の話です。本が名前を挙げているのは次の3つです。</p>
+  <div class="cards">
+    <div class="card c-ppl">
+      <span class="tag t-ppl">EU ／ 2018年〜</span>
+      <h3>GDPR</h3>
+      <p>EU一般データ保護規則。住民に、自分の個人データをコントロールする強い権利を与えた。</p>
+    </div>
+    <div class="card c-ppl">
+      <span class="tag t-ppl">米カリフォルニア州</span>
+      <h3>CCPA</h3>
+      <p>カリフォルニア州消費者プライバシー法。GDPRと同じ流れの規制が、世界の国や州に広がっている例。</p>
+    </div>
+    <div class="card c-ppl">
+      <span class="tag t-ppl">EU</span>
+      <h3>AI法（AI Act）</h3>
+      <p>AIに関する規制。個人データの使い方に、さらに制限を加える。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>法律の外でも影響は大きい</h2>
+  <p>規制の対象になっていない分野でも、システムが人と社会を動かしてしまうことが知られるようになりました。本は2つの例を挙げています。</p>
+  <h3>例1：SNSが選挙に届く</h3>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 272" role="img" aria-label="SNSがニュースの受け取り方を変え、それが政治的な見解を左右し、選挙の結果に影響しうるという連鎖">
+        <rect class="bx" x="60" y="8" width="220" height="44" rx="10"/>
+        <text x="170" y="35" text-anchor="middle" class="b">SNS</text>
+        <line class="ln" x1="170" y1="54" x2="170" y2="74" marker-end="url(#ah-m)"/>
+        <text x="182" y="69" class="sm f-mute">変える</text>
+        <rect class="bx" x="60" y="78" width="220" height="44" rx="10"/>
+        <text x="170" y="105" text-anchor="middle" class="b">ニュースの受け取り方</text>
+        <line class="ln" x1="170" y1="124" x2="170" y2="144" marker-end="url(#ah-m)"/>
+        <text x="182" y="139" class="sm f-mute">左右する</text>
+        <rect class="bx" x="60" y="148" width="220" height="44" rx="10"/>
+        <text x="170" y="175" text-anchor="middle" class="b">政治的な見解</text>
+        <line class="ln-bad" x1="170" y1="194" x2="170" y2="214" marker-end="url(#ah-b)"/>
+        <text x="182" y="209" class="sm f-bad">影響しうる</text>
+        <rect class="bx s-bad" x="60" y="218" width="220" height="44" rx="10"/>
+        <text x="170" y="245" text-anchor="middle" class="b f-bad">選挙の結果</text>
+      </svg>
+    </div>
+    <figcaption>一つひとつは「表示順を決めるだけ」の機能でも、積み重なると社会の意思決定に届く。</figcaption>
+  </figure>
+  <h3>例2：機械が人の人生を決める</h3>
+  <p>自動化されたシステムが、個人に重大な影響のある判定を下すようになっています。</p>
+  <div class="cards">
+    <div class="card c-bad"><h3>ローン</h3><p>誰に貸すか</p></div>
+    <div class="card c-bad"><h3>保険</h3><p>誰に提供するか</p></div>
+    <div class="card c-bad"><h3>採用</h3><p>誰を面接に呼ぶか</p></div>
+    <div class="card c-bad"><h3>捜査</h3><p>誰を容疑者とするか</p></div>
+  </div>
+  <p>ここで本は、責任の所在をはっきり書いています。こうしたシステムに関わる<strong>全員</strong>が、倫理的な影響を考え、法令を守る責任を分け合っている。</p>
+  <div class="gist">
+    <span class="tag t-biz">この節でいちばん強い一文</span>
+    <p>全員が法律や倫理の専門家になる必要はない。ただし、その基本的な知識は<strong class="biz">分散システムの基礎知識と同じくらい重要</strong>だ、と本は言っています。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="nb">法律が設計の根っこに</span><span class="nb">ぶつかる</span></h2>
+  <p>ここからがエンジニアにとっての本題です。法律は「利用規約を直せば済む話」ではなく、<strong>アーキテクチャそのもの</strong>に食い込んできます。</p>
+  <p>代表がGDPRの<strong class="ppl">忘れられる権利</strong>（right to be forgotten）です。本人が頼めば、その人のデータを消してもらえる権利です。</p>
+  <p>一方で、この本でこれから学ぶシステムの多くは<strong>イミュータブル</strong>（書き換えない）な部品に頼っています。たとえば、末尾に足すだけの追記専用ログです。</p>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 156" role="img" aria-label="追記専用ログ。末尾にだけ書き足せる。途中にあるAさんの記録を消したいが、途中は書き換えられない">
+        <text x="328" y="26" text-anchor="end" class="sm f-mute">追記はここだけ</text>
+        <rect class="bx" x="12" y="40" width="36" height="44" rx="6"/><text x="30" y="67" text-anchor="middle" class="sm f-mute">1</text>
+        <rect class="bx" x="52" y="40" width="36" height="44" rx="6"/><text x="70" y="67" text-anchor="middle" class="sm f-mute">2</text>
+        <rect class="bx" x="92" y="40" width="36" height="44" rx="6"/><text x="110" y="67" text-anchor="middle" class="sm f-mute">3</text>
+        <rect class="bx s-bad" x="132" y="40" width="36" height="44" rx="6"/><text x="150" y="67" text-anchor="middle" class="b f-bad">A</text>
+        <rect class="bx" x="172" y="40" width="36" height="44" rx="6"/><text x="190" y="67" text-anchor="middle" class="sm f-mute">5</text>
+        <rect class="bx" x="212" y="40" width="36" height="44" rx="6"/><text x="230" y="67" text-anchor="middle" class="sm f-mute">6</text>
+        <rect class="bx" x="252" y="40" width="36" height="44" rx="6"/><text x="270" y="67" text-anchor="middle" class="sm f-mute">7</text>
+        <rect class="bx dash" x="292" y="40" width="36" height="44" rx="6"/><text x="310" y="68" text-anchor="middle" class="b f-mute">＋</text>
+        <line class="ln-bad" x1="150" y1="112" x2="150" y2="90" marker-end="url(#ah-b)"/>
+        <text x="170" y="130" text-anchor="middle" class="b f-bad">Aさんの記録を消したい</text>
+        <text x="170" y="149" text-anchor="middle" class="sm f-mute">でも途中は書き換えない約束</text>
+      </svg>
+    </div>
+    <figcaption>書き換えないから速くて安全、という設計が、「消してほしい」という権利と正面からぶつかる。</figcaption>
+  </figure>
+  <p>問題はログだけではありません。1.1.3で出てきた<strong>導出データ</strong>にも、Aさんのデータは流れ込んでいます。</p>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 306" role="img" aria-label="記録のシステムにあるAさんのデータが、インデックス、キャッシュ、データウェアハウス、機械学習モデルの学習データへ流れ込んでいる図">
+        <rect class="bx s-ppl" x="60" y="8" width="220" height="52" rx="10"/>
+        <text x="170" y="30" text-anchor="middle" class="b">記録のシステム</text>
+        <text x="170" y="49" text-anchor="middle" class="sm f-bad">Aさんのデータ</text>
+        <path class="ln" d="M60 34H30V274"/>
+        <line class="ln" x1="30" y1="106" x2="58" y2="106" marker-end="url(#ah-m)"/>
+        <line class="ln" x1="30" y1="162" x2="58" y2="162" marker-end="url(#ah-m)"/>
+        <line class="ln" x1="30" y1="218" x2="58" y2="218" marker-end="url(#ah-m)"/>
+        <line class="ln" x1="30" y1="274" x2="58" y2="274" marker-end="url(#ah-m)"/>
+        <rect class="bx" x="62" y="84" width="268" height="44" rx="10"/>
+        <text x="76" y="111" class="b">インデックス</text>
+        <text x="318" y="111" text-anchor="end" class="sm f-mute">ここにも残る</text>
+        <rect class="bx" x="62" y="140" width="268" height="44" rx="10"/>
+        <text x="76" y="167" class="b">キャッシュ</text>
+        <text x="318" y="167" text-anchor="end" class="sm f-mute">ここにも残る</text>
+        <rect class="bx" x="62" y="196" width="268" height="44" rx="10"/>
+        <text x="76" y="223" class="b">データウェアハウス</text>
+        <text x="318" y="223" text-anchor="end" class="sm f-mute">ここにも残る</text>
+        <rect class="bx s-bad" x="62" y="252" width="268" height="44" rx="10"/>
+        <text x="76" y="279" class="b f-bad">MLモデルの学習データ</text>
+        <text x="318" y="279" text-anchor="end" class="sm f-bad">どう消す？</text>
+      </svg>
+    </div>
+    <figcaption>元の1行を消しても、そこから作られたデータは残る。学習に使われたデータをどう消すかは、本も「新たなエンジニアリング上の課題」としている。</figcaption>
+  </figure>
+  <div class="note">
+    <span class="tag t-mute">補足（本にはない）</span>
+    <p>Web開発の感覚に引きつけると、退会処理で <code>users</code> の行を消しても、リードレプリカ、バックアップ、アプリケーションログ、検索インデックス、分析用のコピーには同じ人のデータが残っている、という状況です。</p>
+  </div>
+  <h3>しかも、正解の一覧表はない</h3>
+  <p>「この技術を使えばGDPR準拠」という明確なガイドラインは、今のところありません。規制は<strong>わざと特定の技術を指定していない</strong>からです。技術はすぐ変わるので、法律は解釈の余地がある高レベルの原則だけを定めています。</p>
+  <p>つまり、準拠に簡単な答えはありません。本はこのあとの章で、いくつかの技術を「プライバシー規制の目で見るとどうか」という観点でも扱っていきます。</p>
+</section>
+
+<section>
+  <h2>保存コストの本当の中身</h2>
+  <p>データを保存するのは、ふつう「価値が保存コストを上回る」と考えるからです。ただし、そのコストはS3の請求額だけではありません。</p>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 300" role="img" aria-label="氷山の図。水面の上に見えているのはS3などの保存料金だけ。水面下に、漏洩時の賠償責任、風評被害、法令違反の法的費用、罰金が隠れている">
+        <rect x="0" y="92" width="340" height="208" style="fill:var(--ppl);opacity:.07"/>
+        <line x1="0" y1="92" x2="340" y2="92" style="stroke:var(--ppl);stroke-width:1.5;opacity:.6"/>
+        <polygon class="bx s-biz" points="170,26 212,92 128,92"/>
+        <text x="226" y="52" class="sm f-mute">見えるコスト</text>
+        <text x="226" y="74" class="b f-biz">S3などの料金</text>
+        <polygon class="bx s-bad" points="96,92 244,92 306,180 250,284 90,284 34,180"/>
+        <text x="8" y="110" class="sm f-mute">見えにくい</text>
+        <text x="8" y="127" class="sm f-mute">コスト</text>
+        <text x="170" y="138" text-anchor="middle" class="b f-bad">漏洩したときの賠償責任</text>
+        <text x="170" y="176" text-anchor="middle" class="b f-bad">風評被害</text>
+        <text x="170" y="214" text-anchor="middle" class="b f-bad">法令違反の法的費用</text>
+        <text x="170" y="252" text-anchor="middle" class="b f-bad">罰金</text>
+      </svg>
+    </div>
+    <figcaption>請求書に載るのは先端だけ。漏洩や違反が起きたときのコストは水面下にある。</figcaption>
+  </figure>
+  <p>なので、保存するかどうかの損得計算は次の形で考えます。</p>
+  <div class="formula">
+    <div class="row"><strong class="ppl">データの価値</strong><span class="op">と比べるのは</span></div>
+    <div class="row"><strong class="biz">保存料金</strong><span class="op">＋</span><strong class="bad">漏洩・侵害のリスク</strong><span class="op">＋</span><strong class="bad">法律違反のリスク</strong></div>
+  </div>
+</section>
+
+<section>
+  <h2>データが人を危険にさらす</h2>
+  <p>コストは会社が払うものだけではありません。<strong class="ppl">データに写っている本人</strong>が払わされることもあります。</p>
+  <p>政府や警察は、企業にデータの引き渡しを強制できます。そして世の中には、ある行動が犯罪とされている地域があります。本が挙げる例は、中東やアフリカの複数の国での同性愛と、アメリカの複数の州での中絶です。</p>
+  <p>こうした行動は、驚くほど地味なデータから分かってしまいます。位置情報はもちろん、<strong>IPアドレスのログ</strong>でも、おおよその居場所の移り変わりが分かるからです。</p>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 282" role="img" aria-label="IPアドレスと時刻のログから居場所の移り変わりが分かり、当局がログの提出を強制すると、ユーザー本人に安全上のリスクが生じる">
+        <rect class="bx" x="10" y="8" width="320" height="118" rx="10"/>
+        <text x="22" y="31" class="sm f-mute">アクセスログ（時刻とIPアドレス）</text>
+        <text x="22" y="58" class="sm">09:10</text><text x="68" y="58" class="sm">198.51.100.7</text><text x="176" y="58" class="sm f-mute">→ 自宅のある町</text>
+        <text x="22" y="84" class="sm f-bad">13:40</text><text x="68" y="84" class="sm f-bad">203.0.113.24</text><text x="176" y="84" class="sm b f-bad">→ 別の州の町</text>
+        <text x="22" y="110" class="sm">19:05</text><text x="68" y="110" class="sm">198.51.100.7</text><text x="176" y="110" class="sm f-mute">→ 自宅のある町</text>
+        <line class="ln-bad" x1="170" y1="128" x2="170" y2="150" marker-end="url(#ah-b)"/>
+        <rect class="bx s-bad" x="40" y="154" width="260" height="44" rx="10"/>
+        <text x="170" y="181" text-anchor="middle" class="b">政府・警察が提出を強制</text>
+        <line class="ln-bad" x1="170" y1="200" x2="170" y2="222" marker-end="url(#ah-b)"/>
+        <rect class="bx s-bad" x="40" y="226" width="260" height="44" rx="10"/>
+        <text x="170" y="253" text-anchor="middle" class="b f-bad">本人に現実の安全上のリスク</text>
+      </svg>
+    </div>
+    <figcaption>なんとなく残しているアクセスログが、誰かの行動の証拠になる。IPアドレスは説明用の架空の値。</figcaption>
+  </figure>
+  <div class="note">
+    <span class="tag t-mute">補足（本にはない）</span>
+    <p>悪意がなくても起きる、というのが怖いところです。デバッグ用に残したログでも、存在する限り提出の対象になります。持っていないデータは、漏れることも提出させられることもありません。</p>
+  </div>
+</section>
+
+<section>
+  <h2>だから、データ最小化</h2>
+  <p>リスクを全部数えると、「このデータは保存する価値がない。だから消す」という結論が合理的になる場合があります。これが<strong class="ppl">データ最小化</strong>（data minimization）の原則です。ドイツ語では Datensparsamkeit と呼ばれます。</p>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 222" role="img" aria-label="ビッグデータの発想は、いつか使うかもしれないので全部ためる。データ最小化は、目的に必要な分だけ持つ">
+        <text x="84" y="24" text-anchor="middle" class="b f-biz">ビッグデータの発想</text>
+        <rect class="bx s-biz" x="22" y="36" width="124" height="124" rx="10"/>
+        <rect x="28" y="42" width="112" height="112" fill="url(#dots-biz)"/>
+        <text x="84" y="184" text-anchor="middle" class="sm">いつか使うかも</text>
+        <text x="84" y="204" text-anchor="middle" class="sm b f-biz">全部ためる</text>
+        <text x="252" y="24" text-anchor="middle" class="b f-ppl">データ最小化</text>
+        <rect class="bx s-ppl" x="190" y="36" width="124" height="124" rx="10"/>
+        <rect x="196" y="126" width="112" height="28" fill="url(#dots-ppl)"/>
+        <text x="252" y="86" text-anchor="middle" class="sm f-mute">用が済んだら削除</text>
+        <text x="252" y="184" text-anchor="middle" class="sm">目的に必要な分</text>
+        <text x="252" y="204" text-anchor="middle" class="sm b f-ppl">だけ持つ</text>
+      </svg>
+    </div>
+    <figcaption>将来役立つかもしれないから投機的にためる、という考え方とは正反対。</figcaption>
+  </figure>
+  <p>データ最小化はGDPRとも合っています。GDPRは個人データについて、次の3つを定めているからです。</p>
+  <ol class="steps">
+    <li><strong>目的を決めて集める。</strong>特定の、明示した目的のためにだけ収集できる。</li>
+    <li><strong>流用しない。</strong>あとから別の目的に使ってはいけない。</li>
+    <li><strong>持ちすぎない。</strong>その目的に必要な期間を超えて保持してはいけない。</li>
+  </ol>
+  <div class="note">
+    <span class="tag t-mute">補足（本にはない）</span>
+    <p>たとえるなら、個人データは「会社の資産」というより「お客さんからの預かり物」です。預かる量が多いほど、なくしたときの責任も大きくなります。</p>
+  </div>
+</section>
+
+<section>
+  <h2>企業どうしも監視しあう</h2>
+  <p>目を光らせているのは政府だけではありません。取引先からも、プライバシーと安全性の証明を求められます。本が挙げるのは2つの標準です。</p>
+  <figure>
+    <div class="canvas">
+      <svg viewBox="0 0 340 322" role="img" aria-label="カード会社は決済処理事業者にPCI準拠を要求し、独立した監査人が頻繁に評価する。製品の購入者はソフトウェアベンダーにSOC 2準拠を要求し、第三者の監査人が準拠を確認する">
+        <rect class="bx" x="8" y="24" width="100" height="44" rx="10"/>
+        <text x="58" y="51" text-anchor="middle" class="b">カード会社</text>
+        <line class="ln-biz" x1="110" y1="46" x2="204" y2="46" marker-end="url(#ah-z)"/>
+        <text x="157" y="36" text-anchor="middle" class="sm b f-biz">PCIを要求</text>
+        <rect class="bx s-biz" x="208" y="24" width="124" height="44" rx="10"/>
+        <text x="270" y="51" text-anchor="middle" class="b">決済処理事業者</text>
+        <line class="ln" x1="270" y1="110" x2="270" y2="72" marker-end="url(#ah-m)"/>
+        <text x="262" y="96" text-anchor="end" class="sm f-mute">頻繁に評価</text>
+        <rect class="bx" x="208" y="112" width="124" height="40" rx="10"/>
+        <text x="270" y="137" text-anchor="middle">独立した監査人</text>
+
+        <line x1="8" y1="170" x2="332" y2="170" style="stroke:var(--line);stroke-width:1"/>
+
+        <rect class="bx" x="8" y="188" width="100" height="44" rx="10"/>
+        <text x="58" y="215" text-anchor="middle" class="b">製品の購入者</text>
+        <line class="ln-biz" x1="110" y1="210" x2="204" y2="210" marker-end="url(#ah-z)"/>
+        <text x="157" y="200" text-anchor="middle" class="sm b f-biz">SOC 2を要求</text>
+        <rect class="bx s-biz" x="208" y="188" width="124" height="44" rx="10"/>
+        <text x="270" y="207" text-anchor="middle" class="b">ソフトウェア</text>
+        <text x="270" y="224" text-anchor="middle" class="b">ベンダー</text>
+        <line class="ln" x1="270" y1="274" x2="270" y2="236" marker-end="url(#ah-m)"/>
+        <text x="262" y="260" text-anchor="end" class="sm f-mute">準拠を確認</text>
+        <rect class="bx" x="208" y="276" width="124" height="40" rx="10"/>
+        <text x="270" y="301" text-anchor="middle">第三者の監査人</text>
+      </svg>
+    </div>
+    <figcaption>上がPCI（Payment Card Industry）、下がSOC（Service Organization Control）Type 2。どちらも「自己申告」ではなく、外部の監査で確かめる。</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>まとめ</h2>
+  <dl class="sum">
+    <div><dt>誰への責任か</dt><dd>自社だけでなく、データに写っている人と社会全体。</dd></div>
+    <div><dt>何が縛るか</dt><dd>GDPR、CCPA、AI法などの法律。加えて、PCIやSOC 2のような取引先からの要求。</dd></div>
+    <div><dt>設計への影響</dt><dd>忘れられる権利は、イミュータブルなログや導出データとぶつかる。決まった正解はまだない。</dd></div>
+    <div><dt>コストの考え方</dt><dd>保存料金に、漏洩・法律違反・本人への危険のリスクを足して考える。</dd></div>
+    <div><dt>基本の構え</dt><dd>データ最小化。目的を決めて集め、流用せず、用が済んだら消す。</dd></div>
+  </dl>
+  <p>本の締めはこうです。大切なのは、<strong class="biz">ビジネスのニーズ</strong>と、<strong class="ppl">データを集められる側の人々のニーズ</strong>のバランスを取ること。倫理と法令遵守は、バイアスや差別の問題も含めて、14章でもう一度深く扱われます。</p>
+</section>
+
+<section>
+  <h2>確認の質問</h2>
+  <details>
+    <summary>Q1. 追記専用ログと「忘れられる権利」は、なぜ相性が悪い？</summary>
+    <p><b>答え：</b>追記専用ログは、書いたものを変更しないことを前提にしている。忘れられる権利は、途中にある特定の人のデータを消すことを求める。前提どうしが食い違う。</p>
+  </details>
+  <details>
+    <summary>Q2. 「S3は安いから、とりあえず全部残しておこう」のどこが危ない？</summary>
+    <p><b>答え：</b>コストを保存料金だけで見ている。漏洩時の賠償責任と風評被害、法律違反の法的費用と罰金、そして提出を強制されたときに本人が負う危険が計算に入っていない。</p>
+  </details>
+  <details>
+    <summary>Q3. GDPRは「この技術を使え」と指定している？</summary>
+    <p><b>答え：</b>していない。技術は変わるので、解釈の余地がある高レベルの原則だけを定めている。だから準拠に簡単な答えはない。</p>
+  </details>
+</section>
+
+<footer>
+  事実関係は1.4節の本文に沿っています。「補足（本にはない）」の囲み、図の見せ方（円、氷山、アクセスログの具体例）、かみくだいた言い換えは、説明のために足したものです。
+</footer>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

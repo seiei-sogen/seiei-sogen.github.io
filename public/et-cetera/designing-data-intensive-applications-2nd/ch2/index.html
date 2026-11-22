@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 2章 非機能要件を定義する</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 1カラムの読み物。図はスマホ幅(340)を基準に描く。本文21px・行間2。ダーク固定。
+     色の役割: 琥珀=注目/2.2 ・青緑=正常・速い/2.3 ・藤=2.4 ・若草=2.5 ・朱=遅い・壊れた */
+  --bg:#0f1420;
+  --panel:#171e2e;
+  --panel2:#1f2840;
+  --line:#34405f;
+  --text:#ebe7dc;
+  --mute:#9aa4bb;
+  --amber:#f3b54a;
+  --teal:#58cfc2;
+  --peri:#93a8ff;
+  --green:#a8d672;
+  --bad:#ff7d6e;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  --font-label:"M PLUS 1 Code","SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:27px;line-height:2;-webkit-text-size-adjust:100%}
+main{max-width:36em;margin:0 auto;padding:40px 18px 96px}
+h1,h2,h3,h4{line-height:1.5;text-wrap:balance;margin:0}
+h1{font-size:44px;font-weight:900;margin-top:6px}
+h2{font-size:38px;font-weight:900;margin-top:8px}
+h3{font-size:32px;font-weight:700;margin-top:64px;padding-left:14px;border-left:6px solid var(--sec,var(--mute))}
+h4{font-size:29px;font-weight:700;margin-top:44px;color:var(--sec,var(--text))}
+p{margin:22px 0 0}
+b,strong{font-weight:700;color:#fff}
+a{color:var(--teal)}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+code{font-family:var(--font-label);font-size:1em;background:var(--panel2);padding:2px 6px;border-radius:5px}
+ul,ol{margin:18px 0 0;padding-left:1.3em}
+li{margin-top:8px}
+.eyebrow{font-family:var(--font-label);font-size:27px;color:var(--mute);letter-spacing:.04em;line-height:1.6}
+.sub{color:var(--mute);margin-top:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px;font-size:27px;line-height:1.6;color:var(--mute)}
+.legend i{display:inline-block;width:18px;height:18px;border-radius:4px;margin-right:9px;vertical-align:-2px}
+nav.toc{margin-top:36px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0;border-top:1px solid var(--line)}
+nav.toc li:first-child{border-top:0}
+nav.toc a{display:flex;gap:14px;padding:9px 0;text-decoration:none;color:var(--text)}
+nav.toc a span{font-family:var(--font-label);font-weight:700;min-width:2.2em}
+section.sec{margin-top:96px;padding-top:28px;border-top:3px solid var(--sec,var(--line))}
+.num{font-family:var(--font-label);font-weight:700;font-size:27px;color:var(--sec,var(--mute));letter-spacing:.08em;line-height:1.5}
+.lede{margin-top:26px;background:var(--panel);border-left:6px solid var(--sec,var(--mute));border-radius:0 14px 14px 0;padding:14px 20px 18px}
+.lede small{display:block;font-family:var(--font-label);font-size:27px;color:var(--sec,var(--mute));letter-spacing:.08em}
+.lede p{margin:4px 0 0;font-weight:700}
+.fig{margin:30px -8px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 8px 12px}
+.fig svg{display:block;width:100%;max-width:720px;height:auto;margin:0 auto}
+.fig figcaption{font-size:27px;line-height:2;color:var(--mute);padding:12px 10px 0;max-width:720px;margin:0 auto}
+.fig text{font-family:var(--font-label);fill:var(--text)}
+.fig .t{font-size:14px}.fig .ts{font-size:12.5px}.fig .tl{font-size:16px}.fig .tb{font-weight:700}
+.fig .c-a{fill:var(--amber)}.fig .c-b{fill:var(--teal)}.fig .c-c{fill:var(--peri)}.fig .c-g{fill:var(--green)}
+.fig .c-bad{fill:var(--bad)}.fig .c-mute{fill:var(--mute)}.fig .c-ink{fill:var(--bg)}
+.bx{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+.bx-a{fill:rgba(243,181,74,.15);stroke:var(--amber)}
+.bx-b{fill:rgba(88,207,194,.13);stroke:var(--teal)}
+.bx-c{fill:rgba(147,168,255,.15);stroke:var(--peri)}
+.bx-g{fill:rgba(168,214,114,.14);stroke:var(--green)}
+.bx-bad{fill:rgba(255,125,110,.15);stroke:var(--bad)}
+.dashb{fill:none;stroke-dasharray:5 5}
+.ln{fill:none;stroke-width:2;stroke-linecap:round}
+.dash{stroke-dasharray:5 5}
+.grid{stroke:var(--line);stroke-width:1}
+.s-a{stroke:var(--amber)}.s-b{stroke:var(--teal)}.s-c{stroke:var(--peri)}.s-g{stroke:var(--green)}
+.s-bad{stroke:var(--bad)}.s-mute{stroke:var(--mute)}.s-text{stroke:var(--text)}
+.fl-a{fill:var(--amber)}.fl-b{fill:var(--teal)}.fl-c{fill:var(--peri)}.fl-g{fill:var(--green)}
+.fl-bad{fill:var(--bad)}.fl-mute{fill:var(--mute)}.fl-text{fill:var(--text)}
+.fl-lat{fill:#3a4668}.fl-bar{fill:#7f8aa8}
+.calc{margin-top:26px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;font-family:var(--font-label);font-size:27px;line-height:2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.calc div+div{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px}
+.calc b{color:var(--amber)}
+.calc small{display:block;font-size:27px;color:var(--mute);line-height:1.8}
+pre{margin:26px 0 0;background:#0a0e18;border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto;font-family:var(--font-label);font-size:20px;line-height:1.8}
+pre code{background:none;padding:0;font-size:inherit}
+.tw{margin-top:26px;overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:27px;line-height:1.8;font-variant-numeric:tabular-nums}
+th,td{padding:11px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--line)}
+tr:first-child th,tr:first-child td{border-top:0}
+thead th{background:var(--panel2);font-weight:700;white-space:nowrap}
+tbody th{font-weight:700;color:#fff}
+td.n{font-family:var(--font-label);white-space:nowrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px;margin-top:26px}
+.card{background:var(--panel);border:1px solid var(--line);border-top:5px solid var(--k,var(--mute));border-radius:12px;padding:14px 18px 18px;font-size:27px;line-height:2}
+.card h5{margin:0 0 4px;font-size:29px;font-weight:700;color:var(--k,var(--text));line-height:1.5}
+.card ul{margin:0;padding-left:1.15em}
+.card li{margin-top:2px}
+.card small{display:block;color:var(--mute);font-size:27px;font-family:var(--font-label);line-height:1.6}
+.box{margin-top:34px;border-radius:14px;padding:6px 20px 22px}
+.box>small{display:inline-block;font-family:var(--font-label);font-size:27px;letter-spacing:.08em;padding:2px 10px;border-radius:999px;margin-top:14px;line-height:1.6}
+.box h4{margin-top:10px;color:var(--text)}
+.col{background:var(--panel);border:1px solid var(--line)}
+.col>small{background:var(--panel2);color:var(--text)}
+.note{border:1.5px dashed var(--mute)}
+.note>small{border:1px solid var(--mute);color:var(--mute)}
+dl.term{margin:26px 0 0}
+dl.term dt{font-weight:700;color:#fff;margin-top:18px}
+dl.term dt span{display:block;font-family:var(--font-label);font-weight:500;font-size:27px;color:var(--mute);line-height:1.6}
+dl.term dd{margin:2px 0 0;padding-left:16px;border-left:3px solid var(--line)}
+details{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 18px}
+summary{cursor:pointer;font-weight:700}
+details p{margin-top:8px;color:var(--teal)}
+footer{margin-top:80px;padding-top:24px;border-top:1px solid var(--line);color:var(--mute);font-size:27px;line-height:2}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<main>
+
+<header>
+  <div class="eyebrow">データ指向アプリケーションデザイン 第2版 ／ 2章</div>
+  <h1>非機能要件を定義する</h1>
+  <p class="sub">アプリが「何をするか」ではなく「どんな質でやるか」を、言葉と数字で言えるようになる章です。</p>
+  <div class="legend">
+    <span><i style="background:var(--teal)"></i>正常・速い</span>
+    <span><i style="background:var(--bad)"></i>遅い・壊れた</span>
+    <span><i style="background:var(--amber)"></i>注目するところ</span>
+  </div>
+  <nav class="toc" aria-label="目次">
+    <ol>
+      <li><a href="#intro"><span>2</span>機能要件と非機能要件</a></li>
+      <li><a href="#s21"><span>2.1</span>ケーススタディ：SNSのタイムライン</a></li>
+      <li><a href="#s22"><span>2.2</span>パフォーマンスの表現方法</a></li>
+      <li><a href="#s23"><span>2.3</span>信頼性と耐障害性</a></li>
+      <li><a href="#s24"><span>2.4</span>スケーラビリティ</a></li>
+      <li><a href="#s25"><span>2.5</span>メンテナンス性</a></li>
+      <li><a href="#s26"><span>2.6</span>まとめと理解度チェック</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ============================================================ intro -->
+<section class="sec" id="intro">
+  <div class="num">2章の入口</div>
+  <h2>機能要件と非機能要件</h2>
+
+  <p>アプリを作るとき、最初に決めるのは「何ができるか」です。どんな画面があって、ボタンを押すと何が起きるか。これが<b>機能要件</b>です。</p>
+  <p>もう1つ、「それをどんな質でやるか」という要件があります。速い、落ちない、安全、法令を守る、直しやすい。これが<b>非機能要件</b>です。</p>
+
+  <div class="cards">
+    <div class="card" style="--k:var(--mute)"><h5>機能要件</h5><small>functional</small>何ができるか
+      <ul><li>どんな画面か</li><li>どんなボタンか</li><li>操作すると何が起きるか</li></ul></div>
+    <div class="card" style="--k:var(--amber)"><h5>非機能要件</h5><small>nonfunctional</small>どんな質でやるか
+      <ul><li>速い</li><li>信頼できる</li><li>安全</li><li>法令を守る</li><li>保守しやすい</li></ul></div>
+  </div>
+
+  <p>非機能要件は、当たり前すぎて書かれないことがよくあります。でも本は、機能と同じくらい重要だと言います。耐えられないほど遅いアプリや、信頼できないアプリは、存在しないのと同じだからです。</p>
+  <p>この章が扱うのは次の4つです。セキュリティなどは本の範囲外です。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 244" role="img" aria-label="2章の地図。ケーススタディのあと、パフォーマンス、信頼性、スケーラビリティ、メンテナンス性の4つを扱う"><rect x="60" y="10" width="220" height="46" rx="8" class="bx"/><text x="170" y="28.54" text-anchor="middle" class="t tb">2.1 ケーススタディ</text><text x="170" y="47" text-anchor="middle" class="ts c-mute">SNSのタイムライン</text><line x1="170" y1="58" x2="170.0" y2="84.0" class="ln s-mute" style="stroke-width:2"/><polygon points="170.0,92.0 165.5,83.0 174.5,83.0" class="fl-mute"/><text x="180" y="80" text-anchor="start" class="ts c-mute">この例で考える</text><rect x="8" y="100" width="158" height="62" rx="8" class="bx bx-a"/><text x="87" y="126.54" text-anchor="middle" class="t tb">2.2 パフォーマンス</text><text x="87" y="145" text-anchor="middle" class="ts">速いか</text><rect x="174" y="100" width="158" height="62" rx="8" class="bx bx-b"/><text x="253" y="126.54" text-anchor="middle" class="t tb">2.3 信頼性</text><text x="253" y="145" text-anchor="middle" class="ts">壊れても動くか</text><rect x="8" y="172" width="158" height="62" rx="8" class="bx bx-c"/><text x="87" y="198.54" text-anchor="middle" class="t tb">2.4 スケーラビリティ</text><text x="87" y="217" text-anchor="middle" class="ts">増えても耐えるか</text><rect x="174" y="172" width="158" height="62" rx="8" class="bx bx-g"/><text x="253" y="198.54" text-anchor="middle" class="t tb">2.5 メンテナンス性</text><text x="253" y="217" text-anchor="middle" class="ts">直し続けられるか</text></svg><figcaption>2章の地図。色はこのページの見出しの色と対応しています。</figcaption></figure>
+
+  <p>定義だけを並べると退屈なので、本はまずSNSのタイムラインを例に出します。このページも同じ順番で進みます。</p>
+</section>
+
+<!-- ============================================================ 2.1 -->
+<section class="sec" id="s21" style="--sec:var(--text)">
+  <div class="num">2.1</div>
+  <h2>ケーススタディ：SNSのホームタイムライン</h2>
+
+  <div class="lede"><small>一言でいうと</small><p>「読むたびに計算する」をやめて「書くときに計算しておく」に変えると、データベースの仕事が毎秒4億回から毎秒116万回に減る、という例です。</p></div>
+
+  <h3>お題と数字</h3>
+  <p>X（旧Twitter）のようなSNSを作るとします。ユーザーは投稿でき、他のユーザーをフォローできます。実物をかなり単純化したお題です。本は次の数字を置きます。</p>
+
+  <div class="tw"><table>
+    <tbody>
+      <tr><th>投稿数</th><td class="n">1日 5億件</td><td>平均すると毎秒5,800件</td></tr>
+      <tr><th>ピーク</th><td class="n">毎秒 15万件</td><td>ときどき跳ね上がる</td></tr>
+      <tr><th>フォロー</th><td class="n">平均 200人</td><td>フォロワーも平均200人</td></tr>
+      <tr><th>セレブ</th><td class="n">1億人超</td><td>ごく一部の人のフォロワー数</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>2.1.1 データの持ち方</h3>
+  <p>データはすべてリレーショナルデータベースに入れます。テーブルは3つです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 312" role="img" aria-label="users、posts、followsの3テーブル。followsとpostsがusersのidを指している"><rect x="100" y="12" width="140" height="80" rx="8" class="bx"/><rect x="100" y="12" width="140" height="28" rx="8" class="bx bx-c"/><text x="170" y="31" text-anchor="middle" class="t tb">users</text><text x="112" y="58" text-anchor="start" class="ts">id</text><text x="112" y="84" text-anchor="start" class="ts">screen_name</text><rect x="8" y="170" width="150" height="80" rx="8" class="bx"/><rect x="8" y="170" width="150" height="28" rx="8" class="bx bx-b"/><text x="83" y="189" text-anchor="middle" class="t tb">follows</text><text x="20" y="216" text-anchor="start" class="ts">follower_id</text><text x="20" y="242" text-anchor="start" class="ts">followee_id</text><rect x="182" y="170" width="150" height="132" rx="8" class="bx"/><rect x="182" y="170" width="150" height="28" rx="8" class="bx bx-a"/><text x="257" y="189" text-anchor="middle" class="t tb">posts</text><text x="194" y="216" text-anchor="start" class="ts">id</text><text x="194" y="242" text-anchor="start" class="ts">sender_id</text><text x="194" y="268" text-anchor="start" class="ts">text</text><text x="194" y="294" text-anchor="start" class="ts">timestamp</text><line x1="83" y1="170" x2="135.2" y2="100.4" class="ln s-b" style="stroke-width:2"/><polygon points="140.0,94.0 138.2,103.9 131.0,98.5" class="fl-b"/><line x1="257" y1="170" x2="204.8" y2="100.4" class="ln s-a" style="stroke-width:2"/><polygon points="200.0,94.0 209.0,98.5 201.8,103.9" class="fl-a"/><text x="98" y="128" text-anchor="end" class="ts c-b">誰が誰を</text><text x="98" y="144" text-anchor="end" class="ts c-b">フォロー</text><text x="242" y="128" text-anchor="start" class="ts c-a">誰が</text><text x="242" y="144" text-anchor="start" class="ts c-a">投稿したか</text></svg><figcaption>3つのテーブル。<code>follows</code>は「誰が誰をフォローしているか」、<code>posts</code>は「誰がいつ何を投稿したか」。本の図2-1をもとに作図。</figcaption></figure>
+
+  <p>このSNSでいちばん大事な読み取りは<b>ホームタイムライン</b>です。自分がフォローしている人たちの最近の投稿を並べた、あの画面です。SQLで書くとこうなります。</p>
+
+<pre><code>SELECT posts.*, users.*
+FROM posts
+  JOIN follows ON posts.sender_id = follows.followee_id
+  JOIN users   ON posts.sender_id = users.id
+WHERE follows.follower_id = current_user
+ORDER BY posts.timestamp DESC
+LIMIT 1000</code></pre>
+
+  <p>データベースがやることを絵にすると、こうです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 310" role="img" aria-label="方式1。アプリが5秒ごとに問い合わせ、データベースは毎回200人分の投稿を集めて並べ替える"><rect x="85" y="8" width="170" height="40" rx="8" class="bx"/><text x="170" y="33.04" text-anchor="middle" class="t">あなたのアプリ</text><line x1="170" y1="48" x2="170.0" y2="84.0" class="ln s-a" style="stroke-width:2"/><polygon points="170.0,92.0 165.5,83.0 174.5,83.0" class="fl-a"/><text x="180" y="74" text-anchor="start" class="ts c-a">5秒ごとに「新着ある？」</text><rect x="50" y="92" width="240" height="46" rx="8" class="bx bx-c"/><text x="170" y="110.54" text-anchor="middle" class="t">フォロー中の200人を調べる</text><text x="170" y="129" text-anchor="middle" class="ts c-mute">followsテーブル</text><line x1="170" y1="138" x2="53.1" y2="175.6" class="ln s-mute" style="stroke-width:2"/><polygon points="45.5,178.0 52.7,171.0 55.4,179.5" class="fl-mute"/><rect x="8" y="178" width="75" height="36" rx="8" class="bx"/><text x="45.5" y="200.5" text-anchor="middle" class="ts">Aの投稿</text><line x1="45.5" y1="214" x2="74.9" y2="249.8" class="ln s-mute" style="stroke-width:2"/><polygon points="80.0,256.0 70.8,251.9 77.8,246.2" class="fl-mute"/><line x1="170" y1="138" x2="134.3" y2="172.4" class="ln s-mute" style="stroke-width:2"/><polygon points="128.5,178.0 131.9,168.5 138.1,175.0" class="fl-mute"/><rect x="91" y="178" width="75" height="36" rx="8" class="bx"/><text x="128.5" y="200.5" text-anchor="middle" class="ts">Bの投稿</text><line x1="128.5" y1="214" x2="137.9" y2="248.3" class="ln s-mute" style="stroke-width:2"/><polygon points="140.0,256.0 133.3,248.5 142.0,246.1" class="fl-mute"/><line x1="170" y1="138" x2="205.7" y2="172.4" class="ln s-mute" style="stroke-width:2"/><polygon points="211.5,178.0 201.9,175.0 208.1,168.5" class="fl-mute"/><rect x="174" y="178" width="75" height="36" rx="8" class="bx"/><text x="211.5" y="200.5" text-anchor="middle" class="ts">Cの投稿</text><line x1="211.5" y1="214" x2="202.1" y2="248.3" class="ln s-mute" style="stroke-width:2"/><polygon points="200.0,256.0 198.0,246.1 206.7,248.5" class="fl-mute"/><line x1="170" y1="138" x2="286.9" y2="175.6" class="ln s-mute" style="stroke-width:2"/><polygon points="294.5,178.0 284.6,179.5 287.3,171.0" class="fl-mute"/><rect x="257" y="178" width="75" height="36" rx="8" class="bx"/><text x="294.5" y="200.5" text-anchor="middle" class="ts">…200人</text><line x1="294.5" y1="214" x2="265.1" y2="249.8" class="ln s-mute" style="stroke-width:2"/><polygon points="260.0,256.0 262.2,246.2 269.2,251.9" class="fl-mute"/><rect x="40" y="256" width="260" height="46" rx="8" class="bx bx-a"/><text x="170" y="274.54" text-anchor="middle" class="t">200人分をまとめて</text><text x="170" y="293.54" text-anchor="middle" class="t">新しい順に並べる</text></svg><figcaption>方式1：読むたびに集める。この一連の作業を、問い合わせのたびに最初からやり直します。</figcaption></figure>
+
+  <h3>方式1の問題：読むたびに重い</h3>
+  <p>「投稿は5秒以内にフォロワーに見えてほしい」とします。素直にやるなら、アプリが5秒ごとにさっきのSQLを投げます。これを<b>ポーリング</b>と呼びます。</p>
+  <p>同時に1,000万人がオンラインだとして計算します。</p>
+
+  <div class="calc">
+    <div><small>クエリの数</small>1,000万人 ÷ 5秒 ＝ <b>毎秒200万クエリ</b></div>
+    <div><small>1クエリは200人分を調べる</small>200万 × 200人 ＝ <b>毎秒4億ルックアップ</b></div>
+  </div>
+
+  <p>途方もない数です。しかもこれは平均の話です。数万アカウントをフォローしている人のクエリはもっと重く、速くするのも難しくなります。</p>
+
+  <h3>2.1.2 方式2：書くときに配っておく</h3>
+  <p>改善点は2つあります。</p>
+  <ol>
+    <li>ポーリングをやめ、サーバーのほうから新着を<b>プッシュ</b>する。</li>
+    <li>クエリの結果を<b>先に計算してキャッシュ</b>しておく。</li>
+  </ol>
+  <p>ユーザーごとに「できあがったタイムライン」を保存しておきます。誰かが投稿したら、その人のフォロワー全員を調べ、それぞれのタイムラインに投稿を書き込みます。本のたとえでは、郵便受けに手紙を配るのと同じです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 246" role="img" aria-label="ファンアウト。1件の投稿が、フォロワー200人それぞれのタイムラインへの書き込みに増える"><text x="8" y="40" text-anchor="start" class="ts">1件の投稿が</text><text x="8" y="58" text-anchor="start" class="ts c-b">200件の書き込みに</text><rect x="8" y="95" width="96" height="56" rx="8" class="bx bx-a"/><text x="56" y="118.54" text-anchor="middle" class="t tb">投稿</text><text x="56" y="137.54" text-anchor="middle" class="t tb">1件</text><text x="56" y="176" text-anchor="middle" class="ts c-mute">ファンアウト</text><text x="56" y="193" text-anchor="middle" class="ts c-mute">係数 200</text><line x1="104" y1="123" x2="180.8" y2="34.1" class="ln s-b" style="stroke-width:2"/><polygon points="186.0,28.0 183.5,37.8 176.7,31.9" class="fl-b"/><rect x="186" y="10" width="146" height="36" rx="8" class="bx bx-b"/><text x="259" y="32.5" text-anchor="middle" class="ts">フォロワー①のTL</text><line x1="104" y1="123" x2="179.0" y2="81.8" class="ln s-b" style="stroke-width:2"/><polygon points="186.0,78.0 180.3,86.3 175.9,78.4" class="fl-b"/><rect x="186" y="60" width="146" height="36" rx="8" class="bx bx-b"/><text x="259" y="82.5" text-anchor="middle" class="ts">フォロワー②のTL</text><line x1="104" y1="123" x2="178.0" y2="127.5" class="ln s-b" style="stroke-width:2"/><polygon points="186.0,128.0 176.7,131.9 177.3,123.0" class="fl-b"/><rect x="186" y="110" width="146" height="36" rx="8" class="bx bx-b"/><text x="259" y="132.5" text-anchor="middle" class="ts">フォロワー③のTL</text><line x1="104" y1="123" x2="180.8" y2="211.9" class="ln s-b" style="stroke-width:2"/><polygon points="186.0,218.0 176.7,214.1 183.5,208.2" class="fl-b"/><rect x="186" y="200" width="146" height="36" rx="8" class="bx bx-b"/><text x="259" y="222.5" text-anchor="middle" class="ts">フォロワー200のTL</text><text x="259" y="180" text-anchor="middle" class="t c-mute">⋮</text></svg><figcaption>方式2：書くときに配る。TLはタイムラインの略。読む側は、できあがったTLを受け取るだけです。本の図2-2をもとに作図。</figcaption></figure>
+
+  <p>1つのリクエストが下流でいくつものリクエストに増えるとき、その倍率を<b>ファンアウト</b>（fan-out）と呼びます。ここでは200です。</p>
+  <p>配る作業の量を計算します。</p>
+
+  <div class="calc">
+    <div><small>投稿数 × フォロワー数</small>毎秒5,800件 × 200人 ＝ <b>毎秒116万書き込み</b></div>
+  </div>
+
+  <p>多いことは多いです。でも方式1と比べると桁が違います。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 140" role="img" aria-label="方式1は毎秒4億回のルックアップ、方式2は毎秒116万回の書き込み。約345分の1"><text x="8" y="20" text-anchor="start" class="t tb">方式1 読むたびに集める</text><rect x="8" y="30" width="300" height="26" rx="4" class="fl-bad"/><text x="300" y="48" text-anchor="end" class="t tb c-ink">毎秒 4億回</text><text x="8" y="92" text-anchor="start" class="t tb">方式2 書くときに配る</text><rect x="8" y="102" width="1" height="26" rx="0" class="fl-b"/><text x="18" y="120" text-anchor="start" class="t tb c-b">毎秒 116万回</text></svg><figcaption>データベースの仕事量。2本は同じ縮尺です。方式2は方式1の約345分の1なので、細い線にしか見えません。</figcaption></figure>
+
+  <p>投稿が急増したときも強くなります。配る作業はキューに積んでおき、届くのが少し遅れるのを許せばよいからです。読む側はキャッシュから返すだけなので、スパイク中も速いままです。</p>
+
+  <h3>名前がついている：マテリアライゼーション</h3>
+  <p>クエリの結果を先に計算し、元データが変わるたびに更新する。この作業を<b>マテリアライゼーション</b>（materialization）と呼びます。できあがったタイムラインのキャッシュは<b>マテリアライズドビュー</b>（materialized view）の一例です。</p>
+  <p>代わりに払うものもあります。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th></th><th>読むとき</th><th>書くとき</th></tr></thead>
+    <tbody>
+      <tr><th>方式1</th><td>重い（毎回200人分を集める）</td><td>軽い（1行足すだけ）</td></tr>
+      <tr><th>方式2</th><td>軽い（できあがりを渡す）</td><td>重い（フォロワー全員に配る）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>平均で考えると漏れる、極端な2人</h3>
+  <p>ほとんどのユーザーなら、書き込みのコストは控えめです。SNSでは次の2種類の人を別に考える必要があります。</p>
+  <ul>
+    <li><b>ものすごい数をフォローしている人。</b>タイムラインへの書き込みが多くなります。ただ、この人が全部を読んでいる可能性は低いので、書き込みの一部を捨てて、投稿のサンプルだけ見せても問題ありません。</li>
+    <li><b>フォロワーが数百万人いるセレブ。</b>1回の投稿で数百万件の書き込みが発生します。こちらは捨てるわけにいきません。そこでセレブの投稿だけ別に保存し、読むときにタイムラインと合体させます。</li>
+  </ul>
+
+  <figure class="fig"><svg viewBox="0 0 340 348" role="img" aria-label="セレブの投稿は各フォロワーのタイムラインに配らず別に保存し、読み取り時にマージする"><rect x="8" y="10" width="152" height="44" rx="8" class="bx bx-b"/><text x="84" y="37.04" text-anchor="middle" class="t">ふつうの人の投稿</text><rect x="180" y="10" width="152" height="44" rx="8" class="bx bx-a"/><text x="256" y="37.04" text-anchor="middle" class="t">セレブの投稿</text><line x1="84" y1="54" x2="84.0" y2="104.0" class="ln s-b" style="stroke-width:2"/><polygon points="84.0,112.0 79.5,103.0 88.5,103.0" class="fl-b"/><text x="92" y="88" text-anchor="start" class="ts c-b">書くとき</text><text x="92" y="104" text-anchor="start" class="ts c-b">配る</text><line x1="256" y1="54" x2="256.0" y2="104.0" class="ln s-a" style="stroke-width:2"/><polygon points="256.0,112.0 251.5,103.0 260.5,103.0" class="fl-a"/><text x="264" y="88" text-anchor="start" class="ts c-a">配らない</text><rect x="8" y="112" width="152" height="56" rx="8" class="bx bx-b"/><text x="84" y="135.54" text-anchor="middle" class="t">あなたのTL</text><text x="84" y="154" text-anchor="middle" class="ts c-mute">事前計算ずみ</text><rect x="180" y="112" width="152" height="56" rx="8" class="bx bx-a"/><text x="256" y="135.54" text-anchor="middle" class="t">セレブ投稿の</text><text x="256" y="154.54" text-anchor="middle" class="t">置き場</text><line x1="84" y1="168" x2="125.0" y2="219.7" class="ln s-b" style="stroke-width:2"/><polygon points="130.0,226.0 120.9,221.7 127.9,216.2" class="fl-b"/><line x1="256" y1="168" x2="215.0" y2="219.7" class="ln s-a" style="stroke-width:2"/><polygon points="210.0,226.0 212.1,216.2 219.1,221.7" class="fl-a"/><rect x="60" y="226" width="220" height="44" rx="8" class="bx"/><text x="170" y="253.04" text-anchor="middle" class="t tb">読むときにマージする</text><line x1="170" y1="270" x2="170.0" y2="292.0" class="ln s-mute" style="stroke-width:2"/><polygon points="170.0,300.0 165.5,291.0 174.5,291.0" class="fl-mute"/><rect x="60" y="300" width="220" height="40" rx="8" class="bx"/><text x="170" y="325.04" text-anchor="middle" class="t">ホームタイムライン</text></svg><figcaption>セレブ対策。数百万件の書き込みを省き、読むときに合体させます。</figcaption></figure>
+
+  <p>ここまで工夫しても、セレブを扱うには大量のインフラが必要になることがある、と本は書いています。</p>
+
+  <div class="box note"><small>本にない補足</small>
+    <p>タイムラインのキャッシュは、1.1.3節で出てきた<b>導出データ</b>です。元データ（投稿とフォロー関係）から作り直せます。PostgreSQLの <code>MATERIALIZED VIEW</code> と考え方は同じで、違いは更新を自分たちの仕組みでやっている点です。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 2.2 -->
+<section class="sec" id="s22" style="--sec:var(--amber)">
+  <div class="num">2.2</div>
+  <h2>パフォーマンスの表現方法</h2>
+
+  <div class="lede"><small>一言でいうと</small><p>性能は「1件にかかる時間」と「1秒にさばける件数」の2つで語ります。時間のほうは平均ではなく、パーセンタイルで見ます。</p></div>
+
+  <h3>ものさしは2つ</h3>
+  <div class="cards">
+    <div class="card" style="--k:var(--amber)"><h5>レスポンスタイム</h5><small>単位：秒、ミリ秒</small>リクエストを送ってから答えを受け取るまでの時間。</div>
+    <div class="card" style="--k:var(--teal)"><h5>スループット</h5><small>単位：1秒あたり○件</small>1秒あたりに処理しているリクエスト数やデータ量。ハードウェアごとに上限がある。</div>
+  </div>
+
+  <p>ラーメン屋でいうと、レスポンスタイムは「注文してから出てくるまでの時間」、スループットは「1時間に出せる杯数」です（このたとえは本にありません）。</p>
+  <p>タイムラインの例に当てはめると、「1秒あたりの投稿数」や「1秒あたりのタイムライン書き込み数」がスループットです。「タイムラインの読み込みにかかる時間」や「投稿がフォロワーに届くまでの時間」がレスポンスタイムです。</p>
+
+  <h3>2つはつながっている</h3>
+  <p>空いている店はすぐ出てきます。混んでくると待たされます。システムも同じです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 244" role="img" aria-label="スループットが処理能力の上限に近づくと、レスポンスタイムが急激に伸びる曲線"><line x1="44" y1="210" x2="322.0" y2="210.0" class="ln s-mute" style="stroke-width:2"/><polygon points="330.0,210.0 321.0,214.5 321.0,205.5" class="fl-mute"/><line x1="44" y1="210" x2="44.0" y2="30.0" class="ln s-mute" style="stroke-width:2"/><polygon points="44.0,22.0 48.5,31.0 39.5,31.0" class="fl-mute"/><line x1="300" y1="26" x2="300.0" y2="210.0" class="ln s-bad dash" style="stroke-width:2"/><text x="8" y="14" text-anchor="start" class="ts c-mute">レスポンスタイム ↑</text><text x="332" y="14" text-anchor="end" class="ts c-bad">処理能力の上限</text><path d="M44.0,192.0 L49.1,191.6 L54.2,191.2 L59.4,190.9 L64.5,190.4 L69.6,190.0 L74.7,189.5 L79.8,189.1 L85.0,188.6 L90.1,188.0 L95.2,187.5 L100.3,186.9 L105.4,186.3 L110.6,185.7 L115.7,185.0 L120.8,184.3 L125.9,183.5 L131.0,182.7 L136.2,181.9 L141.3,181.0 L146.4,180.0 L151.5,179.0 L156.6,177.9 L161.8,176.7 L166.9,175.4 L172.0,174.0 L177.1,172.5 L182.2,170.9 L187.4,169.1 L192.5,167.1 L197.6,165.0 L202.7,162.6 L207.8,160.0 L213.0,157.1 L218.1,153.7 L223.2,150.0 L228.3,145.7 L233.4,140.8 L238.6,135.0 L243.7,128.2 L248.8,120.0 L253.9,110.0 L259.0,97.5 L264.2,81.4 L269.3,60.0 L274.4,30.0" class="ln s-a" style="stroke-width:3"/><text x="130" y="152" text-anchor="middle" class="ts c-b">空いている間は速い</text><text x="232" y="100" text-anchor="end" class="ts c-a">上限に近づくと</text><text x="232" y="118" text-anchor="end" class="ts c-a">行列ができて急に遅くなる</text><text x="186" y="234" text-anchor="middle" class="ts c-mute">スループット(1秒にさばく数) →</text></svg><figcaption>混み具合と待ち時間の関係（概略）。上限の手前で急に跳ね上がります。本の図2-3をもとに作図。</figcaption></figure>
+
+  <p>原因は<b>キューイング</b>（queueing、順番待ち）です。忙しいシステムにリクエストが着くと、CPUは前のリクエストを処理している最中なので、新しいリクエストは終わるまで待ちます。スループットが上限に近づくと、この待ち時間が急に伸びます。</p>
+
+  <div class="box col"><small>本のコラム</small>
+    <h4>過負荷になったシステムが回復しない場合</h4>
+    <p>上限の近くでは、遅さがさらなる過負荷を呼ぶ悪循環に入ることがあります。</p>
+
+    <figure class="fig"><svg viewBox="0 0 340 226" role="img" aria-label="リトライストームの悪循環。キューが伸び、応答が遅れ、タイムアウトし、再送されて負荷がさらに増える"><rect x="8" y="30" width="140" height="48" rx="8" class="bx bx-bad"/><text x="78" y="59.04" text-anchor="middle" class="t">キューが伸びる</text><rect x="192" y="30" width="140" height="48" rx="8" class="bx bx-bad"/><text x="262" y="59.04" text-anchor="middle" class="t">応答が遅くなる</text><rect x="192" y="164" width="140" height="52" rx="8" class="bx bx-bad"/><text x="262" y="185.54" text-anchor="middle" class="t">クライアントが</text><text x="262" y="204.54" text-anchor="middle" class="t">タイムアウト</text><rect x="8" y="164" width="140" height="52" rx="8" class="bx bx-bad"/><text x="78" y="185.54" text-anchor="middle" class="t">同じリクエストを</text><text x="78" y="204.54" text-anchor="middle" class="t">再送(リトライ)</text><line x1="148" y1="54" x2="184.0" y2="54.0" class="ln s-bad" style="stroke-width:2"/><polygon points="192.0,54.0 183.0,58.5 183.0,49.5" class="fl-bad"/><line x1="262" y1="78" x2="262.0" y2="156.0" class="ln s-bad" style="stroke-width:2"/><polygon points="262.0,164.0 257.5,155.0 266.5,155.0" class="fl-bad"/><line x1="192" y1="190" x2="156.0" y2="190.0" class="ln s-bad" style="stroke-width:2"/><polygon points="148.0,190.0 157.0,185.5 157.0,194.5" class="fl-bad"/><line x1="78" y1="164" x2="78.0" y2="86.0" class="ln s-bad" style="stroke-width:2"/><polygon points="78.0,78.0 82.5,87.0 73.5,87.0" class="fl-bad"/><text x="170" y="118" text-anchor="middle" class="t tb c-bad">負荷がさらに増える</text><text x="170" y="138" text-anchor="middle" class="ts c-mute">悪循環</text></svg><figcaption>リトライストーム。遅いから再送し、再送するからもっと遅くなります。</figcaption></figure>
+
+    <p>これが<b>リトライストーム</b>です。やっかいなのは、元の負荷が下がっても過負荷のまま戻らない場合があることです。再起動などでリセットしないと直りません。この現象を<b>準安定障害</b>（metastable failure）と呼びます。</p>
+    <p>対策はクライアント側とサーバー側の両方にあります。</p>
+
+    <div class="tw"><table>
+      <thead><tr><th>どこで</th><th>手法</th><th>やること</th></tr></thead>
+      <tbody>
+        <tr><th rowspan="2">クライアント</th><td>指数バックオフ</td><td>リトライの間隔をだんだん長くし、ランダムにばらす</td></tr>
+        <tr><td>サーキットブレーカー、トークンバケット</td><td>最近エラーやタイムアウトを返した相手には、しばらく送らない</td></tr>
+        <tr><th rowspan="2">サーバー</th><td>負荷の削減（load shedding）</td><td>限界が近いと気づいたら、先回りして断る</td></tr>
+        <tr><td>バックプレッシャー</td><td>「速度を落として」とクライアントに返す</td></tr>
+      </tbody>
+    </table></div>
+    <p>キューイングや負荷分散のアルゴリズムの選び方でも変わる、と本は付け加えています。</p>
+  </div>
+
+  <p>2つのものさしは見る人が違います。ユーザーが気にするのはレスポンスタイムです。スループットは必要なサーバーの台数、つまりコストを決めます。</p>
+  <p>スループットが今のハードウェアの限界を超えそうなら、能力を足す必要があります。コンピューティングリソースを足すことで最大スループットを大きく上げられるシステムを、<b>スケーラブル</b>と言います。こちらは2.4節で扱います。</p>
+
+  <h3>2.2.1 レイテンシとレスポンスタイム</h3>
+  <p>この2つは同じ意味で使われがちですが、本は使い分けます。1つのリクエストを時間の流れで見ると区別がつきます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 334" role="img" aria-label="レスポンスタイムの内訳。行きの通信、キュー待ち、サービスタイム、送信待ち、帰りの通信"><line x1="24" y1="34" x2="322.0" y2="34.0" class="ln s-a" style="stroke-width:2"/><line x1="24" y1="28" x2="24.0" y2="74.0" class="ln s-a dash" style="stroke-width:2"/><line x1="322" y1="28" x2="322.0" y2="74.0" class="ln s-a dash" style="stroke-width:2"/><text x="173" y="22" text-anchor="middle" class="t tb c-a">レスポンスタイム(待つ時間ぜんぶ)</text><text x="40" y="62" text-anchor="start" class="ts c-mute">クライアント</text><line x1="8" y1="74" x2="332.0" y2="74.0" class="ln s-mute" style="stroke-width:2"/><line x1="8" y1="180" x2="332.0" y2="180.0" class="ln s-mute" style="stroke-width:2"/><text x="8" y="204" text-anchor="start" class="ts c-mute">サーバー</text><line x1="24" y1="74" x2="80.1" y2="173.0" class="ln s-text" style="stroke-width:2"/><polygon points="84.0,180.0 75.7,174.4 83.5,170.0" class="fl-text"/><line x1="262" y1="180" x2="318.1" y2="81.0" class="ln s-text" style="stroke-width:2"/><polygon points="322.0,74.0 321.5,84.0 313.7,79.6" class="fl-text"/><line x1="84" y1="180" x2="140.0" y2="180.0" class="ln s-mute dash" style="stroke-width:7"/><line x1="140" y1="180" x2="236.0" y2="180.0" class="ln s-b" style="stroke-width:8"/><line x1="236" y1="180" x2="262.0" y2="180.0" class="ln s-mute dash" style="stroke-width:7"/><text x="112" y="204" text-anchor="middle" class="ts c-mute">キュー待ち</text><text x="188" y="166" text-anchor="middle" class="ts tb c-b">サービスタイム</text><text x="254" y="204" text-anchor="middle" class="ts c-mute">送信待ち</text><text x="66" y="122" text-anchor="start" class="ts">行きの通信</text><text x="280" y="122" text-anchor="end" class="ts">帰りの通信</text><rect x="24" y="244" width="60" height="30" rx="0" class="fl-lat" stroke="#0f1420" stroke-width="1.5"/><text x="54" y="264" text-anchor="middle" class="ts tb">通信</text><rect x="84" y="244" width="56" height="30" rx="0" class="fl-lat" stroke="#0f1420" stroke-width="1.5"/><text x="112" y="264" text-anchor="middle" class="ts tb">待ち</text><rect x="140" y="244" width="96" height="30" rx="0" class="fl-b" stroke="#0f1420" stroke-width="1.5"/><text x="188" y="264" text-anchor="middle" class="ts tb c-ink">処理</text><rect x="236" y="244" width="26" height="30" rx="0" class="fl-lat" stroke="#0f1420" stroke-width="1.5"/><rect x="262" y="244" width="60" height="30" rx="0" class="fl-lat" stroke="#0f1420" stroke-width="1.5"/><text x="292" y="264" text-anchor="middle" class="ts tb">通信</text><rect x="24" y="292" width="12" height="12" rx="2" class="fl-lat"/><text x="42" y="303" text-anchor="start" class="ts">レイテンシ：処理されず待っている時間</text><rect x="24" y="312" width="12" height="12" rx="2" class="fl-b"/><text x="42" y="323" text-anchor="start" class="ts">サービスタイム：実際に処理している時間</text></svg><figcaption>時間は左から右へ流れます。斜めの矢印がネットワークを渡るメッセージです。本の図2-4をもとに作図。</figcaption></figure>
+
+  <dl class="term">
+    <dt>レスポンスタイム</dt><dd>クライアントから見た時間。途中のすべての遅れを含みます。</dd>
+    <dt>サービスタイム</dt><dd>サービスがそのリクエストを実際に処理している時間。</dd>
+    <dt>キューイング遅延</dt><dd>順番待ちの時間。CPUが空くのを待つ場合や、返事のパケットが送信待ちになる場合など、流れの中の何か所かで起きます。</dd>
+    <dt>レイテンシ<span>latency</span></dt><dd>リクエストが処理されずに待っている時間をまとめて指す言葉。ネットワークを渡っている時間は、ネットワークレイテンシやネットワーク遅延と呼びます。</dd>
+  </dl>
+
+  <p>同じリクエストを繰り返しても、レスポンスタイムは毎回変わります。本が挙げる理由は次のとおりです。</p>
+  <ul>
+    <li>バックグラウンドプロセスへのコンテキストスイッチ</li>
+    <li>パケットの損失とTCPの再送</li>
+    <li>ガベージコレクション（GC）の一時停止</li>
+    <li>ディスクから読むことになるページフォールト</li>
+    <li>サーバーラックの物理的な振動</li>
+  </ul>
+
+  <h3>ばらつきの主犯は順番待ち</h3>
+  <p>サーバーが同時に処理できる数には限りがあります（たとえばCPUのコア数）。そのため、遅いリクエストが少しあるだけで後ろが詰まります。これを<b>先頭ブロッキング</b>（head-of-line blocking）と呼びます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 190" role="img" aria-label="先頭ブロッキング。重い処理1件のせいで、10ミリ秒で終わるはずの後続3件が約3秒待たされる"><text x="8" y="20" text-anchor="start" class="ts c-mute">順番待ち</text><text x="252" y="20" text-anchor="middle" class="ts c-mute">CPUは1個</text><rect x="8" y="34" width="42" height="42" rx="8" class="bx bx-b"/><text x="29" y="59.5" text-anchor="middle" class="ts">10ms</text><rect x="58" y="34" width="42" height="42" rx="8" class="bx bx-b"/><text x="79" y="59.5" text-anchor="middle" class="ts">10ms</text><rect x="108" y="34" width="42" height="42" rx="8" class="bx bx-b"/><text x="129" y="59.5" text-anchor="middle" class="ts">10ms</text><line x1="154" y1="55" x2="164.0" y2="55.0" class="ln s-mute" style="stroke-width:2"/><polygon points="172.0,55.0 163.0,59.5 163.0,50.5" class="fl-mute"/><rect x="174" y="28" width="158" height="54" rx="8" class="bx"/><rect x="182" y="34" width="142" height="42" rx="8" class="bx bx-bad"/><text x="253" y="60.04" text-anchor="middle" class="t tb">重い処理 3秒</text><text x="170" y="108" text-anchor="middle" class="ts c-mute">後ろの「10ms」のレスポンスタイムは？</text><rect x="8" y="120" width="156" height="60" rx="8" class="bx bx-b"/><text x="86" y="144" text-anchor="middle" class="ts">サーバーで測る</text><text x="86" y="166.26" text-anchor="middle" class="tl tb c-b">10ms</text><rect x="176" y="120" width="156" height="60" rx="8" class="bx bx-bad"/><text x="254" y="144" text-anchor="middle" class="ts">クライアントで測る</text><text x="254" y="166.26" text-anchor="middle" class="tl tb c-bad">約3秒</text></svg><figcaption>先頭ブロッキング。先頭の1件が重いと、後ろは自分の処理が一瞬でも待たされます。</figcaption></figure>
+
+  <p>順番待ちの時間はサービスタイムに入りません。サーバー側の数字だけ見ていると「全部10msで速い」と勘違いします。だから本は、レスポンスタイムを<b>クライアント側で測る</b>ことが重要だと言います。</p>
+
+  <h3>2.2.2 平均値、中央値、パーセンタイル</h3>
+  <p>レスポンスタイムは毎回違うので、1つの数字ではなく<b>分布</b>として見ます。100件のリクエストを並べてみます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 226" role="img" aria-label="100件のリクエストのレスポンスタイム。平均227ミリ秒、中央値180ミリ秒、95パーセンタイル700ミリ秒、99パーセンタイル1450ミリ秒"><line x1="46" y1="170" x2="336" y2="170" class="grid"/><text x="40" y="174" text-anchor="end" class="ts c-mute">0</text><line x1="46" y1="120" x2="336" y2="120" class="grid"/><text x="40" y="124" text-anchor="end" class="ts c-mute">500</text><line x1="46" y1="70" x2="336" y2="70" class="grid"/><text x="40" y="74" text-anchor="end" class="ts c-mute">1,000</text><line x1="46" y1="20" x2="336" y2="20" class="grid"/><text x="40" y="24" text-anchor="end" class="ts c-mute">1,500</text><text x="8" y="12" text-anchor="start" class="ts c-mute">ms</text><rect x="46.0" y="153.0" width="2" height="17.0" class="fl-bar"/><rect x="48.9" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="51.8" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="54.6" y="157.0" width="2" height="13.0" class="fl-bar"/><rect x="57.5" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="60.4" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="63.3" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="66.2" y="108.0" width="2" height="62.0" class="fl-bar"/><rect x="69.0" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="71.9" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="74.8" y="158.0" width="2" height="12.0" class="fl-bar"/><rect x="77.7" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="80.6" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="83.4" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="86.3" y="153.0" width="2" height="17.0" class="fl-bar"/><rect x="89.2" y="139.0" width="2" height="31.0" class="fl-bar"/><rect x="92.1" y="154.0" width="2" height="16.0" class="fl-bar"/><rect x="95.0" y="154.0" width="2" height="16.0" class="fl-bar"/><rect x="97.8" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="100.7" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="103.6" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="106.5" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="109.4" y="160.0" width="2" height="10.0" class="fl-bar"/><rect x="112.2" y="25.0" width="2" height="145.0" class="fl-bar"/><rect x="115.1" y="157.0" width="2" height="13.0" class="fl-bar"/><rect x="118.0" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="120.9" y="149.0" width="2" height="21.0" class="fl-bar"/><rect x="123.8" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="126.6" y="160.0" width="2" height="10.0" class="fl-bar"/><rect x="129.5" y="159.0" width="2" height="11.0" class="fl-bar"/><rect x="132.4" y="157.0" width="2" height="13.0" class="fl-bar"/><rect x="135.3" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="138.2" y="162.0" width="2" height="8.0" class="fl-bar"/><rect x="141.0" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="143.9" y="141.0" width="2" height="29.0" class="fl-bar"/><rect x="146.8" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="149.7" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="152.6" y="154.0" width="2" height="16.0" class="fl-bar"/><rect x="155.4" y="159.0" width="2" height="11.0" class="fl-bar"/><rect x="158.3" y="157.0" width="2" height="13.0" class="fl-bar"/><rect x="161.2" y="154.0" width="2" height="16.0" class="fl-bar"/><rect x="164.1" y="116.0" width="2" height="54.0" class="fl-bar"/><rect x="167.0" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="169.8" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="172.7" y="154.0" width="2" height="16.0" class="fl-bar"/><rect x="175.6" y="141.0" width="2" height="29.0" class="fl-bar"/><rect x="178.5" y="153.0" width="2" height="17.0" class="fl-bar"/><rect x="181.4" y="158.0" width="2" height="12.0" class="fl-bar"/><rect x="184.2" y="161.0" width="2" height="9.0" class="fl-bar"/><rect x="187.1" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="190.0" y="160.0" width="2" height="10.0" class="fl-bar"/><rect x="192.9" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="195.8" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="198.6" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="201.5" y="147.0" width="2" height="23.0" class="fl-bar"/><rect x="204.4" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="207.3" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="210.2" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="213.0" y="82.0" width="2" height="88.0" class="fl-bar"/><rect x="215.9" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="218.8" y="153.0" width="2" height="17.0" class="fl-bar"/><rect x="221.7" y="159.0" width="2" height="11.0" class="fl-bar"/><rect x="224.6" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="227.4" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="230.3" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="233.2" y="143.0" width="2" height="27.0" class="fl-bar"/><rect x="236.1" y="100.0" width="2" height="70.0" class="fl-bar"/><rect x="239.0" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="241.8" y="160.0" width="2" height="10.0" class="fl-bar"/><rect x="244.7" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="247.6" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="250.5" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="253.4" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="256.2" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="259.1" y="134.0" width="2" height="36.0" class="fl-bar"/><rect x="262.0" y="157.0" width="2" height="13.0" class="fl-bar"/><rect x="264.9" y="155.0" width="2" height="15.0" class="fl-bar"/><rect x="267.8" y="138.0" width="2" height="32.0" class="fl-bar"/><rect x="270.6" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="273.5" y="58.0" width="2" height="112.0" class="fl-bar"/><rect x="276.4" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="279.3" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="282.2" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="285.0" y="157.0" width="2" height="13.0" class="fl-bar"/><rect x="287.9" y="154.0" width="2" height="16.0" class="fl-bar"/><rect x="290.8" y="153.0" width="2" height="17.0" class="fl-bar"/><rect x="293.7" y="156.0" width="2" height="14.0" class="fl-bar"/><rect x="296.6" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="299.4" y="160.0" width="2" height="10.0" class="fl-bar"/><rect x="302.3" y="143.0" width="2" height="27.0" class="fl-bar"/><rect x="305.2" y="94.0" width="2" height="76.0" class="fl-bar"/><rect x="308.1" y="158.0" width="2" height="12.0" class="fl-bar"/><rect x="311.0" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="313.8" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="316.7" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="319.6" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="322.5" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="325.4" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="328.2" y="158.0" width="2" height="12.0" class="fl-bar"/><rect x="331.1" y="150.0" width="2" height="20.0" class="fl-bar"/><line x1="46" y1="25" x2="336.0" y2="25.0" class="ln s-bad" style="stroke-width:1.5"/><line x1="46" y1="100" x2="336.0" y2="100.0" class="ln s-a" style="stroke-width:1.5"/><line x1="46" y1="147.3" x2="336.0" y2="147.3" class="ln s-text dash" style="stroke-width:1.5"/><line x1="46" y1="152" x2="336.0" y2="152.0" class="ln s-b" style="stroke-width:1.5"/><line x1="46" y1="192" x2="64.0" y2="192.0" class="ln s-text dash" style="stroke-width:2"/><text x="72" y="196" text-anchor="start" class="ts">平均 227ms</text><line x1="196" y1="192" x2="214.0" y2="192.0" class="ln s-b" style="stroke-width:2"/><text x="222" y="196" text-anchor="start" class="ts">p50 180ms</text><line x1="46" y1="212" x2="64.0" y2="212.0" class="ln s-a" style="stroke-width:2"/><text x="72" y="216" text-anchor="start" class="ts">p95 700ms</text><line x1="196" y1="212" x2="214.0" y2="212.0" class="ln s-bad" style="stroke-width:2"/><text x="222" y="216" text-anchor="start" class="ts">p99 1,450ms</text></svg><figcaption>100件のリクエストを届いた順に並べた例。棒の高さがかかった時間です。数値はこのページ用に作った例。本の図2-5をもとに作図。</figcaption></figure>
+
+  <p>ほとんどは速く、たまに飛び抜けて遅いものがあります。これを<b>外れ値</b>（outlier）と呼びます。ネットワーク遅延のばらつきは<b>ジッター</b>（jitter）とも呼びます。</p>
+
+  <h4>平均が向いていない理由</h4>
+  <p>平均値は、スループットの限界を見積もるのには役立ちます。でも「ふつうどのくらい待つのか」を知るには向いていません。その遅さを実際に体験した人が何人いたのか、平均からは分からないからです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 190" role="img" aria-label="10件中9件が100ミリ秒、1件が5000ミリ秒。平均は590ミリ秒だが、その時間を体験した人はいない"><line x1="20" y1="160" x2="332.0" y2="160.0" class="ln s-mute" style="stroke-width:2"/><rect x="30" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="60" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="90" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="120" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="150" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="180" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="210" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="240" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="270" y="157" width="20" height="3" rx="2" class="fl-b"/><rect x="300" y="30" width="20" height="130" rx="2" class="fl-bad"/><line x1="20" y1="144.66" x2="296.0" y2="144.7" class="ln s-a dash" style="stroke-width:1.5"/><text x="310" y="22" text-anchor="middle" class="ts tb c-bad">5,000ms</text><text x="8" y="60" text-anchor="start" class="ts c-b">中央値 100ms：ふつうの体験</text><text x="8" y="82" text-anchor="start" class="ts c-a">平均 590ms：誰も体験していない</text><text x="150" y="180" text-anchor="middle" class="ts c-b">100ms が9件</text></svg><figcaption>平均の落とし穴。点線が平均です。10件のどれとも違う値になっています。</figcaption></figure>
+
+  <h4>パーセンタイルは「速い順に並べて何番目か」</h4>
+  <p>さっきの100件を、速い順に並べ替えます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 216" role="img" aria-label="同じ100件を速い順に並べ替えた図。50番目の境目がp50、95番目の境目がp95、いちばん遅い1件がp99"><line x1="46" y1="170" x2="336" y2="170" class="grid"/><text x="40" y="174" text-anchor="end" class="ts c-mute">0</text><line x1="46" y1="120" x2="336" y2="120" class="grid"/><text x="40" y="124" text-anchor="end" class="ts c-mute">500</text><line x1="46" y1="70" x2="336" y2="70" class="grid"/><text x="40" y="74" text-anchor="end" class="ts c-mute">1,000</text><line x1="46" y1="20" x2="336" y2="20" class="grid"/><text x="40" y="24" text-anchor="end" class="ts c-mute">1,500</text><text x="8" y="12" text-anchor="start" class="ts c-mute">ms</text><rect x="46.0" y="162.0" width="2" height="8.0" class="fl-b"/><rect x="48.9" y="161.0" width="2" height="9.0" class="fl-b"/><rect x="51.8" y="160.0" width="2" height="10.0" class="fl-b"/><rect x="54.6" y="160.0" width="2" height="10.0" class="fl-b"/><rect x="57.5" y="160.0" width="2" height="10.0" class="fl-b"/><rect x="60.4" y="160.0" width="2" height="10.0" class="fl-b"/><rect x="63.3" y="160.0" width="2" height="10.0" class="fl-b"/><rect x="66.2" y="159.0" width="2" height="11.0" class="fl-b"/><rect x="69.0" y="159.0" width="2" height="11.0" class="fl-b"/><rect x="71.9" y="159.0" width="2" height="11.0" class="fl-b"/><rect x="74.8" y="158.0" width="2" height="12.0" class="fl-b"/><rect x="77.7" y="158.0" width="2" height="12.0" class="fl-b"/><rect x="80.6" y="158.0" width="2" height="12.0" class="fl-b"/><rect x="83.4" y="158.0" width="2" height="12.0" class="fl-b"/><rect x="86.3" y="157.0" width="2" height="13.0" class="fl-b"/><rect x="89.2" y="157.0" width="2" height="13.0" class="fl-b"/><rect x="92.1" y="157.0" width="2" height="13.0" class="fl-b"/><rect x="95.0" y="157.0" width="2" height="13.0" class="fl-b"/><rect x="97.8" y="157.0" width="2" height="13.0" class="fl-b"/><rect x="100.7" y="157.0" width="2" height="13.0" class="fl-b"/><rect x="103.6" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="106.5" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="109.4" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="112.2" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="115.1" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="118.0" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="120.9" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="123.8" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="126.6" y="156.0" width="2" height="14.0" class="fl-b"/><rect x="129.5" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="132.4" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="135.3" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="138.2" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="141.0" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="143.9" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="146.8" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="149.7" y="155.0" width="2" height="15.0" class="fl-b"/><rect x="152.6" y="154.0" width="2" height="16.0" class="fl-b"/><rect x="155.4" y="154.0" width="2" height="16.0" class="fl-b"/><rect x="158.3" y="154.0" width="2" height="16.0" class="fl-b"/><rect x="161.2" y="154.0" width="2" height="16.0" class="fl-b"/><rect x="164.1" y="154.0" width="2" height="16.0" class="fl-b"/><rect x="167.0" y="154.0" width="2" height="16.0" class="fl-b"/><rect x="169.8" y="153.0" width="2" height="17.0" class="fl-b"/><rect x="172.7" y="153.0" width="2" height="17.0" class="fl-b"/><rect x="175.6" y="153.0" width="2" height="17.0" class="fl-b"/><rect x="178.5" y="153.0" width="2" height="17.0" class="fl-b"/><rect x="181.4" y="153.0" width="2" height="17.0" class="fl-b"/><rect x="184.2" y="152.0" width="2" height="18.0" class="fl-b"/><rect x="187.1" y="152.0" width="2" height="18.0" class="fl-b"/><rect x="190.0" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="192.9" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="195.8" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="198.6" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="201.5" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="204.4" y="152.0" width="2" height="18.0" class="fl-bar"/><rect x="207.3" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="210.2" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="213.0" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="215.9" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="218.8" y="151.0" width="2" height="19.0" class="fl-bar"/><rect x="221.7" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="224.6" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="227.4" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="230.3" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="233.2" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="236.1" y="150.0" width="2" height="20.0" class="fl-bar"/><rect x="239.0" y="149.0" width="2" height="21.0" class="fl-bar"/><rect x="241.8" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="244.7" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="247.6" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="250.5" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="253.4" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="256.2" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="259.1" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="262.0" y="148.0" width="2" height="22.0" class="fl-bar"/><rect x="264.9" y="147.0" width="2" height="23.0" class="fl-bar"/><rect x="267.8" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="270.6" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="273.5" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="276.4" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="279.3" y="146.0" width="2" height="24.0" class="fl-bar"/><rect x="282.2" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="285.0" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="287.9" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="290.8" y="144.0" width="2" height="26.0" class="fl-bar"/><rect x="293.7" y="143.0" width="2" height="27.0" class="fl-bar"/><rect x="296.6" y="143.0" width="2" height="27.0" class="fl-bar"/><rect x="299.4" y="141.0" width="2" height="29.0" class="fl-bar"/><rect x="302.3" y="141.0" width="2" height="29.0" class="fl-bar"/><rect x="305.2" y="139.0" width="2" height="31.0" class="fl-bar"/><rect x="308.1" y="138.0" width="2" height="32.0" class="fl-bar"/><rect x="311.0" y="134.0" width="2" height="36.0" class="fl-bar"/><rect x="313.8" y="116.0" width="2" height="54.0" class="fl-bar"/><rect x="316.7" y="108.0" width="2" height="62.0" class="fl-bar"/><rect x="319.6" y="100.0" width="2" height="70.0" class="fl-a"/><rect x="322.5" y="94.0" width="2" height="76.0" class="fl-a"/><rect x="325.4" y="82.0" width="2" height="88.0" class="fl-a"/><rect x="328.2" y="58.0" width="2" height="112.0" class="fl-a"/><rect x="331.1" y="25.0" width="2" height="145.0" class="fl-bad"/><line x1="189.5" y1="24" x2="189.5" y2="170.0" class="ln s-b dash" style="stroke-width:1.5"/><line x1="319.1" y1="40" x2="319.1" y2="170.0" class="ln s-a dash" style="stroke-width:1.5"/><text x="194.5" y="34" text-anchor="start" class="ts tb c-b">p50 = 180ms</text><text x="314.1" y="50" text-anchor="end" class="ts tb c-a">p95 = 700ms</text><text x="336" y="14" text-anchor="end" class="ts tb c-bad">p99 = 1,450ms</text><text x="118" y="190" text-anchor="middle" class="ts c-b">速い50件</text><text x="253.36" y="190" text-anchor="middle" class="ts c-mute">遅い50件</text><text x="336" y="208" text-anchor="end" class="ts c-a">右端の5件がp95以上</text></svg><figcaption>同じ100件を速い順に並べ替えたもの。パーセンタイルは「この並びの何番目か」を読むだけです。</figcaption></figure>
+
+  <p>真ん中の値が<b>中央値</b>（median）です。50パーセンタイル、略して<b>p50</b>とも呼びます。この例では180msで、半分のリクエストはこれより速く、残り半分はこれ以上かかっています。ユーザーがふつうどのくらい待つかを知るのに向いた数字です。</p>
+  <p>外れ値がどれだけひどいかは、もっと上のパーセンタイルで見ます。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>呼び名</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><th>p50（中央値）</th><td>半分はこれより速い</td></tr>
+      <tr><th>p95</th><td>100件中95件はこれより速い。5件はこれ以上</td></tr>
+      <tr><th>p99</th><td>100件中99件はこれより速い</td></tr>
+      <tr><th>p999</th><td>99.9パーセンタイル。1,000件中999件はこれより速い</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>この例だと、平均は227ms、p95は700ms、p99は1,450msです。平均だけ見ていたら、1秒以上待たされた人がいることに気づけません。</p>
+
+  <h4>しっぽが大事：末尾遅延</h4>
+  <p>高いパーセンタイルのレスポンスタイムを<b>末尾遅延</b>（tail latency）と呼びます。分布のしっぽの部分だからです。</p>
+  <p>本はAmazonの例を出します。Amazonは社内サービスの要件をp999で決めています。1,000件に1件しか関係しない数字です。それでも重視するのは、いちばん遅いリクエストを出すのが、アカウントのデータがいちばん多い人、つまりたくさん買ってきた<b>いちばん大事な客</b>であることが多いからです。</p>
+  <p>ただし上を見ればきりがありません。Amazonは、99.99パーセンタイル（10,000件に1件）の最適化はコストが高すぎて効果が見合わないと判断しました。非常に高いパーセンタイルは、制御できない偶然の出来事に左右されやすく、改善の効果もだんだん小さくなります。</p>
+
+  <div class="box col"><small>本のコラム</small>
+    <h4>レスポンスタイムのユーザーへの影響</h4>
+    <p>速いほうがいいのは当たり前に思えます。でも「どれだけ遅いと、どれだけ困るのか」を示す信頼できるデータは、意外なほど少ないそうです。</p>
+
+    <div class="tw"><table>
+      <thead><tr><th>誰が</th><th>報告</th><th>本の評価</th></tr></thead>
+      <tbody>
+        <tr><th>Google 2006年</th><td>400ms→900msで、トラフィックと収益が20%減</td><td rowspan="2">同じ会社なのに結果が大きく違う</td></tr>
+        <tr><th>Google 2009年</th><td>400ms遅くして、検索数は0.6%減</td></tr>
+        <tr><th>Bing 2009年</th><td>2秒遅くして、広告収入が4.3%減</td><td>その後の新しいデータは出ていない</td></tr>
+        <tr><th>Akamai</th><td>100ms遅いと、ECのコンバージョン率が最大7%低下</td><td>速すぎるページも成績が悪い。中身のないページ（404など）が速いだけで、中身の影響を切り分けていない</td></tr>
+        <tr><th>Yahoo</th><td>差が1.25秒以上あると、速いほうのクリックが20〜30%多い</td><td>検索結果の品質を揃えて比べている</td></tr>
+      </tbody>
+    </table></div>
+    <p>「100ms遅いと売上が何%落ちる」という数字を見かけたら、条件を揃えた調査かどうかを疑う、というのがこのコラムの教訓です。</p>
+  </div>
+
+  <h3>2.2.3 レスポンスタイムメトリクスの活用</h3>
+  <h4>しっぽは増幅する</h4>
+  <p>1つのユーザーリクエストをさばくために、裏でバックエンドを何回も呼ぶことがあります。並列に呼んでも、いちばん遅い呼び出しが終わるまで全体は終わりません。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 228" role="img" aria-label="1つのユーザーリクエストが5つのバックエンド呼び出しを並列に行う。4つは速いが1つが遅く、全体がその1つを待つ"><text x="8" y="18" text-anchor="start" class="ts tb">ユーザーの1リクエスト</text><rect x="8" y="26" width="304" height="18" rx="3" class="fl-a"/><text x="8" y="75" text-anchor="start" class="ts c-mute">呼び出し1</text><rect x="78" y="62" width="52" height="18" rx="3" class="fl-b"/><text x="8" y="103" text-anchor="start" class="ts c-mute">呼び出し2</text><rect x="78" y="90" width="40" height="18" rx="3" class="fl-b"/><text x="8" y="131" text-anchor="start" class="ts c-mute">呼び出し3</text><rect x="78" y="118" width="64" height="18" rx="3" class="fl-b"/><text x="8" y="159" text-anchor="start" class="ts c-mute">呼び出し4</text><rect x="78" y="146" width="46" height="18" rx="3" class="fl-b"/><text x="8" y="187" text-anchor="start" class="ts c-mute">呼び出し5</text><rect x="78" y="174" width="234" height="18" rx="3" class="fl-bad"/><text x="195" y="187" text-anchor="middle" class="ts tb c-ink">これだけ遅い</text><line x1="312" y1="26" x2="312.0" y2="200.0" class="ln s-bad dash" style="stroke-width:1.5"/><text x="312" y="218" text-anchor="end" class="ts c-bad">全体はいちばん遅い1本を待つ</text></svg><figcaption>並列に呼んでも、全部そろうまで返せません。1本遅いだけで全体が遅くなります。本の図2-6をもとに作図。</figcaption></figure>
+
+  <p>遅い呼び出しがごく一部でも、呼ぶ回数が多いと、どれかに当たる確率が上がります。その結果、遅くなるユーザーリクエストの割合が増えます。これを<b>末尾遅延の増幅</b>（tail latency amplification）と呼びます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 172" role="img" aria-label="遅い呼び出しに1回以上当たる確率。1回なら1パーセント、10回で9.6、50回で39.5、100回で63.4パーセント"><text x="8" y="16" text-anchor="start" class="ts c-mute">1%の確率で遅い呼び出しを、何回するか</text><text x="8" y="44" text-anchor="start" class="ts">1回</text><rect x="64" y="30" width="200" height="20" rx="3" class="fl-lat"/><rect x="64" y="30" width="2" height="20" rx="3" class="fl-bad"/><text x="272" y="45" text-anchor="start" class="ts tb c-bad">1.0%</text><text x="8" y="74" text-anchor="start" class="ts">10回</text><rect x="64" y="60" width="200" height="20" rx="3" class="fl-lat"/><rect x="64" y="60" width="19.1236" height="20" rx="3" class="fl-bad"/><text x="272" y="75" text-anchor="start" class="ts tb c-bad">9.6%</text><text x="8" y="104" text-anchor="start" class="ts">50回</text><rect x="64" y="90" width="200" height="20" rx="3" class="fl-lat"/><rect x="64" y="90" width="78.9988" height="20" rx="3" class="fl-bad"/><text x="272" y="105" text-anchor="start" class="ts tb c-bad">39.5%</text><text x="8" y="134" text-anchor="start" class="ts">100回</text><rect x="64" y="120" width="200" height="20" rx="3" class="fl-lat"/><rect x="64" y="120" width="126.794" height="20" rx="3" class="fl-bad"/><text x="272" y="135" text-anchor="start" class="ts tb c-bad">63.4%</text><text x="64" y="164" text-anchor="start" class="ts c-mute">0%</text><text x="264" y="164" text-anchor="end" class="ts c-mute">100%</text></svg><figcaption>遅い呼び出しに1回以上当たる確率（1 − 0.99<sup>n</sup>）。本にない計算例です。</figcaption></figure>
+
+  <p>バックエンドのp99が「100回に1回だけ遅い」でも、100回呼ぶ画面なら6割以上が遅くなる計算です。何度も呼ばれるサービスほど、高いパーセンタイルが大事になります。</p>
+
+  <h4>SLOとSLA</h4>
+  <p>パーセンタイルは、サービスの約束ごとを書くのによく使われます。</p>
+  <div class="cards">
+    <div class="card" style="--k:var(--amber)"><h5>SLO</h5><small>Service Level Objective</small>サービスレベル目標。<br>例：中央値が200ms未満、p99が1秒未満、有効なリクエストの99.9%以上がエラーなし。</div>
+    <div class="card" style="--k:var(--bad)"><h5>SLA</h5><small>Service Level Agreement</small>サービスレベル合意。<br>SLOを守れなかったらどうなるかを決めた契約。例：顧客が返金を受けられる。</div>
+  </div>
+  <p>これが基本です。ただ本は、実際に適切な可用性の指標を決めるのは簡単ではない、とも書いています。</p>
+
+  <div class="box col"><small>本のコラム</small>
+    <h4>パーセンタイルの計算</h4>
+    <p>監視ダッシュボードにp99を出すには、計算し続ける必要があります。たとえば直近10分間のレスポンスタイムを持っておき、1分ごとに計算してグラフに描きます。</p>
+    <p>いちばん単純なのは、全部の値を持っておいて毎分ソートする方法です。重すぎる場合は、少ないCPUとメモリで近似値を出すライブラリがあります。本が挙げるのは HdrHistogram、t-digest、OpenHistogram、DDSketch です。</p>
+    <p>注意点が1つあります。<b>パーセンタイルを平均してはいけません。</b>複数マシンの値をまとめるときや、時間の粒度を粗くするときにやりがちですが、数学的に意味がありません。</p>
+
+    <figure class="fig"><svg viewBox="0 0 340 240" role="img" aria-label="パーセンタイルを平均すると実在しない550ミリ秒が出る。ヒストグラムを合算して計算すれば正しい1000ミリ秒になる"><rect x="8" y="10" width="156" height="74" rx="8" class="bx bx-b"/><text x="86" y="33.04" text-anchor="middle" class="t tb">マシンA</text><text x="86" y="51.5" text-anchor="middle" class="ts">900件 ぜんぶ100ms</text><text x="86" y="70.5" text-anchor="middle" class="ts c-b">p99 = 100ms</text><rect x="176" y="10" width="156" height="74" rx="8" class="bx bx-a"/><text x="254" y="33.04" text-anchor="middle" class="t tb">マシンB</text><text x="254" y="51.5" text-anchor="middle" class="ts">100件 ぜんぶ1,000ms</text><text x="254" y="70.5" text-anchor="middle" class="ts c-a">p99 = 1,000ms</text><line x1="86" y1="84" x2="86.0" y2="104.0" class="ln s-mute" style="stroke-width:2"/><line x1="254" y1="84" x2="254.0" y2="104.0" class="ln s-mute" style="stroke-width:2"/><line x1="86" y1="104" x2="254.0" y2="104.0" class="ln s-mute" style="stroke-width:2"/><line x1="86" y1="104" x2="86.0" y2="124.0" class="ln s-bad" style="stroke-width:2"/><polygon points="86.0,132.0 81.5,123.0 90.5,123.0" class="fl-bad"/><line x1="254" y1="104" x2="254.0" y2="124.0" class="ln s-b" style="stroke-width:2"/><polygon points="254.0,132.0 249.5,123.0 258.5,123.0" class="fl-b"/><rect x="8" y="132" width="156" height="78" rx="8" class="bx bx-bad"/><text x="86" y="156.5" text-anchor="middle" class="ts tb">p99どうしを平均</text><text x="86" y="175.5" text-anchor="middle" class="ts">(100+1,000)÷2</text><text x="86" y="195.04" text-anchor="middle" class="t tb c-bad">= 550ms</text><rect x="176" y="132" width="156" height="78" rx="8" class="bx bx-b"/><text x="254" y="156.5" text-anchor="middle" class="ts tb">分布を足してから計算</text><text x="254" y="175.5" text-anchor="middle" class="ts">1,000件中100件が遅い</text><text x="254" y="195.04" text-anchor="middle" class="t tb c-b">p99 = 1,000ms</text><text x="86" y="230" text-anchor="middle" class="ts c-bad">× 550msの応答は1件もない</text><text x="254" y="230" text-anchor="middle" class="ts c-b">○ 正しい</text></svg><figcaption>パーセンタイルは平均できません。ヒストグラム（分布）を足してから計算します。数値は本にない例です。</figcaption></figure>
+  </div>
+
+  <div class="box note"><small>本にない補足：実務でいうと</small>
+    <p>AWSなら、CloudWatchでALBの <code>TargetResponseTime</code> を見るとき、統計を Average ではなく p50、p95、p99 に切り替えられます。これがこの節の話そのものです。</p>
+    <p>ALBの数字はサーバー寄りの測定です。ユーザーの手元までの時間は入っていないので、「クライアント側で測る」にはブラウザやアプリ側の計測が別に必要です。</p>
+    <p>AWS SDKの自動リトライは、指数バックオフにランダムな揺らぎを足す方式です。コラムの対策がそのまま入っています。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 2.3 -->
+<section class="sec" id="s23" style="--sec:var(--teal)">
+  <div class="num">2.3</div>
+  <h2>信頼性と耐障害性</h2>
+
+  <div class="lede"><small>一言でいうと</small><p>部品は必ず壊れます。部品が壊れてもサービス全体は止めない。これが信頼性です。</p></div>
+
+  <h3>「正しく動く」とは</h3>
+  <p>ソフトウェアに期待されるのは、だいたい次の4つです。</p>
+  <ul>
+    <li>ユーザーが期待する機能を果たす。</li>
+    <li>ユーザーがミスをしても、想定外の使い方をしても耐える。</li>
+    <li>想定した負荷とデータ量のもとで、十分な性能が出る。</li>
+    <li>不正なアクセスや悪用を防ぐ。</li>
+  </ul>
+  <p>これを全部合わせて「正しく動く」とします。すると<b>信頼性</b>は、おおまかに「何か問題が起きても、正しく動き続けること」と言えます。</p>
+
+  <h3>障害と機能不全は別もの</h3>
+  <p>「問題が起きる」を正確に言うために、本は2つの言葉を分けます。</p>
+
+  <dl class="term">
+    <dt>障害<span>fault</span></dt><dd>システムの<b>一部</b>が正しく動かなくなること。ディスク1台の故障、マシン1台のクラッシュ、依存している外部サービスの停止など。</dd>
+    <dt>機能不全<span>failure</span></dt><dd>システム<b>全体</b>が、ユーザーに必要なサービスを提供できなくなること。SLOを満たせない状態。</dd>
+  </dl>
+
+  <figure class="fig"><svg viewBox="0 0 340 196" role="img" aria-label="ディスク1台のシステムではディスク故障がシステムの機能不全になる。コピーがあれば同じ故障は障害で済む"><text x="84" y="22" text-anchor="middle" class="ts">ディスク1台のシステム</text><rect x="8" y="32" width="152" height="110" rx="8" class="bx dashb"/><rect x="44" y="58" width="80" height="56" rx="8" class="bx bx-bad"/><text x="84" y="81" text-anchor="middle" class="ts">ディスク</text><text x="84" y="100.54" text-anchor="middle" class="t tb c-bad">故障</text><text x="84" y="164" text-anchor="middle" class="ts tb c-bad">システムも止まる</text><text x="84" y="184" text-anchor="middle" class="ts c-bad">機能不全(failure)</text><text x="256" y="22" text-anchor="middle" class="ts">コピーを持つシステム</text><rect x="180" y="32" width="152" height="110" rx="8" class="bx dashb"/><rect x="188" y="58" width="64" height="56" rx="8" class="bx bx-bad"/><text x="220" y="81" text-anchor="middle" class="ts">ディスク</text><text x="220" y="100.54" text-anchor="middle" class="t tb c-bad">故障</text><rect x="260" y="58" width="64" height="56" rx="8" class="bx bx-b"/><text x="292" y="81" text-anchor="middle" class="ts">ディスク</text><text x="292" y="100.54" text-anchor="middle" class="t tb c-b">正常</text><text x="256" y="164" text-anchor="middle" class="ts tb c-b">システムは動き続ける</text><text x="256" y="184" text-anchor="middle" class="ts c-b">ただの障害(fault)</text></svg><figcaption>同じ「ディスクが1台壊れた」でも、システムの作りで呼び名が変わります。</figcaption></figure>
+
+  <p>ややこしいのは、同じ出来事がレベルによって呼び名を変える点です。ディスクそのものにとっては機能不全です。それを含む大きなシステムから見ると、ただの障害です。電球が1個切れることと、部屋が真っ暗になることの違いです（このたとえは本にありません）。</p>
+
+  <h3>2.3.1 耐障害性</h3>
+  <p>特定の障害が起きても必要なサービスを続けられるシステムを、<b>耐障害性がある</b>（fault-tolerant）と言います。逆に、そこが壊れたら全体が止まる部分を<b>単一障害点</b>（single point of failure、SPOF）と呼びます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 262" role="img" aria-label="アプリは2台あるがデータベースは1台だけ。データベースが単一障害点になっている"><rect x="110" y="8" width="120" height="38" rx="8" class="bx"/><text x="170" y="32.04" text-anchor="middle" class="t">ユーザー</text><line x1="150" y1="46" x2="96.6" y2="83.4" class="ln s-mute" style="stroke-width:2"/><polygon points="90.0,88.0 94.8,79.2 100.0,86.5" class="fl-mute"/><line x1="190" y1="46" x2="243.4" y2="83.4" class="ln s-mute" style="stroke-width:2"/><polygon points="250.0,88.0 240.0,86.5 245.2,79.2" class="fl-mute"/><rect x="30" y="88" width="120" height="44" rx="8" class="bx bx-b"/><text x="90" y="115.04" text-anchor="middle" class="t">アプリ①</text><rect x="190" y="88" width="120" height="44" rx="8" class="bx bx-b"/><text x="250" y="115.04" text-anchor="middle" class="t">アプリ②</text><line x1="90" y1="132" x2="143.8" y2="175.0" class="ln s-mute" style="stroke-width:2"/><polygon points="150.0,180.0 140.2,177.9 145.8,170.9" class="fl-mute"/><line x1="250" y1="132" x2="196.2" y2="175.0" class="ln s-mute" style="stroke-width:2"/><polygon points="190.0,180.0 194.2,170.9 199.8,177.9" class="fl-mute"/><rect x="100" y="180" width="140" height="48" rx="8" class="bx bx-bad"/><text x="170" y="209.04" text-anchor="middle" class="t tb">データベース</text><text x="170" y="250" text-anchor="middle" class="ts c-bad">1台だけ = 単一障害点(SPOF)</text></svg><figcaption>アプリは片方が落ちても平気ですが、データベースが落ちると全部止まります。構成は本にない例です。</figcaption></figure>
+
+  <p>タイムラインの例で考えます。投稿を配っている最中に、配る係のマシンがクラッシュしたとします。耐障害性を持たせるには、別のマシンが作業を引き継ぎ、しかも投稿を<b>1件も落とさず、二重にも配らない</b>必要があります。この考え方は「厳密に1回のセマンティクス」（exactly-once semantics）と呼ばれ、12章で扱います。</p>
+
+  <h4>「何が、何個まで」とセットで言う</h4>
+  <p>耐障害性には必ず範囲があります。「ディスク2台までの同時故障に耐える」「3台中1台のノードが落ちても大丈夫」という形です。どんな数の障害にも耐える、はありえません。全ノードが落ちたら打つ手はありません。</p>
+  <p>本の冗談を借りると、地球ごとブラックホールに飲まれる障害に耐えるには宇宙でホスティングする必要がありますが、その予算は通りません。</p>
+
+  <h4>わざと壊す</h4>
+  <p>耐障害性のあるシステムでは、わざと障害を起こすことに意味があります。プロセスを予告なしにランダムに止める、などです。これを<b>フォールトインジェクション</b>（fault injection）と呼びます。</p>
+  <p>理由は、重大なバグの多くがエラー処理の不備から来ているからです。ふだんから障害を起こしておけば、耐える仕組みが動き続けてテストされます。本番で自然に起きたときにも正しく処理される、という自信が持てます。こうした実験を扱う分野が<b>カオスエンジニアリング</b>です。避難訓練と同じ発想です（このたとえは本にありません）。</p>
+
+  <h4>耐えるより防ぐべき場合</h4>
+  <p>ふつうは、障害を防ぐより耐えるほうが好ましいとされます。例外は、起きたら取り消せないものです。セキュリティがそうで、機密データを一度読まれたら、なかったことにはできません。この本が主に扱うのは、回復できる種類の障害です。</p>
+
+  <h3>2.3.2 ハードウェアの障害</h3>
+  <p>止まる原因として最初に思いつくのはハードウェアです。本が挙げる数字をまとめます。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>部品</th><th>どのくらい壊れるか</th></tr></thead>
+    <tbody>
+      <tr><th>磁気ハードディスク</th><td>年に2〜5%が故障</td></tr>
+      <tr><th>SSD</th><td>年に0.5〜1%が故障。訂正できないエラーは、新しいドライブでも1台あたり年に約1回。この率はハードディスクより高い</td></tr>
+      <tr><th>CPU</th><td>およそ1,000台に1台のマシンに、まれに計算を間違えるコアがある。クラッシュせず、黙って間違った結果を返すこともある</td></tr>
+      <tr><th>RAM</th><td>宇宙線などでデータが壊れる。ECCメモリでも、年に1%以上のマシンで訂正できないエラーが起きる</td></tr>
+      <tr><th>電源、RAIDコントローラなど</th><td>ディスクほどではないが壊れる</td></tr>
+      <tr><th>データセンター全体</th><td>停電やネットワークの設定ミスで使えなくなる。火災、洪水、地震で失われることもある。太陽嵐が電力網や海底ケーブルを傷める可能性もある</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>1台だけなら「めったに起きない」で済みます。台数が増えると話が変わります。</p>
+
+  <div class="calc">
+    <div><small>ディスク10,000台のクラスタ</small>10,000台 × 年2〜5% ＝ 年に200〜500台</div>
+    <div><small>1日あたりに直すと</small>200〜500台 ÷ 365日 ≒ <b>毎日1台くらい壊れる</b></div>
+  </div>
+
+  <p>小さなシステムでは、壊れたら交換すれば済む、まれな出来事です。大きなシステムでは、ハードウェアの障害は<b>ふだんの運用の一部</b>になります。</p>
+
+  <h4>2.3.2.1 冗長性で耐える</h4>
+  <p>最初の対策は、部品を二重にすることです。</p>
+  <ul>
+    <li>ディスクはRAID構成にする（1台壊れてもデータが残る）。</li>
+    <li>サーバーに電源を2つ付ける。動かしたまま交換できるCPUを使う。</li>
+    <li>データセンターにバッテリーとディーゼル発電機を置く。</li>
+  </ul>
+  <p>これで1台のマシンを何年も止めずに動かせます。ただし冗長性がよく効くのは、故障が<b>独立</b>している場合です。現実には故障は連動します。ラックごと、データセンターごと使えなくなる事態は、期待よりずっと多く起きます。</p>
+  <p>そこでクラウドは方針を変えました。個々のマシンを頑丈にするより、<b>マシンが落ちることを前提に、ソフトウェアで耐える</b>ほうに力を入れます。そのための目印が<b>アベイラビリティゾーン</b>です。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 232" role="img" aria-label="1つのリージョンに3つのアベイラビリティゾーン。1つが丸ごと停止しても残り2つが引き継ぐ"><text x="12" y="18" text-anchor="start" class="ts c-mute">リージョン</text><rect x="4" y="26" width="332" height="150" rx="8" class="bx dashb"/><rect x="12" y="36" width="100" height="132" rx="8" class="bx bx-bad"/><text x="62" y="54" text-anchor="middle" class="ts tb">AZ-a</text><rect x="22" y="64" width="80" height="40" rx="8" class="bx bx-bad"/><text x="62" y="88.5" text-anchor="middle" class="ts">停止</text><rect x="22" y="114" width="80" height="40" rx="8" class="bx bx-bad"/><text x="62" y="138.5" text-anchor="middle" class="ts">停止</text><rect x="120" y="36" width="100" height="132" rx="8" class="bx bx-b"/><text x="170" y="54" text-anchor="middle" class="ts tb">AZ-b</text><rect x="130" y="64" width="80" height="40" rx="8" class="bx bx-b"/><text x="170" y="88.5" text-anchor="middle" class="ts">マシン</text><rect x="130" y="114" width="80" height="40" rx="8" class="bx bx-b"/><text x="170" y="138.5" text-anchor="middle" class="ts">マシン</text><rect x="228" y="36" width="100" height="132" rx="8" class="bx bx-b"/><text x="278" y="54" text-anchor="middle" class="ts tb">AZ-c</text><rect x="238" y="64" width="80" height="40" rx="8" class="bx bx-b"/><text x="278" y="88.5" text-anchor="middle" class="ts">マシン</text><rect x="238" y="114" width="80" height="40" rx="8" class="bx bx-b"/><text x="278" y="138.5" text-anchor="middle" class="ts">マシン</text><text x="170" y="200" text-anchor="middle" class="ts">AZ-aが丸ごと落ちても</text><text x="170" y="220" text-anchor="middle" class="ts c-b">AZ-b・AZ-cのマシンが引き継ぐ</text></svg><figcaption>アベイラビリティゾーン（AZ）は「物理的に同じ場所にあるもの」のまとまりです。同じAZの中は一緒に落ちやすくなります。</figcaption></figure>
+
+  <p>この本の耐障害性の手法は、マシン、ラック、アベイラビリティゾーンを丸ごと失っても耐えるように作られています。6章と10章で詳しく出てきます。</p>
+  <p>マシンが丸ごと落ちても平気なシステムには、運用上の得もあります。1台構成だと、OSのパッチを当てる再起動のたびに計画停止が必要です。複数ノード構成なら、1台ずつ順番に再起動できます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 198" role="img" aria-label="逐次更新。3台のノードを1台ずつ再起動して更新するので、常に2台が稼働している"><text x="8" y="35" text-anchor="start" class="ts c-mute">手順1</text><rect x="70" y="10" width="82" height="40" rx="8" class="bx bx-a"/><text x="111" y="34.5" text-anchor="middle" class="ts">再起動中</text><rect x="160" y="10" width="82" height="40" rx="8" class="bx bx-b"/><text x="201" y="34.5" text-anchor="middle" class="ts">稼働中</text><rect x="250" y="10" width="82" height="40" rx="8" class="bx bx-b"/><text x="291" y="34.5" text-anchor="middle" class="ts">稼働中</text><text x="8" y="89" text-anchor="start" class="ts c-mute">手順2</text><rect x="70" y="64" width="82" height="40" rx="8" class="bx bx-g"/><text x="111" y="88.5" text-anchor="middle" class="ts">更新済み</text><rect x="160" y="64" width="82" height="40" rx="8" class="bx bx-a"/><text x="201" y="88.5" text-anchor="middle" class="ts">再起動中</text><rect x="250" y="64" width="82" height="40" rx="8" class="bx bx-b"/><text x="291" y="88.5" text-anchor="middle" class="ts">稼働中</text><text x="8" y="143" text-anchor="start" class="ts c-mute">手順3</text><rect x="70" y="118" width="82" height="40" rx="8" class="bx bx-g"/><text x="111" y="142.5" text-anchor="middle" class="ts">更新済み</text><rect x="160" y="118" width="82" height="40" rx="8" class="bx bx-g"/><text x="201" y="142.5" text-anchor="middle" class="ts">更新済み</text><rect x="250" y="118" width="82" height="40" rx="8" class="bx bx-a"/><text x="291" y="142.5" text-anchor="middle" class="ts">再起動中</text><text x="170" y="188" text-anchor="middle" class="ts c-b">どの時点でも2台は動いている</text></svg><figcaption>逐次更新（rolling upgrade）。1台ずつ止めるので、サービス全体は止まりません。</figcaption></figure>
+
+  <h4>2.3.2.2 ソフトウェアの障害</h4>
+  <p>ハードウェアの故障は、多少連動するとはいえ、大部分は独立しています。ソフトウェアの障害は違います。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 176" role="img" aria-label="ハードウェアの故障は6台中1台だけが壊れる。ソフトウェアのバグは同じソフトを動かす6台すべてが同時に壊れる"><text x="84" y="18" text-anchor="middle" class="ts tb">ハードウェアの故障</text><text x="256" y="18" text-anchor="middle" class="ts tb">ソフトウェアのバグ</text><line x1="170" y1="8" x2="170.0" y2="176.0" class="ln s-mute dash" style="stroke-width:1"/><rect x="18" y="30" width="38" height="38" rx="6" class="bx bx-b"/><rect x="64" y="30" width="38" height="38" rx="6" class="bx bx-b"/><rect x="110" y="30" width="38" height="38" rx="6" class="bx bx-b"/><rect x="18" y="76" width="38" height="38" rx="6" class="bx bx-b"/><rect x="64" y="76" width="38" height="38" rx="6" class="bx bx-bad"/><text x="83" y="100" text-anchor="middle" class="t tb c-bad">×</text><rect x="110" y="76" width="38" height="38" rx="6" class="bx bx-b"/><rect x="190" y="30" width="38" height="38" rx="6" class="bx bx-bad"/><text x="209" y="54" text-anchor="middle" class="t tb c-bad">×</text><rect x="236" y="30" width="38" height="38" rx="6" class="bx bx-bad"/><text x="255" y="54" text-anchor="middle" class="t tb c-bad">×</text><rect x="282" y="30" width="38" height="38" rx="6" class="bx bx-bad"/><text x="301" y="54" text-anchor="middle" class="t tb c-bad">×</text><rect x="190" y="76" width="38" height="38" rx="6" class="bx bx-bad"/><text x="209" y="100" text-anchor="middle" class="t tb c-bad">×</text><rect x="236" y="76" width="38" height="38" rx="6" class="bx bx-bad"/><text x="255" y="100" text-anchor="middle" class="t tb c-bad">×</text><rect x="282" y="76" width="38" height="38" rx="6" class="bx bx-bad"/><text x="301" y="100" text-anchor="middle" class="t tb c-bad">×</text><text x="84" y="146" text-anchor="middle" class="ts c-b">バラバラに壊れる</text><text x="84" y="164" text-anchor="middle" class="ts c-mute">ほぼ独立</text><text x="256" y="146" text-anchor="middle" class="ts c-bad">同時に全部こける</text><text x="256" y="164" text-anchor="middle" class="ts c-mute">強く相関</text></svg><figcaption>ノード6台の例。全員が同じソフトを動かしているので、バグは全員が同時に踏みます。</figcaption></figure>
+
+  <p>このため、ソフトウェアの障害は予測しにくく、ハードウェアよりずっと多くの機能不全を引き起こす傾向があります。本が挙げる例です。</p>
+  <ul>
+    <li><b>全ノードが同時に踏むバグ。</b>2012年6月30日、うるう秒をきっかけにLinuxカーネルのバグが出て、多数のJavaアプリが同時にハングしました。別の例では、ファームウェアのバグで、ある型番のSSDすべてが、ちょうど32,768時間（4年弱）動かしたところで突然故障しました。</li>
+    <li><b>暴走プロセス。</b>CPU時間、メモリ、ディスク容量、ネットワーク帯域、スレッドといった共有の資源を使い尽くします。</li>
+    <li><b>依存しているサービスの不調。</b>遅くなる、応答しなくなる、壊れた返事を返し始める。</li>
+    <li><b>創発的動作</b>（emergent behavior）。システム同士の組み合わせで、単独のテストでは起きない動きが出ます。</li>
+    <li><b>連鎖障害。</b>下の図のとおりです。</li>
+  </ul>
+
+  <figure class="fig"><svg viewBox="0 0 340 100" role="img" aria-label="連鎖障害。サービスAが遅くなるとBが待ちで詰まり、Cも巻き添えになる"><rect x="8" y="12" width="96" height="54" rx="8" class="bx bx-bad"/><text x="56" y="34.75" text-anchor="middle" class="ts tb">サービスA</text><text x="56" y="52.25" text-anchor="middle" class="ts c-bad">遅くなる</text><rect x="122" y="12" width="96" height="54" rx="8" class="bx bx-a"/><text x="170" y="34.75" text-anchor="middle" class="ts tb">サービスB</text><text x="170" y="52.25" text-anchor="middle" class="ts c-a">待ちで詰まる</text><rect x="236" y="12" width="96" height="54" rx="8" class="bx bx-a"/><text x="284" y="34.75" text-anchor="middle" class="ts tb">サービスC</text><text x="284" y="52.25" text-anchor="middle" class="ts c-a">巻き添え</text><line x1="104" y1="39" x2="114.0" y2="39.0" class="ln s-bad" style="stroke-width:2"/><polygon points="122.0,39.0 113.0,43.5 113.0,34.5" class="fl-bad"/><line x1="218" y1="39" x2="228.0" y2="39.0" class="ln s-bad" style="stroke-width:2"/><polygon points="236.0,39.0 227.0,43.5 227.0,34.5" class="fl-bad"/><text x="170" y="90" text-anchor="middle" class="ts c-mute">1か所の不調が隣へ隣へと広がる</text></svg><figcaption>連鎖障害（cascading failure）。</figcaption></figure>
+
+  <p>こうしたバグは長く眠っていて、珍しい状況が重なったときに初めて表に出ます。そのとき、ソフトウェアが環境について置いていた前提が見えてきます。その前提は「ふつうは」正しかったのですが、ある日正しくなくなったのです。</p>
+  <p>特効薬はありません。本が挙げるのは小さな取り組みの積み重ねです。</p>
+  <ul>
+    <li>前提と、システム間のやり取りを慎重に考える</li>
+    <li>徹底的にテストする</li>
+    <li>プロセスを分離する</li>
+    <li>プロセスがクラッシュして再起動することを許す</li>
+    <li>リトライストームのようなフィードバックループを避ける</li>
+    <li>本番での振る舞いを測り、監視し、分析する</li>
+  </ul>
+
+  <h3>2.3.3 人間と信頼性</h3>
+  <p>システムを作るのも動かすのも人間です。人間は創造的で、状況に合わせて動けます。そのぶん予測がつかず、最善を尽くしていてもミスをします。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 90" role="img" aria-label="ある大規模インターネットサービスの調査で、機能不全のうちハードウェアが関係したのは10から25パーセントだった"><text x="20" y="20" text-anchor="start" class="ts c-mute">機能不全のうちハードウェアが関係した割合</text><rect x="20" y="32" width="300" height="28" rx="4" class="fl-lat"/><rect x="50" y="32" width="45" height="28" rx="0" class="fl-a"/><text x="208" y="51" text-anchor="middle" class="ts tb">主な原因は「設定変更」</text><text x="72.5" y="80" text-anchor="middle" class="ts tb c-a">10〜25%</text><text x="20" y="80" text-anchor="start" class="ts c-mute">0%</text><text x="320" y="80" text-anchor="end" class="ts c-mute">100%</text></svg><figcaption>本が引く調査（ある大規模インターネットサービス）の数字。琥珀色の幅が10〜25%です。</figcaption></figure>
+
+  <h4>「ヒューマンエラー」で片づけない</h4>
+  <p>これを「ヒューマンエラー」と呼び、手順やルールを厳しくすれば解決できる、と考えたくなります。本はこれを否定します。ミスをした人を責めるのは逆効果です。</p>
+  <p>いわゆるヒューマンエラーは事故の本当の原因ではありません。人と技術を合わせた仕組み全体（本は<b>社会技術システム</b>と呼びます）が抱える問題の、現れです。人はその中でベストを尽くしています。</p>
+
+  <h4>技術でできること</h4>
+  <ul>
+    <li>徹底的なテスト（手書きのテストと、大量のランダム入力で確かめるプロパティテストの両方）</li>
+    <li>設定変更をすぐ元に戻せるロールバックの仕組み</li>
+    <li>新しいコードを少しずつ広げる段階的ロールアウト</li>
+    <li>詳しく分かりやすい監視</li>
+    <li>本番の問題を調べるためのオブザーバビリティツール</li>
+    <li>正しい操作をしやすく、間違った操作をしにくいインターフェース</li>
+  </ul>
+
+  <h4>本当の問題は優先順位</h4>
+  <p>これらには時間とお金がかかります。組織は、ミスに強くする施策より、収益を生む仕事を優先しがちです。機能とテストのどちらかを選ぶなら、多くの組織は機能を選びます。その結果、防げたはずのミスが起きたとき、ミスをした人を責めても意味がありません。問題は組織の優先順位のほうにあります。</p>
+  <p>そこで広まっているのが<b>責任追及をしない振り返り</b>（blameless postmortem）です。事故のあと、関係者が罰を恐れずに、何が起きたかを詳しく話します。組織の他の人が同じ問題を防ぐ方法を学べます。事業の優先順位や投資先を変える必要が見えてくることもあります。</p>
+
+  <h4>単純すぎる答えを疑う</h4>
+  <div class="cards">
+    <div class="card" style="--k:var(--bad)"><h5>生産的でない答え</h5>「ボブはデプロイのとき、もっと注意すべきだった」</div>
+    <div class="card" style="--k:var(--bad)"><h5>これも同じ</h5>「バックエンドをHaskellで書き直さなければならない」</div>
+    <div class="card" style="--k:var(--teal)"><h5>本のすすめ</h5>毎日そのシステムを触っている人の視点から、仕組みがどう動いているかを学ぶ機会にする</div>
+  </div>
+
+  <div class="box col"><small>本のコラム</small>
+    <h4>信頼性はどれほど重要か？</h4>
+    <p>信頼性は原子力発電所や航空管制だけの話ではありません。業務アプリのバグは生産性を落とし、数字が間違っていれば法的なリスクになります。ECサイトが止まれば売上と評判を失います。</p>
+    <p>多くのアプリでは、数分から数時間の一時的な停止は許容範囲です。許されないのは<b>データが永久に消えること、壊れること</b>です。本は、写真アプリに子どもの写真と動画を全部預けている親を想像してみてほしい、と言います。</p>
+    <p>もっと重い例が、英国郵便局のHorizonスキャンダルです。1999年から2019年にかけて、郵便局の支局を運営していた数百人が、会計ソフトが不足額を表示したために、窃盗や詐欺で有罪になりました。のちに不足額の多くはソフトウェアのバグが原因だと分かり、有罪判決の多くが覆されました。背景には「反証がなければコンピュータは正しく動いているとみなす」という英国法の前提がありました。</p>
+    <p>開発コストを抑えるために信頼性を削る判断もありえます。たとえば、売れるか分からない試作品です。その場合も、どこで手を抜いているのかを自覚し、何が起こりうるかを頭に置いておくべきだ、と本は締めています。</p>
+  </div>
+
+  <div class="box note"><small>本にない補足：実務でいうと</small>
+    <p>RDSのマルチAZ配置は、アベイラビリティゾーンを丸ごと失っても別のAZのインスタンスが引き継ぐ仕組みです。この節の「ソフトウェアで耐える」の実例です。</p>
+    <p>ECSやKubernetesのローリングデプロイは、逐次更新そのものです。AWS Fault Injection Service は、フォールトインジェクションをするためのサービスです。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 2.4 -->
+<section class="sec" id="s24" style="--sec:var(--peri)">
+  <div class="num">2.4</div>
+  <h2>スケーラビリティ</h2>
+
+  <div class="lede"><small>一言でいうと</small><p>「スケールする／しない」という一言のラベルに意味はありません。「何がどの方向に増えたら、どう対処するか」を考えるのがスケーラビリティです。</p></div>
+
+  <p>今日ちゃんと動いているシステムが、将来もそうとは限りません。よくある原因は負荷の増大です。同時接続が1万人から10万人に、100万人から1,000万人に増える。データ量が何倍にもなる。</p>
+  <p><b>スケーラビリティ</b>は、増える負荷に対処する能力を表す言葉です。</p>
+
+  <h3>まず、心配しなくていい場合</h3>
+  <p>「あなたはGoogleでもAmazonでもないのだから、スケールは気にせずリレーショナルデータベースを使いなさい」という意見があります。当てはまるかどうかは、作っているものによります。</p>
+  <p>ユーザーがまだ少ない新しいプロダクトなら、最優先は<b>シンプルで柔軟に保つこと</b>です。顧客のことが分かってくるにつれて、機能をすばやく直せるからです。この段階で、来るかどうか分からない規模を心配するのは逆効果です。よくて無駄な努力、悪ければ硬い設計に縛られて身動きが取れなくなります。</p>
+
+  <h3>考えるべき3つの問い</h3>
+  <ul>
+    <li>システムが特定の方向に成長したら、対処の選択肢は何があるか。</li>
+    <li>増えた負荷をさばくために、コンピューティングリソースをどう足せるか。</li>
+    <li>今の成長予測だと、今のアーキテクチャの限界にいつ着くか。</li>
+  </ul>
+  <p>アプリが人気になって負荷が増えてくると、どこがボトルネックで、どの方向に伸ばす必要があるかが見えてきます。スケーラビリティの技法を考え始めるのは、その段階です。</p>
+
+  <h3>2.4.1 負荷を理解する</h3>
+  <p>「負荷が2倍になったら？」を話すには、今の負荷を数字で言える必要があります。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>種類</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><th>スループット</th><td>1秒あたりのリクエスト数、1日に届くデータのGB数、1時間あたりの精算数</td></tr>
+      <tr><th>ピーク値</th><td>同時オンラインユーザー数の最大</td></tr>
+      <tr><th>負荷の性質</th><td>読み取りと書き込みの比率、キャッシュのヒット率、ユーザーあたりのデータ数（タイムラインの例ならフォロワー数）</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>平均が効くこともあれば、少数の極端なケースがボトルネックを決めることもあります。セレブの話がまさにそれでした。</p>
+  <p>負荷が分かったら、増えたときのことを2つの見方で調べます。</p>
+  <ol>
+    <li>リソースを変えずに負荷を増やすと、性能はどうなるか。</li>
+    <li>性能を保つには、リソースをどれだけ増やす必要があるか。</li>
+  </ol>
+  <p>ふつうの目標は、SLAの範囲に性能を保ちながら、運用コストをできるだけ小さくすることです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 232" role="img" aria-label="負荷と必要なリソースの関係。線形、線形より速く増える、線形より遅く増えるの3本"><line x1="40" y1="200" x2="322.0" y2="200.0" class="ln s-mute" style="stroke-width:2"/><polygon points="330.0,200.0 321.0,204.5 321.0,195.5" class="fl-mute"/><line x1="40" y1="200" x2="40.0" y2="30.0" class="ln s-mute" style="stroke-width:2"/><polygon points="40.0,22.0 44.5,31.0 35.5,31.0" class="fl-mute"/><text x="8" y="14" text-anchor="start" class="ts c-mute">必要なリソース(コスト) ↑</text><text x="185" y="224" text-anchor="middle" class="ts c-mute">負荷 →</text><path d="M40.0,200.0 L46.5,196.5 L53.0,192.9 L59.5,189.3 L66.0,185.7 L72.5,182.0 L79.0,178.2 L85.5,174.4 L92.0,170.6 L98.5,166.7 L105.0,162.8 L111.5,158.9 L118.0,154.8 L124.5,150.8 L131.0,146.7 L137.5,142.6 L144.0,138.4 L150.5,134.2 L157.0,129.9 L163.5,125.6 L170.0,121.2 L176.5,116.9 L183.0,112.4 L189.5,107.9 L196.0,103.4 L202.5,98.8 L209.0,94.2 L215.5,89.6 L222.0,84.8 L228.5,80.1 L235.0,75.3 L241.5,70.5 L248.0,65.6 L254.5,60.7 L261.0,55.7 L267.5,50.7 L274.0,45.7 L280.5,40.6 L287.0,35.4 L293.5,30.2 L300.0,25.0" class="ln s-bad" style="stroke-width:2.5"/><path d="M40.0,200.0 L46.5,196.5 L53.0,193.0 L59.5,189.5 L66.0,186.0 L72.5,182.5 L79.0,179.0 L85.5,175.5 L92.0,172.0 L98.5,168.5 L105.0,165.0 L111.5,161.5 L118.0,158.0 L124.5,154.5 L131.0,151.0 L137.5,147.5 L144.0,144.0 L150.5,140.5 L157.0,137.0 L163.5,133.5 L170.0,130.0 L176.5,126.5 L183.0,123.0 L189.5,119.5 L196.0,116.0 L202.5,112.5 L209.0,109.0 L215.5,105.5 L222.0,102.0 L228.5,98.5 L235.0,95.0 L241.5,91.5 L248.0,88.0 L254.5,84.5 L261.0,81.0 L267.5,77.5 L274.0,74.0 L280.5,70.5 L287.0,67.0 L293.5,63.5 L300.0,60.0" class="ln s-b" style="stroke-width:2.5"/><path d="M40.0,200.0 L46.5,196.5 L53.0,193.1 L59.5,189.8 L66.0,186.4 L72.5,183.2 L79.0,180.0 L85.5,176.9 L92.0,173.8 L98.5,170.8 L105.0,167.8 L111.5,164.9 L118.0,162.1 L124.5,159.3 L131.0,156.5 L137.5,153.8 L144.0,151.2 L150.5,148.6 L157.0,146.1 L163.5,143.7 L170.0,141.2 L176.5,138.9 L183.0,136.6 L189.5,134.4 L196.0,132.2 L202.5,130.1 L209.0,128.0 L215.5,126.0 L222.0,124.0 L228.5,122.2 L235.0,120.3 L241.5,118.5 L248.0,116.8 L254.5,115.1 L261.0,113.5 L267.5,112.0 L274.0,110.5 L280.5,109.0 L287.0,107.6 L293.5,106.3 L300.0,105.0" class="ln s-mute dash" style="stroke-width:2.5"/><line x1="52" y1="30" x2="72.0" y2="30.0" class="ln s-bad" style="stroke-width:2.5"/><text x="80" y="34" text-anchor="start" class="ts">2倍より多くかかる(よくある)</text><line x1="52" y1="50" x2="72.0" y2="50.0" class="ln s-b" style="stroke-width:2.5"/><text x="80" y="54" text-anchor="start" class="ts">ちょうど2倍(リニア)</text><line x1="52" y1="70" x2="72.0" y2="70.0" class="ln s-mute dash" style="stroke-width:2.5"/><text x="80" y="74" text-anchor="start" class="ts">2倍未満で済む(たまに)</text></svg><figcaption>負荷を2倍にしたとき、リソースは何倍いるか（概略）。本によると、いちばん多いのは赤い線です。</figcaption></figure>
+
+  <p>リソースを2倍にすれば、同じ性能のまま2倍の負荷をさばける。これを<b>リニアスケーラビリティ</b>と呼び、望ましい状態です。現実にはコストが線形より速く増えることのほうがずっと多い、と本は言います。たとえばデータが多いと、同じサイズの書き込み1回でも、やる作業が増えることがあります。</p>
+
+  <h3>2.4.2 リソースの増やし方は3種類</h3>
+
+  <figure class="fig"><svg viewBox="0 0 340 482" role="img" aria-label="3つのアーキテクチャ。共有メモリは1台の大きなマシン、共有ディスクは複数マシンが1つのディスクを共有、シェアードナッシングは各マシンが自分のCPU、RAM、ディスクを持つ"><text x="8" y="18" text-anchor="start" class="t tb c-c">① 共有メモリ = スケールアップ</text><rect x="40" y="28" width="260" height="92" rx="8" class="bx bx-c"/><rect x="52" y="38" width="54" height="30" rx="8" class="bx"/><text x="79" y="57.5" text-anchor="middle" class="ts">CPU</text><rect x="112" y="38" width="54" height="30" rx="8" class="bx"/><text x="139" y="57.5" text-anchor="middle" class="ts">CPU</text><rect x="172" y="38" width="54" height="30" rx="8" class="bx"/><text x="199" y="57.5" text-anchor="middle" class="ts">CPU</text><rect x="232" y="38" width="54" height="30" rx="8" class="bx"/><text x="259" y="57.5" text-anchor="middle" class="ts">CPU</text><rect x="52" y="78" width="114" height="32" rx="8" class="bx"/><text x="109" y="98.5" text-anchor="middle" class="ts">RAM たくさん</text><rect x="174" y="78" width="114" height="32" rx="8" class="bx"/><text x="231" y="98.5" text-anchor="middle" class="ts">ディスク</text><text x="170" y="140" text-anchor="middle" class="ts c-mute">1台を強くする</text><text x="8" y="180" text-anchor="start" class="t tb c-a">② 共有ディスク</text><rect x="20" y="190" width="90" height="42" rx="8" class="bx"/><text x="65" y="215.5" text-anchor="middle" class="ts">CPU+RAM</text><line x1="65" y1="232" x2="103.6" y2="261.2" class="ln s-a" style="stroke-width:2"/><polygon points="110.0,266.0 100.1,264.2 105.5,257.0" class="fl-a"/><rect x="125" y="190" width="90" height="42" rx="8" class="bx"/><text x="170" y="215.5" text-anchor="middle" class="ts">CPU+RAM</text><line x1="170" y1="232" x2="170.0" y2="258.0" class="ln s-a" style="stroke-width:2"/><polygon points="170.0,266.0 165.5,257.0 174.5,257.0" class="fl-a"/><rect x="230" y="190" width="90" height="42" rx="8" class="bx"/><text x="275" y="215.5" text-anchor="middle" class="ts">CPU+RAM</text><line x1="275" y1="232" x2="236.4" y2="261.2" class="ln s-a" style="stroke-width:2"/><polygon points="230.0,266.0 234.5,257.0 239.9,264.2" class="fl-a"/><rect x="60" y="266" width="220" height="36" rx="8" class="bx bx-a"/><text x="170" y="288.5" text-anchor="middle" class="ts tb">共有ディスク (NAS / SAN)</text><text x="170" y="322" text-anchor="middle" class="ts c-mute">データ置き場だけ全員で共有する</text><text x="8" y="362" text-anchor="start" class="t tb c-b">③ シェアードナッシング = スケールアウト</text><rect x="20" y="372" width="90" height="58" rx="8" class="bx bx-b"/><text x="65" y="396.75" text-anchor="middle" class="ts">CPU+RAM</text><text x="65" y="414.25" text-anchor="middle" class="ts">+ディスク</text><line x1="65" y1="430" x2="65.0" y2="450.0" class="ln s-b" style="stroke-width:2"/><rect x="125" y="372" width="90" height="58" rx="8" class="bx bx-b"/><text x="170" y="396.75" text-anchor="middle" class="ts">CPU+RAM</text><text x="170" y="414.25" text-anchor="middle" class="ts">+ディスク</text><line x1="170" y1="430" x2="170.0" y2="450.0" class="ln s-b" style="stroke-width:2"/><rect x="230" y="372" width="90" height="58" rx="8" class="bx bx-b"/><text x="275" y="396.75" text-anchor="middle" class="ts">CPU+RAM</text><text x="275" y="414.25" text-anchor="middle" class="ts">+ディスク</text><line x1="275" y1="430" x2="275.0" y2="450.0" class="ln s-b" style="stroke-width:2"/><line x1="65" y1="450" x2="275.0" y2="450.0" class="ln s-b" style="stroke-width:2"/><text x="170" y="472" text-anchor="middle" class="ts c-mute">何も共有しない。ネットワークでつなぐ</text></svg><figcaption>リソースの増やし方3種類。違いは「マシン同士が何を共有するか」です。</figcaption></figure>
+
+  <div class="tw"><table>
+    <thead><tr><th>方式</th><th>良いところ</th><th>限界</th></tr></thead>
+    <tbody>
+      <tr><th>① 共有メモリ<br>垂直スケーリング</th><td>いちばんシンプル。強いマシンに移るだけ</td><td>値段が線形より速く上がる。2倍のスペックは2倍をはるかに超える値段。ボトルネックがあるので、2倍の負荷をさばけるとも限らない</td></tr>
+      <tr><th>② 共有ディスク</th><td>CPUとRAMを持つマシンを複数台に増やせる。昔からオンプレのデータウェアハウスで使われてきた</td><td>競合とロックのオーバーヘッドが上限を決める</td></tr>
+      <tr><th>③ シェアードナッシング<br>水平スケーリング</th><td>リニアに伸びる可能性がある。割安なハードウェアを選べる。増減させやすい。複数のデータセンターやリージョンに分けて耐障害性を上げられる</td><td>明示的なシャーディングが必要（7章）。分散システムの複雑さを全部背負う（9章）</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>鍋でたとえると、①は大きい鍋に買い替える、③は鍋の数を増やす、です（このたとえは本にありません）。</p>
+
+  <h4>クラウドネイティブなデータベースは②に似ている</h4>
+  <p>1.2節で見た「ストレージとコンピュートの分離」を思い出してください。複数のコンピュートノードが、同じストレージサービスを共有します。形は共有ディスクに似ています。</p>
+  <p>違いは、ストレージ側がファイルシステム（NAS）やブロックデバイス（SAN）のふりをするのではなく、<b>データベース専用に設計したAPI</b>を出している点です。これで昔の共有ディスクのスケーラビリティ問題を避けています。</p>
+
+  <h3>2.4.3 スケーラビリティの原則</h3>
+  <h4>万能のソースはない</h4>
+  <p>大規模なシステムのアーキテクチャは、そのアプリ専用になるのがふつうです。何にでも効くスケーラブルな構成（本は<b>魔法のスケーリングソース</b>と呼びます）はありません。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 182" role="img" aria-label="1キロバイトを毎秒10万件さばくシステムと、2ギガバイトを毎分3件さばくシステム。どちらもデータ量は毎秒100メガバイト"><text x="8" y="18" text-anchor="start" class="ts tb">システムA：1kBを毎秒10万件</text><rect x="8" y="26" width="324" height="40" rx="8" class="bx"/><circle cx="18.0" cy="33.0" r="2" class="fl-b"/><circle cx="25.8" cy="33.0" r="2" class="fl-b"/><circle cx="33.6" cy="33.0" r="2" class="fl-b"/><circle cx="41.4" cy="33.0" r="2" class="fl-b"/><circle cx="49.2" cy="33.0" r="2" class="fl-b"/><circle cx="57.0" cy="33.0" r="2" class="fl-b"/><circle cx="64.8" cy="33.0" r="2" class="fl-b"/><circle cx="72.6" cy="33.0" r="2" class="fl-b"/><circle cx="80.4" cy="33.0" r="2" class="fl-b"/><circle cx="88.2" cy="33.0" r="2" class="fl-b"/><circle cx="96.0" cy="33.0" r="2" class="fl-b"/><circle cx="103.8" cy="33.0" r="2" class="fl-b"/><circle cx="111.6" cy="33.0" r="2" class="fl-b"/><circle cx="119.4" cy="33.0" r="2" class="fl-b"/><circle cx="127.2" cy="33.0" r="2" class="fl-b"/><circle cx="135.0" cy="33.0" r="2" class="fl-b"/><circle cx="142.8" cy="33.0" r="2" class="fl-b"/><circle cx="150.6" cy="33.0" r="2" class="fl-b"/><circle cx="158.4" cy="33.0" r="2" class="fl-b"/><circle cx="166.2" cy="33.0" r="2" class="fl-b"/><circle cx="174.0" cy="33.0" r="2" class="fl-b"/><circle cx="181.8" cy="33.0" r="2" class="fl-b"/><circle cx="189.6" cy="33.0" r="2" class="fl-b"/><circle cx="197.4" cy="33.0" r="2" class="fl-b"/><circle cx="205.2" cy="33.0" r="2" class="fl-b"/><circle cx="213.0" cy="33.0" r="2" class="fl-b"/><circle cx="220.8" cy="33.0" r="2" class="fl-b"/><circle cx="228.6" cy="33.0" r="2" class="fl-b"/><circle cx="236.4" cy="33.0" r="2" class="fl-b"/><circle cx="244.2" cy="33.0" r="2" class="fl-b"/><circle cx="252.0" cy="33.0" r="2" class="fl-b"/><circle cx="259.8" cy="33.0" r="2" class="fl-b"/><circle cx="267.6" cy="33.0" r="2" class="fl-b"/><circle cx="275.4" cy="33.0" r="2" class="fl-b"/><circle cx="283.2" cy="33.0" r="2" class="fl-b"/><circle cx="291.0" cy="33.0" r="2" class="fl-b"/><circle cx="298.8" cy="33.0" r="2" class="fl-b"/><circle cx="306.6" cy="33.0" r="2" class="fl-b"/><circle cx="314.4" cy="33.0" r="2" class="fl-b"/><circle cx="322.2" cy="33.0" r="2" class="fl-b"/><circle cx="18.0" cy="41.6" r="2" class="fl-b"/><circle cx="25.8" cy="41.6" r="2" class="fl-b"/><circle cx="33.6" cy="41.6" r="2" class="fl-b"/><circle cx="41.4" cy="41.6" r="2" class="fl-b"/><circle cx="49.2" cy="41.6" r="2" class="fl-b"/><circle cx="57.0" cy="41.6" r="2" class="fl-b"/><circle cx="64.8" cy="41.6" r="2" class="fl-b"/><circle cx="72.6" cy="41.6" r="2" class="fl-b"/><circle cx="80.4" cy="41.6" r="2" class="fl-b"/><circle cx="88.2" cy="41.6" r="2" class="fl-b"/><circle cx="96.0" cy="41.6" r="2" class="fl-b"/><circle cx="103.8" cy="41.6" r="2" class="fl-b"/><circle cx="111.6" cy="41.6" r="2" class="fl-b"/><circle cx="119.4" cy="41.6" r="2" class="fl-b"/><circle cx="127.2" cy="41.6" r="2" class="fl-b"/><circle cx="135.0" cy="41.6" r="2" class="fl-b"/><circle cx="142.8" cy="41.6" r="2" class="fl-b"/><circle cx="150.6" cy="41.6" r="2" class="fl-b"/><circle cx="158.4" cy="41.6" r="2" class="fl-b"/><circle cx="166.2" cy="41.6" r="2" class="fl-b"/><circle cx="174.0" cy="41.6" r="2" class="fl-b"/><circle cx="181.8" cy="41.6" r="2" class="fl-b"/><circle cx="189.6" cy="41.6" r="2" class="fl-b"/><circle cx="197.4" cy="41.6" r="2" class="fl-b"/><circle cx="205.2" cy="41.6" r="2" class="fl-b"/><circle cx="213.0" cy="41.6" r="2" class="fl-b"/><circle cx="220.8" cy="41.6" r="2" class="fl-b"/><circle cx="228.6" cy="41.6" r="2" class="fl-b"/><circle cx="236.4" cy="41.6" r="2" class="fl-b"/><circle cx="244.2" cy="41.6" r="2" class="fl-b"/><circle cx="252.0" cy="41.6" r="2" class="fl-b"/><circle cx="259.8" cy="41.6" r="2" class="fl-b"/><circle cx="267.6" cy="41.6" r="2" class="fl-b"/><circle cx="275.4" cy="41.6" r="2" class="fl-b"/><circle cx="283.2" cy="41.6" r="2" class="fl-b"/><circle cx="291.0" cy="41.6" r="2" class="fl-b"/><circle cx="298.8" cy="41.6" r="2" class="fl-b"/><circle cx="306.6" cy="41.6" r="2" class="fl-b"/><circle cx="314.4" cy="41.6" r="2" class="fl-b"/><circle cx="322.2" cy="41.6" r="2" class="fl-b"/><circle cx="18.0" cy="50.2" r="2" class="fl-b"/><circle cx="25.8" cy="50.2" r="2" class="fl-b"/><circle cx="33.6" cy="50.2" r="2" class="fl-b"/><circle cx="41.4" cy="50.2" r="2" class="fl-b"/><circle cx="49.2" cy="50.2" r="2" class="fl-b"/><circle cx="57.0" cy="50.2" r="2" class="fl-b"/><circle cx="64.8" cy="50.2" r="2" class="fl-b"/><circle cx="72.6" cy="50.2" r="2" class="fl-b"/><circle cx="80.4" cy="50.2" r="2" class="fl-b"/><circle cx="88.2" cy="50.2" r="2" class="fl-b"/><circle cx="96.0" cy="50.2" r="2" class="fl-b"/><circle cx="103.8" cy="50.2" r="2" class="fl-b"/><circle cx="111.6" cy="50.2" r="2" class="fl-b"/><circle cx="119.4" cy="50.2" r="2" class="fl-b"/><circle cx="127.2" cy="50.2" r="2" class="fl-b"/><circle cx="135.0" cy="50.2" r="2" class="fl-b"/><circle cx="142.8" cy="50.2" r="2" class="fl-b"/><circle cx="150.6" cy="50.2" r="2" class="fl-b"/><circle cx="158.4" cy="50.2" r="2" class="fl-b"/><circle cx="166.2" cy="50.2" r="2" class="fl-b"/><circle cx="174.0" cy="50.2" r="2" class="fl-b"/><circle cx="181.8" cy="50.2" r="2" class="fl-b"/><circle cx="189.6" cy="50.2" r="2" class="fl-b"/><circle cx="197.4" cy="50.2" r="2" class="fl-b"/><circle cx="205.2" cy="50.2" r="2" class="fl-b"/><circle cx="213.0" cy="50.2" r="2" class="fl-b"/><circle cx="220.8" cy="50.2" r="2" class="fl-b"/><circle cx="228.6" cy="50.2" r="2" class="fl-b"/><circle cx="236.4" cy="50.2" r="2" class="fl-b"/><circle cx="244.2" cy="50.2" r="2" class="fl-b"/><circle cx="252.0" cy="50.2" r="2" class="fl-b"/><circle cx="259.8" cy="50.2" r="2" class="fl-b"/><circle cx="267.6" cy="50.2" r="2" class="fl-b"/><circle cx="275.4" cy="50.2" r="2" class="fl-b"/><circle cx="283.2" cy="50.2" r="2" class="fl-b"/><circle cx="291.0" cy="50.2" r="2" class="fl-b"/><circle cx="298.8" cy="50.2" r="2" class="fl-b"/><circle cx="306.6" cy="50.2" r="2" class="fl-b"/><circle cx="314.4" cy="50.2" r="2" class="fl-b"/><circle cx="322.2" cy="50.2" r="2" class="fl-b"/><circle cx="18.0" cy="58.8" r="2" class="fl-b"/><circle cx="25.8" cy="58.8" r="2" class="fl-b"/><circle cx="33.6" cy="58.8" r="2" class="fl-b"/><circle cx="41.4" cy="58.8" r="2" class="fl-b"/><circle cx="49.2" cy="58.8" r="2" class="fl-b"/><circle cx="57.0" cy="58.8" r="2" class="fl-b"/><circle cx="64.8" cy="58.8" r="2" class="fl-b"/><circle cx="72.6" cy="58.8" r="2" class="fl-b"/><circle cx="80.4" cy="58.8" r="2" class="fl-b"/><circle cx="88.2" cy="58.8" r="2" class="fl-b"/><circle cx="96.0" cy="58.8" r="2" class="fl-b"/><circle cx="103.8" cy="58.8" r="2" class="fl-b"/><circle cx="111.6" cy="58.8" r="2" class="fl-b"/><circle cx="119.4" cy="58.8" r="2" class="fl-b"/><circle cx="127.2" cy="58.8" r="2" class="fl-b"/><circle cx="135.0" cy="58.8" r="2" class="fl-b"/><circle cx="142.8" cy="58.8" r="2" class="fl-b"/><circle cx="150.6" cy="58.8" r="2" class="fl-b"/><circle cx="158.4" cy="58.8" r="2" class="fl-b"/><circle cx="166.2" cy="58.8" r="2" class="fl-b"/><circle cx="174.0" cy="58.8" r="2" class="fl-b"/><circle cx="181.8" cy="58.8" r="2" class="fl-b"/><circle cx="189.6" cy="58.8" r="2" class="fl-b"/><circle cx="197.4" cy="58.8" r="2" class="fl-b"/><circle cx="205.2" cy="58.8" r="2" class="fl-b"/><circle cx="213.0" cy="58.8" r="2" class="fl-b"/><circle cx="220.8" cy="58.8" r="2" class="fl-b"/><circle cx="228.6" cy="58.8" r="2" class="fl-b"/><circle cx="236.4" cy="58.8" r="2" class="fl-b"/><circle cx="244.2" cy="58.8" r="2" class="fl-b"/><circle cx="252.0" cy="58.8" r="2" class="fl-b"/><circle cx="259.8" cy="58.8" r="2" class="fl-b"/><circle cx="267.6" cy="58.8" r="2" class="fl-b"/><circle cx="275.4" cy="58.8" r="2" class="fl-b"/><circle cx="283.2" cy="58.8" r="2" class="fl-b"/><circle cx="291.0" cy="58.8" r="2" class="fl-b"/><circle cx="298.8" cy="58.8" r="2" class="fl-b"/><circle cx="306.6" cy="58.8" r="2" class="fl-b"/><circle cx="314.4" cy="58.8" r="2" class="fl-b"/><circle cx="322.2" cy="58.8" r="2" class="fl-b"/><text x="8" y="96" text-anchor="start" class="ts tb">システムB：2GBを毎分3件</text><rect x="8" y="104" width="324" height="40" rx="8" class="bx"/><rect x="20" y="110" width="90" height="28" rx="4" class="fl-a"/><rect x="125" y="110" width="90" height="28" rx="4" class="fl-a"/><rect x="230" y="110" width="90" height="28" rx="4" class="fl-a"/><text x="170" y="170" text-anchor="middle" class="ts c-mute">どちらも 100MB/秒。設計はまるで別物</text></svg><figcaption>流れるデータ量は同じでも、小粒が大量に来るのと巨大な塊が少し来るのとでは、必要な仕組みが違います。</figcaption></figure>
+
+  <div class="calc">
+    <div><small>システムA</small>1kB × 100,000件/秒 ＝ <b>100MB/秒</b></div>
+    <div><small>システムB</small>2GB × 3件 ÷ 60秒 ＝ <b>100MB/秒</b></div>
+  </div>
+
+  <h4>見直しは1桁ごと</h4>
+  <p>ある負荷に合ったアーキテクチャが、その10倍に耐えることはまずありません。急成長中のサービスなら、負荷が<b>1桁増えるごと</b>に設計を考え直すことになります。アプリに求められることも変わっていくので、1桁より先の将来に備えて計画する価値は、ふつうありません。</p>
+
+  <h4>原則は2つ</h4>
+  <div class="cards">
+    <div class="card" style="--k:var(--peri)"><h5>小さく分ける</h5>システムを、互いにほぼ独立して動ける小さな部品に分ける。マイクロサービス、シャーディング、ストリーム処理、シェアードナッシングの根っこにある考え方。<br>難しいのは、どこで線を引くか。</div>
+    <div class="card" style="--k:var(--green)"><h5>必要以上に複雑にしない</h5>1台のデータベースで足りるなら、たぶんそのほうがいい。5つのサービスでできたシステムは、50のサービスでできたシステムよりシンプル。</div>
+  </div>
+  <p>オートスケーリングも例に出ます。魅力的ですが、負荷がかなり予測できるなら、手動でスケールするほうが運用上の驚きが少ないかもしれません。良いアーキテクチャは、いくつかの方法を実用的に組み合わせたものになります。</p>
+
+  <div class="box note"><small>本にない補足：実務でいうと</small>
+    <p>RDSのインスタンスクラスを上げるのが①の垂直スケーリングです。DynamoDBのようにデータを分けて多数のノードに持たせるのが③です。Auroraは、複数のインスタンスが1つの分散ストレージ層を共有するので、「②に似ているクラウドネイティブなデータベース」の例です。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 2.5 -->
+<section class="sec" id="s25" style="--sec:var(--green)">
+  <div class="num">2.5</div>
+  <h2>メンテナンス性</h2>
+
+  <div class="lede"><small>一言でいうと</small><p>ソフトウェアのコストの大半は、作ったあとにかかります。だから、あとで面倒を見る人が楽になるように作ります。</p></div>
+
+  <p>ソフトウェアは機械のようにすり減りません。それでも手を入れ続ける必要があります。要件が変わり、動かす環境（依存ライブラリやプラットフォーム）が変わり、直すべきバグが見つかるからです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 138" role="img" aria-label="ソフトウェアのコストは初期開発よりメンテナンスのほうが大きい"><text x="8" y="18" text-anchor="start" class="ts c-mute">ソフトウェアにかかるコスト(割合はイメージ)</text><rect x="8" y="28" width="70" height="36" rx="4" class="bx bx-c"/><text x="43" y="51" text-anchor="middle" class="ts tb">初期開発</text><rect x="82" y="28" width="250" height="36" rx="4" class="bx bx-g"/><text x="207" y="51" text-anchor="middle" class="ts tb">メンテナンス(ずっと続く)</text><text x="207" y="86" text-anchor="middle" class="ts">バグ修正・運用・障害調査</text><text x="207" y="106" text-anchor="middle" class="ts">新しい環境や使い道への対応</text><text x="207" y="126" text-anchor="middle" class="ts">技術的負債の返済・新機能</text></svg><figcaption>本は具体的な割合を示していません。「大部分は初期開発ではなくメンテナンス」という関係だけを描いています。</figcaption></figure>
+
+  <h3>全部いつかレガシーになる</h3>
+  <p>メンテナンスは大変です。特にレガシーシステムはそうです。長年問題なく動いてきたシステムは、今では分かる人が少ない技術（メインフレームやCOBOLなど）で動いていることがあります。なぜその設計になったのかという知識は、人が辞めるたびに失われます。コンピュータシステムはそれを使う組織と絡み合っているので、メンテナンスは技術の問題であると同時に、人の問題でもあります。</p>
+  <p>本の指摘はこうです。今日作るシステムは、十分に価値があって長く生き残れば、<b>いつか必ずレガシーになります</b>。だから、将来それを保守する人の苦労を小さくするように設計します。本が注目する原則は3つです。</p>
+
+  <div class="cards">
+    <div class="card" style="--k:var(--green)"><h5>運用性</h5><small>operability</small>組織がシステムを円滑に動かし続けやすい。</div>
+    <div class="card" style="--k:var(--green)"><h5>簡潔性</h5><small>simplicity</small>よく知られた一貫したパターンで作り、不要な複雑さを避ける。新しく来た人が理解しやすい。</div>
+    <div class="card" style="--k:var(--green)"><h5>発展性</h5><small>evolvability</small>要件が変わったとき、想定外の使い道にも合わせて変更しやすい。</div>
+  </div>
+
+  <h3>2.5.1 運用性：運用を楽にする</h3>
+  <p>本が引く言葉があります。良い運用は、出来の悪いソフトウェアの弱点をしばしばカバーできます。でも良いソフトウェアも、悪い運用のもとでは信頼性を保てません。</p>
+
+  <h4>自動化は諸刃の剣</h4>
+  <p>何千台ものマシンを手で世話するのは高くつきすぎるので、自動化は欠かせません。ただし副作用があります。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 200" role="img" aria-label="自動化すると簡単な作業は機械がやり、人には難しいケースと自動化の誤動作の調査だけが残る"><text x="8" y="18" text-anchor="start" class="ts tb">自動化する前：人が全部やる</text><rect x="8" y="28" width="75" height="36" rx="8" class="bx bx-b"/><text x="45.5" y="50.5" text-anchor="middle" class="ts">簡単</text><rect x="91" y="28" width="75" height="36" rx="8" class="bx bx-b"/><text x="128.5" y="50.5" text-anchor="middle" class="ts">簡単</text><rect x="174" y="28" width="75" height="36" rx="8" class="bx bx-b"/><text x="211.5" y="50.5" text-anchor="middle" class="ts">簡単</text><rect x="257" y="28" width="75" height="36" rx="8" class="bx bx-bad"/><text x="294.5" y="50.5" text-anchor="middle" class="ts">難しい</text><text x="8" y="98" text-anchor="start" class="ts tb">自動化した後：人に残るもの</text><rect x="8" y="108" width="75" height="36" rx="8" class="bx"/><text x="45.5" y="130.5" text-anchor="middle" class="ts c-mute">自動</text><rect x="91" y="108" width="75" height="36" rx="8" class="bx"/><text x="128.5" y="130.5" text-anchor="middle" class="ts c-mute">自動</text><rect x="174" y="108" width="75" height="36" rx="8" class="bx"/><text x="211.5" y="130.5" text-anchor="middle" class="ts c-mute">自動</text><rect x="257" y="108" width="75" height="36" rx="8" class="bx bx-bad"/><text x="294.5" y="130.5" text-anchor="middle" class="ts tb c-bad">難しい</text><text x="8" y="170" text-anchor="start" class="ts c-bad">人の出番は難しいケースだけになる</text><text x="8" y="190" text-anchor="start" class="ts c-bad">＋ 自動化そのものが誤動作したときの調査</text></svg><figcaption>自動化が進むほど、運用チームにはより高いスキルが必要になります。</figcaption></figure>
+
+  <p>自動化が増えれば運用性が上がる、とは限りません。ある程度の自動化は重要ですが、ちょうどいい加減はアプリと組織によります。</p>
+
+  <h4>データシステムにできること</h4>
+  <p>良い運用性とは、決まった作業を簡単にし、運用チームが価値の高い仕事に集中できるようにすることです。</p>
+  <ul>
+    <li>監視ツールとオブザーバビリティツールに対応する。</li>
+    <li>特定のマシンに頼らない（全体を動かしたまま、1台を止めてメンテナンスできる）。</li>
+    <li>良いドキュメントと、分かりやすい運用モデルを出す（「Xをすれば、Yが起きる」）。</li>
+    <li>まともなデフォルト動作にしつつ、管理者が必要なら上書きできるようにする。</li>
+    <li>できる場面では自己回復しつつ、管理者が手動で状態を操作できるようにする。</li>
+    <li>予測できる動きをし、驚きを減らす。</li>
+  </ul>
+
+  <h3>2.5.2 簡潔性：複雑さを管理する</h3>
+  <p>小さいプロジェクトのコードは、シンプルで読みやすいことがあります。大きくなるにつれて複雑になり、分かりにくくなります。複雑さは関わる全員の仕事を遅くし、メンテナンスのコストを押し上げます。複雑さに絡め取られたプロジェクトは<b>大きな泥だんご</b>（big ball of mud）と呼ばれます。</p>
+  <p>複雑だと、変更のたびにバグを入れるリスクも上がります。隠れた前提、意図しない結果、予期しない相互作用を見落としやすくなるからです。だから簡潔性は大事な目標です。</p>
+
+  <h4>「シンプル」は測れない</h4>
+  <p>困ったことに、何がシンプルかは主観になりがちで、客観的な基準はありません。シンプルなインターフェースの裏に複雑な実装を隠したシステムと、実装はシンプルだが内部を多く見せるシステム。どちらがシンプルでしょうか。</p>
+  <p>複雑さを2種類に分ける考え方があります。</p>
+
+  <div class="cards">
+    <div class="card" style="--k:var(--teal)"><h5>本質的な複雑さ</h5><small>essential</small>アプリが解こうとしている問題そのものに備わっている。</div>
+    <div class="card" style="--k:var(--bad)"><h5>偶発的な複雑さ</h5><small>accidental</small>道具の制約からだけ生まれる。</div>
+  </div>
+  <p>本はこの区分にも欠陥があると言います。道具が進化すると、2つの境界が動いてしまうからです。</p>
+
+  <h4>いちばん効く道具は抽象化</h4>
+  <p>良い<b>抽象化</b>（abstraction）は、大量の実装の詳細を、すっきりした見た目の裏に隠します。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 258" role="img" aria-label="SQLという抽象化の壁。利用者はSELECT文だけを書き、データ構造、同時実行、クラッシュ後の後始末は壁の裏に隠れている"><rect x="40" y="8" width="260" height="52" rx="8" class="bx bx-b"/><text x="170" y="29" text-anchor="middle" class="ts c-mute">あなたが書くもの</text><text x="170" y="48.54" text-anchor="middle" class="t tb">SELECT … FROM posts</text><text x="170" y="80" text-anchor="middle" class="ts tb c-a">抽象化の壁 (SQL)</text><line x1="8" y1="90" x2="332.0" y2="90.0" class="ln s-a" style="stroke-width:4"/><text x="170" y="114" text-anchor="middle" class="ts c-mute">壁の裏に隠れているもの</text><rect x="40" y="124" width="260" height="38" rx="8" class="bx"/><text x="170" y="148.04" text-anchor="middle" class="t">ディスク上・メモリ上のデータ構造</text><rect x="40" y="168" width="260" height="38" rx="8" class="bx"/><text x="170" y="192.04" text-anchor="middle" class="t">他のクライアントとの同時実行</text><rect x="40" y="212" width="260" height="38" rx="8" class="bx"/><text x="170" y="236.04" text-anchor="middle" class="t">クラッシュ後の不整合の後始末</text></svg><figcaption>SQLは抽象化の代表例。壁の裏のことを考えずに済みます。</figcaption></figure>
+
+  <p>高水準プログラミング言語も同じです。マシンコード、CPUレジスタ、システムコールを隠しています。高水準言語で書いていても、マシンコードを使っていることに変わりはありません。<b>直接は</b>使っていないだけです。</p>
+  <p>良い抽象化は、いろいろなアプリで使い回せます。同じものを何度も作り直すより効率がよく、部品の品質が上がれば、使っているアプリ全部が得をします。</p>
+
+  <h4>この本が扱う抽象化</h4>
+  <p>アプリのコードの複雑さを減らす抽象化は、デザインパターンやドメイン駆動設計（DDD）で作れます。この本が扱うのはそちらではありません。その下の土台になる汎用的な抽象化、たとえば<b>データベーストランザクション、インデックス、イベントログ</b>です。DDDを使いたければ、この土台の上に組めます。</p>
+
+  <h3>2.5.3 発展性：変更を楽にする</h3>
+  <p>要件がずっと変わらないことは、まずありません。新しい事実が分かる。想定外の使い道が出てくる。事業の優先順位が変わる。ユーザーが新機能を求める。プラットフォームが入れ替わる。法規制が変わる。成長がアーキテクチャの変更を迫る。</p>
+  <p>組織の進め方としては、アジャイルが変化に合わせる枠組みを出しています。テスト駆動開発（TDD）やリファクタリングも、そのための道具です。この本はもう少し大きい単位、つまり性質の違う複数のアプリやサービスからなる<b>システム全体</b>で、変えやすさを高める方法を探ります。</p>
+  <p>データシステムの変えやすさは、簡潔性と抽象化に深く結びついています。疎結合でシンプルなシステムは、密結合で複雑なシステムより変えやすいのがふつうです。この「データシステムのレベルでの変えやすさ」を、本は<b>発展性</b>と呼びます。</p>
+
+  <h4>変更を難しくする最大の要因：戻れないこと</h4>
+
+  <figure class="fig"><svg viewBox="0 0 340 208" role="img" aria-label="データベース移行の例。旧システムに戻せる移行はリスクが小さく、戻せない移行はリスクが大きい"><text x="8" y="18" text-anchor="start" class="ts tb c-b">戻れる移行</text><rect x="8" y="28" width="110" height="44" rx="8" class="bx"/><text x="63" y="55.04" text-anchor="middle" class="t">旧DB</text><rect x="222" y="28" width="110" height="44" rx="8" class="bx bx-b"/><text x="277" y="55.04" text-anchor="middle" class="t">新DB</text><line x1="118" y1="42" x2="214.0" y2="42.0" class="ln s-b" style="stroke-width:2"/><polygon points="222.0,42.0 213.0,46.5 213.0,37.5" class="fl-b"/><line x1="222" y1="58" x2="126.0" y2="58.0" class="ln s-b" style="stroke-width:2"/><polygon points="118.0,58.0 127.0,53.5 127.0,62.5" class="fl-b"/><text x="170" y="92" text-anchor="middle" class="ts c-b">ダメなら戻す。リスク小</text><text x="8" y="124" text-anchor="start" class="ts tb c-bad">戻れない移行</text><rect x="8" y="134" width="110" height="44" rx="8" class="bx"/><text x="63" y="161.04" text-anchor="middle" class="t">旧DB</text><rect x="222" y="134" width="110" height="44" rx="8" class="bx bx-bad"/><text x="277" y="161.04" text-anchor="middle" class="t">新DB</text><line x1="118" y1="156" x2="214.0" y2="156.0" class="ln s-bad" style="stroke-width:2"/><polygon points="222.0,156.0 213.0,160.5 213.0,151.5" class="fl-bad"/><text x="170" y="198" text-anchor="middle" class="ts c-bad">問題が出ても引き返せない。リスク大</text></svg><figcaption>不可逆性。同じ移行でも、戻り道があるかどうかでリスクが変わります。</figcaption></figure>
+
+  <p>戻れない操作をするときは細心の注意が要ります。逆に、戻れない部分を減らせば、それだけ柔軟になります。</p>
+</section>
+
+<!-- ============================================================ 2.6 -->
+<section class="sec" id="s26">
+  <div class="num">2.6</div>
+  <h2>まとめ</h2>
+
+  <div class="tw"><table>
+    <thead><tr><th>要件</th><th>問い</th><th>覚える言葉</th></tr></thead>
+    <tbody>
+      <tr><th style="color:var(--amber)">パフォーマンス</th><td>速いか</td><td>レスポンスタイム、スループット、パーセンタイル（p50、p95、p99）、末尾遅延、SLO、SLA</td></tr>
+      <tr><th style="color:var(--teal)">信頼性</th><td>壊れても動くか</td><td>障害と機能不全、耐障害性、単一障害点、冗長性、責任追及をしない振り返り</td></tr>
+      <tr><th style="color:var(--peri)">スケーラビリティ</th><td>増えても耐えるか</td><td>負荷の把握、垂直と水平、シェアードナッシング、小さく独立した部品に分ける</td></tr>
+      <tr><th style="color:var(--green)">メンテナンス性</th><td>直し続けられるか</td><td>運用性、簡潔性、発展性、抽象化、不可逆性</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>章の流れを一本にすると、こうなります。</p>
+  <ol>
+    <li>SNSのタイムラインで、規模が大きくなると何が起きるかを見た。</li>
+    <li>性能はレスポンスタイムのパーセンタイルで測り、負荷はスループットで測る。その数字をSLAに使う。</li>
+    <li>スケーラビリティは、負荷が増えても性能を保つこと。原則は、独立して動ける小さな部分に分けること。</li>
+    <li>信頼性は耐障害性で作る。ソフトウェアの障害は連動するぶん、ハードウェアより手ごわい。人のミスに強くすることも含まれる。</li>
+    <li>メンテナンス性は、運用を支え、複雑さを抑え、変えやすくすること。近道はないが、よく理解された部品が出す抽象化が助けになる。</li>
+  </ol>
+
+  <h3>理解度チェック</h3>
+  <p>答えを頭の中で言ってから、開いて確かめてください。</p>
+
+  <details><summary>1. タイムラインを方式2に変えると、何が軽くなり、何が重くなりますか。</summary>
+    <p>読み取りが軽くなり、書き込みが重くなります。投稿1件がフォロワーの数だけの書き込みに増えるからです（ファンアウト）。</p></details>
+  <details><summary>2. 平均レスポンスタイムが200msでも安心できないのはなぜですか。</summary>
+    <p>その遅さを何人が体験したのか、平均からは分からないからです。少数の外れ値が隠れます。p50、p95、p99で見ます。</p></details>
+  <details><summary>3. サーバーで測ると10msなのに、ユーザーは3秒待っています。何が考えられますか。</summary>
+    <p>順番待ち（キューイング遅延、先頭ブロッキング）やネットワークの時間です。これらはサービスタイムに入りません。だからクライアント側で測ります。</p></details>
+  <details><summary>4. RAID構成のディスクが1台壊れました。障害ですか、機能不全ですか。</summary>
+    <p>ディスクにとっては機能不全、システムにとっては障害です。残りのディスクにデータがあるので、システムはサービスを続けられます。</p></details>
+  <details><summary>5. ソフトウェアの障害がハードウェアより手ごわい理由は何ですか。</summary>
+    <p>強く連動するからです。多くのノードが同じソフトウェアを動かしているので、同じバグを同時に踏みます。同じソフトを載せた台数を増やしても防げません。</p></details>
+  <details><summary>6. 「うちのシステムはスケールします」という説明の、どこが足りませんか。</summary>
+    <p>スケーラビリティは一言のラベルではありません。どの負荷がどの方向に増えたとき、どうリソースを足すのか、今の設計の限界はいつ来るのか、を言う必要があります。</p></details>
+  <details><summary>7. 1kBを毎秒10万件と、2GBを毎分3件。同じ設計で済みますか。</summary>
+    <p>済みません。データ量はどちらも100MB/秒ですが、まったく違う設計になります。万能のスケーラブルな構成はありません。</p></details>
+
+  <footer>
+    <p>このページは『データ指向アプリケーションデザイン 第2版』2章を、学習用に自分の言葉でまとめ直したものです。</p>
+    <p>図は、本文と図のタイトルをもとに描き直しています。たとえ話、AWSの例、「本にない」と書いた計算例と数値は、本にはない補足です。</p>
+  </footer>
+</section>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

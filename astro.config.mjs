@@ -27,6 +27,13 @@ export default defineConfig({
         new URL('et-cetera/quaternion/hypersphere/', siteConfig.site.url).href,
         new URL('et-cetera/kenron/', siteConfig.site.url).href,
         new URL('et-cetera/kenron/natural-transformation/', siteConfig.site.url).href,
+        new URL('et-cetera/designing-data-intensive-applications-2nd/', siteConfig.site.url).href,
+        // 章のページ（apps/src/topics/designing-data-intensive-applications-2nd/chapters.ts の slug）
+        ...['ch1-2', 'ch1-3', 'ch1-4', 'ch2', 'ch3', 'ch4', 'ch5', 'ch6', 'ch7', 'ch8', 'ch9'].map(
+          (slug) =>
+            new URL(`et-cetera/designing-data-intensive-applications-2nd/${slug}/`, siteConfig.site.url)
+              .href
+        ),
       ],
     }),
     icon(),

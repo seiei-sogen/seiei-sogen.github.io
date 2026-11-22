@@ -103,3 +103,25 @@ src/topics/quaternion/
 ```
 
 説明は中学生でも読めることを目標にしている。式は「式で見たい人へ」に折りたたむ。
+
+### designing-data-intensive-applications-2nd — データ指向アプリケーションデザイン 第2版 図解ノート
+
+『データ指向アプリケーションデザイン 第2版』を章ごとに図解したページ。ダークモード専用、本文 27px 以上・行間 2。
+
+目次（`/et-cetera/designing-data-intensive-applications-2nd/`）だけがルートで、各章のページはルーターを通さない1枚ものの HTML を `public/` にそのまま置いている。Vite が `public/` をビルド結果にコピーするので、`just apps-build` で `public/et-cetera/designing-data-intensive-applications-2nd/<slug>/` に出る。目次から章へは `<a>` で開く（`<Link>` は使わない）。
+
+```
+src/routes/designing-data-intensive-applications-2nd/   route = 枠（フッター） ・ index = 目次
+src/topics/designing-data-intensive-applications-2nd/
+  chapters.ts                目次に並べる章（slug・番号・題・説明）
+  styles.css                 目次の CSS
+public/designing-data-intensive-applications-2nd/
+  <slug>/index.html          各章のページ（1枚もの。CSS もスクリプトもこの中）
+```
+
+章を足すとき:
+
+1. `public/designing-data-intensive-applications-2nd/<slug>/index.html` に HTML を置く
+2. 目次へ戻るリンクを入れる。既存の章のファイルから `etc-ddia-nav` の部分（`</head>` の直前の `<style>`、`<body>` の直後と `</body>` の直前の `<nav>`）をそのまま写す
+3. `src/topics/designing-data-intensive-applications-2nd/chapters.ts` に1件追加する
+4. リポジトリのルートの `astro.config.mjs` の `sitemap.customPages` の slug の並びに足す

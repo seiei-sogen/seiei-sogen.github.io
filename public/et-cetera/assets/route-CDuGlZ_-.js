@@ -1,0 +1,1 @@
+import{A as e,o as t,s as n,u as r,v as i}from"./web-bKnwkWOr.js";import{o as a}from"./index-BkFdx4VM.js";var o=i(`<main class="page wrap"><p>ページが見つかりません。</p><!$><!/>`),s=()=>(()=>{var i=t(o),s=i.firstChild.nextSibling,[c,l]=n(s.nextSibling);return r(i,e(a,{to:`/code-vipassana`,children:`問題一覧へ`}),c,l),i})();export{s as notFoundComponent};

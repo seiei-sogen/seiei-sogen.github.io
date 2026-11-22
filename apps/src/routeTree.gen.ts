@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CodeVipassanaRouteRouteImport } from './routes/code-vipassana/route'
+import { Route as DesigningDataIntensiveApplications2ndRouteRouteImport } from './routes/designing-data-intensive-applications-2nd/route'
 import { Route as KenronRouteRouteImport } from './routes/kenron/route'
 import { Route as QuaternionRouteRouteImport } from './routes/quaternion/route'
 import { Route as CodeVipassanaIndexRouteImport } from './routes/code-vipassana/index'
 import { Route as CodeVipassanaLicensesRouteImport } from './routes/code-vipassana/licenses'
+import { Route as DesigningDataIntensiveApplications2ndIndexRouteImport } from './routes/designing-data-intensive-applications-2nd/index'
 import { Route as KenronIndexRouteImport } from './routes/kenron/index'
 import { Route as KenronNaturalTransformationRouteImport } from './routes/kenron/natural-transformation'
 import { Route as QuaternionIndexRouteImport } from './routes/quaternion/index'
@@ -33,6 +35,12 @@ const CodeVipassanaRouteRoute = CodeVipassanaRouteRouteImport.update({
   path: '/code-vipassana',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DesigningDataIntensiveApplications2ndRouteRoute =
+  DesigningDataIntensiveApplications2ndRouteRouteImport.update({
+    id: '/designing-data-intensive-applications-2nd',
+    path: '/designing-data-intensive-applications-2nd',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const KenronRouteRoute = KenronRouteRouteImport.update({
   id: '/kenron',
   path: '/kenron',
@@ -53,6 +61,12 @@ const CodeVipassanaLicensesRoute = CodeVipassanaLicensesRouteImport.update({
   path: '/licenses',
   getParentRoute: () => CodeVipassanaRouteRoute,
 } as any)
+const DesigningDataIntensiveApplications2ndIndexRoute =
+  DesigningDataIntensiveApplications2ndIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DesigningDataIntensiveApplications2ndRouteRoute,
+  } as any)
 const KenronIndexRoute = KenronIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -93,6 +107,7 @@ const CodeVipassanaProblemsIdRoute = CodeVipassanaProblemsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/code-vipassana': typeof CodeVipassanaRouteRouteWithChildren
+  '/designing-data-intensive-applications-2nd': typeof DesigningDataIntensiveApplications2ndRouteRouteWithChildren
   '/kenron': typeof KenronRouteRouteWithChildren
   '/quaternion': typeof QuaternionRouteRouteWithChildren
   '/code-vipassana/licenses': typeof CodeVipassanaLicensesRoute
@@ -101,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/quaternion/euler': typeof QuaternionEulerRoute
   '/quaternion/hypersphere': typeof QuaternionHypersphereRoute
   '/code-vipassana/': typeof CodeVipassanaIndexRoute
+  '/designing-data-intensive-applications-2nd/': typeof DesigningDataIntensiveApplications2ndIndexRoute
   '/kenron/': typeof KenronIndexRoute
   '/quaternion/': typeof QuaternionIndexRoute
   '/code-vipassana/problems/$id': typeof CodeVipassanaProblemsIdRoute
@@ -113,6 +129,7 @@ export interface FileRoutesByTo {
   '/quaternion/euler': typeof QuaternionEulerRoute
   '/quaternion/hypersphere': typeof QuaternionHypersphereRoute
   '/code-vipassana': typeof CodeVipassanaIndexRoute
+  '/designing-data-intensive-applications-2nd': typeof DesigningDataIntensiveApplications2ndIndexRoute
   '/kenron': typeof KenronIndexRoute
   '/quaternion': typeof QuaternionIndexRoute
   '/code-vipassana/problems/$id': typeof CodeVipassanaProblemsIdRoute
@@ -121,6 +138,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/code-vipassana': typeof CodeVipassanaRouteRouteWithChildren
+  '/designing-data-intensive-applications-2nd': typeof DesigningDataIntensiveApplications2ndRouteRouteWithChildren
   '/kenron': typeof KenronRouteRouteWithChildren
   '/quaternion': typeof QuaternionRouteRouteWithChildren
   '/code-vipassana/licenses': typeof CodeVipassanaLicensesRoute
@@ -129,6 +147,7 @@ export interface FileRoutesById {
   '/quaternion/euler': typeof QuaternionEulerRoute
   '/quaternion/hypersphere': typeof QuaternionHypersphereRoute
   '/code-vipassana/': typeof CodeVipassanaIndexRoute
+  '/designing-data-intensive-applications-2nd/': typeof DesigningDataIntensiveApplications2ndIndexRoute
   '/kenron/': typeof KenronIndexRoute
   '/quaternion/': typeof QuaternionIndexRoute
   '/code-vipassana/problems/$id': typeof CodeVipassanaProblemsIdRoute
@@ -138,6 +157,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/code-vipassana'
+    | '/designing-data-intensive-applications-2nd'
     | '/kenron'
     | '/quaternion'
     | '/code-vipassana/licenses'
@@ -146,6 +166,7 @@ export interface FileRouteTypes {
     | '/quaternion/euler'
     | '/quaternion/hypersphere'
     | '/code-vipassana/'
+    | '/designing-data-intensive-applications-2nd/'
     | '/kenron/'
     | '/quaternion/'
     | '/code-vipassana/problems/$id'
@@ -158,6 +179,7 @@ export interface FileRouteTypes {
     | '/quaternion/euler'
     | '/quaternion/hypersphere'
     | '/code-vipassana'
+    | '/designing-data-intensive-applications-2nd'
     | '/kenron'
     | '/quaternion'
     | '/code-vipassana/problems/$id'
@@ -165,6 +187,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/code-vipassana'
+    | '/designing-data-intensive-applications-2nd'
     | '/kenron'
     | '/quaternion'
     | '/code-vipassana/licenses'
@@ -173,6 +196,7 @@ export interface FileRouteTypes {
     | '/quaternion/euler'
     | '/quaternion/hypersphere'
     | '/code-vipassana/'
+    | '/designing-data-intensive-applications-2nd/'
     | '/kenron/'
     | '/quaternion/'
     | '/code-vipassana/problems/$id'
@@ -181,6 +205,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CodeVipassanaRouteRoute: typeof CodeVipassanaRouteRouteWithChildren
+  DesigningDataIntensiveApplications2ndRouteRoute: typeof DesigningDataIntensiveApplications2ndRouteRouteWithChildren
   KenronRouteRoute: typeof KenronRouteRouteWithChildren
   QuaternionRouteRoute: typeof QuaternionRouteRouteWithChildren
 }
@@ -199,6 +224,13 @@ declare module '@tanstack/solid-router' {
       path: '/code-vipassana'
       fullPath: '/code-vipassana'
       preLoaderRoute: typeof CodeVipassanaRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designing-data-intensive-applications-2nd': {
+      id: '/designing-data-intensive-applications-2nd'
+      path: '/designing-data-intensive-applications-2nd'
+      fullPath: '/designing-data-intensive-applications-2nd'
+      preLoaderRoute: typeof DesigningDataIntensiveApplications2ndRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kenron': {
@@ -228,6 +260,13 @@ declare module '@tanstack/solid-router' {
       fullPath: '/code-vipassana/licenses'
       preLoaderRoute: typeof CodeVipassanaLicensesRouteImport
       parentRoute: typeof CodeVipassanaRouteRoute
+    }
+    '/designing-data-intensive-applications-2nd/': {
+      id: '/designing-data-intensive-applications-2nd/'
+      path: '/'
+      fullPath: '/designing-data-intensive-applications-2nd/'
+      preLoaderRoute: typeof DesigningDataIntensiveApplications2ndIndexRouteImport
+      parentRoute: typeof DesigningDataIntensiveApplications2ndRouteRoute
     }
     '/kenron/': {
       id: '/kenron/'
@@ -296,6 +335,21 @@ const CodeVipassanaRouteRouteChildren: CodeVipassanaRouteRouteChildren = {
 const CodeVipassanaRouteRouteWithChildren =
   CodeVipassanaRouteRoute._addFileChildren(CodeVipassanaRouteRouteChildren)
 
+interface DesigningDataIntensiveApplications2ndRouteRouteChildren {
+  DesigningDataIntensiveApplications2ndIndexRoute: typeof DesigningDataIntensiveApplications2ndIndexRoute
+}
+
+const DesigningDataIntensiveApplications2ndRouteRouteChildren: DesigningDataIntensiveApplications2ndRouteRouteChildren =
+  {
+    DesigningDataIntensiveApplications2ndIndexRoute:
+      DesigningDataIntensiveApplications2ndIndexRoute,
+  }
+
+const DesigningDataIntensiveApplications2ndRouteRouteWithChildren =
+  DesigningDataIntensiveApplications2ndRouteRoute._addFileChildren(
+    DesigningDataIntensiveApplications2ndRouteRouteChildren,
+  )
+
 interface KenronRouteRouteChildren {
   KenronNaturalTransformationRoute: typeof KenronNaturalTransformationRoute
   KenronIndexRoute: typeof KenronIndexRoute
@@ -331,6 +385,8 @@ const QuaternionRouteRouteWithChildren = QuaternionRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CodeVipassanaRouteRoute: CodeVipassanaRouteRouteWithChildren,
+  DesigningDataIntensiveApplications2ndRouteRoute:
+    DesigningDataIntensiveApplications2ndRouteRouteWithChildren,
   KenronRouteRoute: KenronRouteRouteWithChildren,
   QuaternionRouteRoute: QuaternionRouteRouteWithChildren,
 }
