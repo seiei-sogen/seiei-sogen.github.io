@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 1.2 クラウドとセルフホスティング図解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one narrow study-note column. Orange always means "自分でやる", blue always means "任せる". */
+:root {
+  --bg: #f2f5fa;
+  --surface: #ffffff;
+  --ink: #14213a;
+  --muted: #56637c;
+  --line: #d3dbea;
+  --self: #c8560a;
+  --self-soft: #ffecd9;
+  --cloud: #1c63d6;
+  --cloud-soft: #e2edff;
+  --warn: #bf2f3a;
+  --warn-soft: #fde7e9;
+  --note: #6a55c9;
+  --note-soft: #eeeafc;
+  --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1524;
+    --surface: #172136;
+    --ink: #e9eefb;
+    --muted: #9dabc7;
+    --line: #2d3b5a;
+    --self: #ff9d52;
+    --self-soft: #40270f;
+    --cloud: #74abff;
+    --cloud-soft: #172e56;
+    --warn: #ff8189;
+    --warn-soft: #471b21;
+    --note: #b9a4f5;
+    --note-soft: #2b2350;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1524;
+  --surface: #172136;
+  --ink: #e9eefb;
+  --muted: #9dabc7;
+  --line: #2d3b5a;
+  --self: #ff9d52;
+  --self-soft: #40270f;
+  --cloud: #74abff;
+  --cloud-soft: #172e56;
+  --warn: #ff8189;
+  --warn-soft: #471b21;
+  --note: #b9a4f5;
+  --note-soft: #2b2350;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.85;
+}
+main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; word-break: auto-phrase; margin: 0; line-height: 1.35; }
+.nb { display: inline-block; }
+h1 { font-size: 30px; font-weight: 900; }
+h2 { font-size: 23px; font-weight: 900; }
+h3 { font-size: 18px; font-weight: 700; }
+p { margin: 0; }
+b, strong { font-weight: 700; }
+.self { color: var(--self); font-weight: 700; }
+.cloud { color: var(--cloud); font-weight: 700; }
+
+header { display: flex; flex-direction: column; gap: 12px; }
+.eyebrow { font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+.lead { font-size: 17px; }
+
+section { display: flex; flex-direction: column; gap: 16px; }
+.sec-no {
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 700; color: var(--muted);
+  border-top: 2px solid var(--ink);
+  padding-top: 10px;
+}
+.sub { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+
+.box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.box.point { border-left: 6px solid var(--ink); }
+.box.note { background: var(--note-soft); border-color: transparent; }
+.box.note .tag { color: var(--note); }
+.tag { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--muted); }
+.fig-cap { font-size: 13px; color: var(--muted); }
+
+ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+
+/* legend */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.dot.s { background: var(--self); }
+.dot.c { background: var(--cloud); }
+
+/* chips */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: 12.5px; font-weight: 700; line-height: 1.4;
+  padding: 3px 9px; border-radius: 999px;
+  border: 1.5px solid currentColor;
+}
+.chip.s { color: var(--self); background: var(--self-soft); }
+.chip.c { color: var(--cloud); background: var(--cloud-soft); }
+
+/* curry analogy */
+.cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 560px) { .cards3 { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.card .emoji { font-size: 30px; line-height: 1; }
+.card h3 { font-size: 16px; }
+.card p { font-size: 14px; line-height: 1.7; }
+.card .eq { font-size: 13.5px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+.card { position: relative; overflow: hidden; padding-top: 20px; }
+.card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; }
+.card.k1::before { background: var(--self); }
+.card.k2::before { background: linear-gradient(90deg, var(--self), var(--cloud)); }
+.card.k3::before { background: var(--cloud); }
+
+/* spectrum */
+.spectrum { display: grid; grid-template-columns: 34px 1fr; gap: 12px; }
+.axis {
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--self), var(--cloud));
+  display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+  padding: 12px 0; color: #fff; font-size: 12px; font-weight: 700;
+}
+.axis span { writing-mode: vertical-rl; letter-spacing: .1em; }
+.rows { display: flex; flex-direction: column; gap: 10px; }
+.row {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.row h3 { font-size: 16px; }
+.row p { font-size: 14px; line-height: 1.65; color: var(--muted); }
+.bracket {
+  border: 2px dashed var(--muted); border-radius: 14px; padding: 10px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.bracket > .tag { padding-left: 4px; }
+
+/* decision */
+.decide { display: flex; flex-direction: column; gap: 10px; }
+.if {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  font-size: 14.5px; line-height: 1.6;
+}
+.if .arrow { font-weight: 700; color: var(--muted); }
+.if .then { font-weight: 700; }
+.if .then.s { color: var(--self); }
+.if .then.c { color: var(--cloud); }
+.if small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px; }
+
+/* svg charts */
+.chart { width: 100%; height: auto; display: block; }
+.chart text { font-family: var(--font-body); fill: var(--ink); font-size: 11.5px; }
+.chart .mut { fill: var(--muted); }
+.chart .axisline { stroke: var(--muted); stroke-width: 1; fill: none; }
+.chart .load { fill: var(--muted); opacity: .35; }
+.chart .loadline { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+.chart .cap-s { stroke: var(--self); stroke-width: 2.5; fill: none; }
+.chart .waste-s { fill: var(--self); opacity: .18; }
+.chart .cap-c { stroke: var(--cloud); stroke-width: 2.5; fill: none; }
+.chart .t-s { fill: var(--self); font-weight: 700; }
+.chart .t-c { fill: var(--cloud); font-weight: 700; }
+
+/* versus */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .vs { grid-template-columns: 1fr; } }
+.side { border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; line-height: 1.7; }
+.side.s { background: var(--self-soft); }
+.side.c { background: var(--cloud-soft); }
+.side h3 { font-size: 15px; }
+.side.s h3 { color: var(--self); }
+.side.c h3 { color: var(--cloud); }
+
+/* risks */
+.risks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; counter-reset: r; }
+@media (max-width: 520px) { .risks { grid-template-columns: 1fr; } }
+.risk {
+  background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--warn);
+  border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;
+  font-size: 14px; line-height: 1.65;
+}
+.risk h3 { font-size: 15px; }
+.risk .so { color: var(--warn); font-weight: 700; }
+
+/* table */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 1.6; }
+th:first-child, td:first-child { width: 6.2em; }
+th, td { padding: 10px 9px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+thead th { font-family: var(--font-display); font-size: 13px; }
+th.s { color: var(--self); } th.c { color: var(--cloud); }
+
+/* layers */
+.stacks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+@media (max-width: 520px) { .stacks { grid-template-columns: 1fr; } }
+.stack { display: flex; flex-direction: column; gap: 4px; }
+.stack .ttl { font-family: var(--font-display); font-weight: 700; font-size: 14px; padding-bottom: 4px; }
+.layer {
+  border-radius: 8px; padding: 9px 12px; font-size: 13.5px; line-height: 1.5; text-align: center;
+  border: 1.5px solid var(--line); background: var(--surface);
+}
+.layer small { display: block; color: var(--muted); font-size: 12px; }
+.stack.s .layer.top { background: var(--self-soft); border-color: var(--self); }
+.stack.c .layer { background: var(--cloud-soft); border-color: var(--cloud); }
+.stack.c .layer.base, .stack.s .layer.base { background: var(--surface); border-style: dashed; border-color: var(--muted); }
+.up { text-align: center; font-size: 12px; color: var(--muted); line-height: 1; }
+
+/* storage / compute */
+.machines { display: flex; flex-direction: column; gap: 14px; }
+.pc {
+  border: 2px solid var(--self); border-radius: 14px; padding: 12px; background: var(--surface);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pc .parts { display: flex; gap: 8px; flex-wrap: wrap; }
+.part {
+  flex: 1 1 110px; border-radius: 8px; padding: 8px 10px; text-align: center; font-size: 13.5px; line-height: 1.5;
+  border: 1.5px solid var(--line); background: var(--bg);
+}
+.part small { display: block; color: var(--muted); font-size: 12px; }
+.split { display: flex; flex-direction: column; gap: 0; }
+.computes { display: flex; gap: 8px; flex-wrap: wrap; }
+.computes .part { background: var(--cloud-soft); border-color: var(--cloud); }
+.computes .part.ghost { background: transparent; border-style: dashed; color: var(--cloud); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.net {
+  align-self: center; text-align: center; font-size: 12.5px; color: var(--muted); font-weight: 700;
+  border-left: 3px dotted var(--muted); border-right: 3px dotted var(--muted);
+  padding: 10px 14px; margin: 0;
+}
+.store {
+  border-radius: 10px; padding: 12px; text-align: center; font-size: 14px; line-height: 1.6;
+  background: var(--cloud-soft); border: 2px solid var(--cloud);
+}
+.store small { display: block; color: var(--muted); font-size: 12.5px; }
+
+.opts { display: flex; flex-direction: column; gap: 10px; counter-reset: o; }
+.opt {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  display: grid; grid-template-columns: 30px 1fr; gap: 10px; font-size: 14.5px; line-height: 1.7;
+}
+.opt::before {
+  counter-increment: o; content: counter(o);
+  width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--bg);
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 900; font-size: 14px;
+}
+.opt h3 { font-size: 15.5px; }
+.opt .verdict { font-weight: 700; }
+
+/* tenants */
+.tenants { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .tenants { grid-template-columns: 1fr; } }
+.tn { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.tn h3 { font-size: 14.5px; }
+.houses { display: flex; gap: 6px; }
+.house { flex: 1; border: 1.5px solid var(--self); background: var(--self-soft); border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 12.5px; line-height: 1.4; }
+.building { border: 2px solid var(--cloud); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 5px; }
+.building .unit { background: var(--cloud-soft); border-radius: 5px; text-align: center; font-size: 12.5px; padding: 4px; }
+.building .ground { text-align: center; font-size: 12px; color: var(--muted); }
+.tn p { font-size: 13.5px; line-height: 1.65; }
+
+/* ops */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl {
+  display: grid; grid-template-columns: 18px 1fr; gap: 12px; font-size: 14.5px; line-height: 1.7;
+}
+.tl i { justify-self: center; width: 3px; background: var(--line); position: relative; }
+.tl i::before { content: ""; position: absolute; top: 8px; left: -5.5px; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); }
+.tl div { padding-bottom: 14px; }
+.tl:last-child div { padding-bottom: 0; }
+
+.shift { display: flex; flex-direction: column; gap: 8px; }
+.sh {
+  display: grid; grid-template-columns: 1fr 24px 1fr; gap: 8px; align-items: center; font-size: 14px; line-height: 1.55;
+}
+.sh .from, .sh .to { border-radius: 10px; padding: 10px 12px; }
+.sh .from { background: var(--self-soft); }
+.sh .to { background: var(--cloud-soft); font-weight: 700; }
+.sh .ar { text-align: center; font-weight: 700; color: var(--muted); }
+
+.check { list-style: none; padding: 0; }
+.check li { padding-left: 28px; position: relative; font-size: 15px; }
+.check li::before {
+  content: ""; position: absolute; left: 2px; top: .5em; width: 16px; height: 16px;
+  border: 2px solid var(--self); border-radius: 4px; background: var(--self-soft);
+}
+
+/* quiz */
+details {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0;
+}
+summary {
+  cursor: pointer; padding: 12px 14px; font-weight: 700; font-size: 15px; line-height: 1.6;
+}
+summary:focus-visible { outline: 3px solid var(--cloud); outline-offset: 2px; border-radius: 12px; }
+details p { padding: 0 14px 14px; font-size: 14.5px; }
+.quiz { display: flex; flex-direction: column; gap: 8px; }
+
+footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; line-height: 1.7; }
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<main>
+
+<header>
+  <div class="eyebrow">データ指向アプリケーションデザイン 第2版 ／ 1章 データシステムアーキテクチャのトレードオフ</div>
+  <h1><span class="nb">1.2 クラウドと</span><span class="nb">セルフホスティング</span></h1>
+  <p class="lead">ひとことで言うと、<b>「自分で面倒を見るか、お金を払って人に任せるか」</b>の話です。どちらが正しいという結論はなく、何と引き換えに何を得るかを整理する節です。</p>
+  <div class="legend">
+    <span><i class="dot s"></i>オレンジ＝自分でやる</span>
+    <span><i class="dot c"></i>青＝人に任せる</span>
+  </div>
+  <div class="box point">
+    <div class="tag">30秒でわかる 1.2</div>
+    <ol>
+      <li>ソフトには<b>「誰が作るか」</b>と<b>「誰が動かすか」</b>の2つの選択がある。</li>
+      <li>クラウドは楽で伸び縮みできる。そのかわり<b>自分でコントロールできない</b>。</li>
+      <li>クラウド前提で設計されたシステム（クラウドネイティブ）は、<b>計算する場所とデータを置く場所を分ける</b>。</li>
+      <li>クラウドにしても<b>運用の仕事はなくならない</b>。中身が変わるだけ。</li>
+    </ol>
+  </div>
+</header>
+
+<!-- ============ 導入 ============ -->
+<section>
+  <div class="sec-no">1.2 のはじめ</div>
+  <h2>カレーを食べたい。さて、どうする？</h2>
+  <p>会社が何かをやるとき、最初に出てくるのが「自分たちでやる？ 外に頼む？」です。カレーで考えるとこうなります。</p>
+
+  <div class="cards3">
+    <div class="card k1">
+      <div class="emoji">🌶️</div>
+      <h3>スパイスから自作</h3>
+      <p>レシピを考えるのも、作るのも、片付けも全部自分。味は思いのまま。</p>
+      <p class="eq">＝ 自社で書いたソフトを、自社で動かす</p>
+    </div>
+    <div class="card k2">
+      <div class="emoji">🍛</div>
+      <h3>市販のルーで作る</h3>
+      <p>レシピは他人が考えたもの。でも鍋を振るのと片付けは自分。</p>
+      <p class="eq">＝ 既製のソフト（MySQLなど）を自分で動かす。これが<b>セルフホスト</b></p>
+    </div>
+    <div class="card k3">
+      <div class="emoji">🍽️</div>
+      <h3>お店で注文</h3>
+      <p>座って待つだけ。厨房の中は見えないし、味の調整も頼めない。</p>
+      <p class="eq">＝ <b>クラウドサービス／SaaS</b></p>
+    </div>
+  </div>
+
+  <div class="box point">
+    <div class="tag">判断のものさし</div>
+    <p><span class="self">自社ならではの強みになるもの</span>は自分でやる。<span class="cloud">どこの会社でも同じ、ありふれたもの</span>は買ってくる。</p>
+    <p class="fig-cap">極端な例：CPUを自分で作る会社はほぼありません。半導体メーカーから買うほうがずっと安いからです。</p>
+  </div>
+
+  <div class="sub">
+    <h3>選択肢は白黒ではなく、グラデーション</h3>
+    <p>本の図1-2にあたる図です。上に行くほど自分でやることが多く、下に行くほど任せることが多くなります。</p>
+
+    <div class="spectrum">
+      <div class="axis"><span>自分でやる</span><span>任せる</span></div>
+      <div class="rows">
+        <div class="row">
+          <h3>自作して、自分で動かす</h3>
+          <div class="chips"><span class="chip s">作る：自分</span><span class="chip s">動かす：自分</span></div>
+          <p>例：自社専用に書いたシステム</p>
+        </div>
+        <div class="bracket">
+          <div class="tag">ここがセルフホスト（既製品を自分でデプロイ）</div>
+          <div class="row">
+            <h3>既製ソフトを自社のマシンで動かす</h3>
+            <div class="chips"><span class="chip c">作る：他人</span><span class="chip s">動かす：自分</span><span class="chip s">マシン：自前</span></div>
+            <p>例：MySQLをダウンロードして自社サーバーに入れる。<b>オンプレミス</b>と呼ぶ。</p>
+          </div>
+          <div class="row">
+            <h3>既製ソフトを借りたVMで動かす</h3>
+            <div class="chips"><span class="chip c">作る：他人</span><span class="chip s">動かす：自分</span><span class="chip c">マシン：借り物</span></div>
+            <p>例：MySQLをクラウドの仮想マシンに入れる。マシンだけ借りる形を <b>IaaS</b> と呼ぶ。</p>
+          </div>
+        </div>
+        <div class="row">
+          <h3>クラウドサービス／SaaS</h3>
+          <div class="chips"><span class="chip c">作る：他人</span><span class="chip c">動かす：他人</span></div>
+          <p>WebやAPI越しに使うだけ。中身には触れない。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="box note">
+      <div class="tag">言葉のメモ</div>
+      <ul>
+        <li><b>オンプレミス</b>：自社で管理するハードで動かすこと。サーバーが借りたデータセンターのラックに置いてあっても、こう呼ぶのがふつう。</li>
+        <li><b>IaaS</b>（Infrastructure as a Service）：クラウドのVMを借りること。中で何を動かすかは自由、そのかわり面倒も自分で見る。</li>
+        <li>Kubernetesなど「どうやってデプロイするか」の道具選びは、データシステムの設計への影響が小さいので、この本では扱わない。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 1.2.1 ============ -->
+<section>
+  <div class="sec-no">1.2.1</div>
+  <h2><span class="nb">クラウドサービスの</span><span class="nb">良いところ、悪いところ</span></h2>
+  <p>クラウド会社は「うちを使えば安くて速い」と言います。でも本当にそうかは<b>自分たちのスキル</b>と<b>負荷の波</b>しだいです。</p>
+
+  <div class="decide">
+    <div class="if">
+      <div>運用のやり方をもう知っている。<br>負荷もだいたい読める。</div>
+      <div class="arrow">→</div>
+      <div class="then s">自前のほうが安いことが多い<small>マシンを買って自分で動かす</small></div>
+    </div>
+    <div class="if">
+      <div>そのシステムの動かし方をまだ知らない。</div>
+      <div class="arrow">→</div>
+      <div class="then c">クラウドのほうが早くて楽<small>専任の人を雇って育てるのはとても高い</small></div>
+    </div>
+    <div class="if">
+      <div>負荷が時間によって大きく上下する。</div>
+      <div class="arrow">→</div>
+      <div class="then c">クラウドが特に得意<small>使う分だけ借りて、終わったら返せる</small></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>なぜ「負荷の波」が大事なのか</h3>
+    <p>自前のマシンは、いちばん混む瞬間に耐えられる台数を買っておく必要があります。すると、ひまな時間はずっとマシンが遊んでいます。</p>
+
+    <div class="box">
+      <div class="tag"><span class="self">自前</span>：ピークに合わせて買う</div>
+      <svg class="chart" viewBox="0 0 340 150" role="img" aria-label="自前の場合。能力の線はピークの高さで一定。負荷が低い時間帯は能力が余っている。">
+        <path class="waste-s" d="M10,16 H330 V100 L290,96 L270,28 L250,30 L230,92 L200,100 L150,95 L130,35 L110,40 L90,98 L60,100 L10,105 Z"/>
+        <path class="load" d="M10,105 L60,100 L90,98 L110,40 L130,35 L150,95 L200,100 L230,92 L250,30 L270,28 L290,96 L330,100 V125 H10 Z"/>
+        <path class="loadline" d="M10,105 L60,100 L90,98 L110,40 L130,35 L150,95 L200,100 L230,92 L250,30 L270,28 L290,96 L330,100"/>
+        <path class="cap-s" d="M10,16 H330"/>
+        <path class="axisline" d="M10,8 V125 H332"/>
+        <text class="t-s" x="16" y="12">用意した能力（ずっと一定）</text>
+        <text class="t-s" x="170" y="62">余り。お金は</text>
+        <text class="t-s" x="170" y="77">払っている</text>
+        <text x="16" y="120">実際の負荷</text>
+        <text class="mut" x="300" y="142">時間 →</text>
+      </svg>
+    </div>
+
+    <div class="box">
+      <div class="tag"><span class="cloud">クラウド</span>：負荷に合わせて増やして、減らす</div>
+      <svg class="chart" viewBox="0 0 340 150" role="img" aria-label="クラウドの場合。能力の線が負荷の山に合わせて上がり、山が終わると下がる。">
+        <path class="load" d="M10,105 L60,100 L90,98 L110,40 L130,35 L150,95 L200,100 L230,92 L250,30 L270,28 L290,96 L330,100 V125 H10 Z"/>
+        <path class="loadline" d="M10,105 L60,100 L90,98 L110,40 L130,35 L150,95 L200,100 L230,92 L250,30 L270,28 L290,96 L330,100"/>
+        <path class="cap-c" d="M10,88 H88 V22 H152 V88 H228 V16 H292 V88 H330"/>
+        <path class="axisline" d="M10,8 V125 H332"/>
+        <text class="t-c" x="16" y="80">借りた能力</text>
+        <text class="t-c" x="160" y="50">山が来たら</text>
+        <text class="t-c" x="160" y="65">増やす</text>
+        <text x="16" y="120">実際の負荷</text>
+        <text class="mut" x="300" y="142">時間 →</text>
+      </svg>
+      <p class="fig-cap">図はイメージです。山のときだけ借りて、終わったらクラウド会社に返します。</p>
+    </div>
+
+    <div class="box note">
+      <div class="tag">波が激しい代表：分析システム</div>
+      <p>大きな分析クエリは、大量のマシンを並列に使って一気に終わらせたい。でも終わった瞬間、次のクエリまでマシンはひまになります。データが巨大で、速く結果がほしいほど、クラウドで「使い終わったら返す」効果が大きくなります。データが小さければ差は小さめです。</p>
+      <p class="fig-cap">日次レポートのような決まったクエリは、順番待ちにして波をならせます。人がその場で投げるクエリではそれが難しい。</p>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>サービスの質はどっちが上？</h3>
+    <div class="vs">
+      <div class="side c">
+        <h3>任せた場合</h3>
+        <p>相手は運用のプロ。たくさんの顧客を相手にする中でノウハウがたまっていく。自分でやるより質が高いかもしれない。</p>
+      </div>
+      <div class="side s">
+        <h3>自分で動かす場合</h3>
+        <p>自社の使い方にぴったり合うように設定やチューニングができる。クラウド側がそこまでやってくれることはまずない。</p>
+      </div>
+    </div>
+    <p class="fig-cap">なお、クラウドにしても運用チームは必要です（1.2.3で出てきます）。基本的な管理を任せることで、もっと上のレイヤーの課題に集中できる、という話です。</p>
+  </div>
+
+  <div class="sub">
+    <h3>最大の欠点：自分でコントロールできない</h3>
+    <p>お店のカレーは、厨房に入って直すことができません。クラウドも同じです。</p>
+    <div class="risks">
+      <div class="risk">
+        <h3>ほしい機能がない</h3>
+        <p><span class="so">お願いするしかない。</span>自分で実装することはふつうできない。</p>
+      </div>
+      <div class="risk">
+        <h3>サービスが落ちた</h3>
+        <p><span class="so">復旧を待つしかない。</span></p>
+      </div>
+      <div class="risk">
+        <h3>遅い、バグっぽい</h3>
+        <p><span class="so">原因を調べにくい。</span>自前ならOSのメトリクスやサーバーログを見られるが、クラウドでは中が見えない。</p>
+      </div>
+      <div class="risk">
+        <h3>終了・値上げ・仕様変更</h3>
+        <p><span class="so">相手の都合に振り回される。</span>古いバージョンを使い続ける手はたいてい使えず、引っ越すことになる。標準のAPIがないと引っ越し代が高い。これが<b>ベンダーロックイン</b>。</p>
+      </div>
+      <div class="risk">
+        <h3>国と国がもめた</h3>
+        <p><span class="so">締め出されるおそれ。</span>提供元が外国の会社だと、制裁で使えなくなるリスクがある。</p>
+      </div>
+      <div class="risk">
+        <h3>データを預けている</h3>
+        <p><span class="so">相手を信じるしかない。</span>プライバシーやセキュリティの規制に対応する手続きがややこしくなる。</p>
+      </div>
+    </div>
+
+    <div class="box point">
+      <div class="tag">それでも現実は</div>
+      <p>これだけリスクがあっても、クラウドの上に新しいアプリを作る会社は増え続けています。一部だけクラウドにする<b>ハイブリッド</b>も一般的です。</p>
+      <p>ただし全部がクラウドに移るわけではありません。クラウド以前からある古いシステムは残りますし、特殊な要件のものは自前が必要です。たとえば高頻度取引は遅延に極端に敏感なので、ハードウェアを完全に自分で握りたい。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 1.2.2 ============ -->
+<section>
+  <div class="sec-no">1.2.2</div>
+  <h2><span class="nb">クラウドネイティブな</span><span class="nb">システムアーキテクチャ</span></h2>
+  <p>クラウドが変えたのは「買う」から「月額で借りる」というお金の払い方だけではありません。<b>データシステムの作り方そのもの</b>も変えました。</p>
+
+  <div class="vs">
+    <div class="side s">
+      <h3>クラウドに引っ越しただけ</h3>
+      <p>もともと自分で動かす前提のソフトを、クラウド会社が代わりに動かして提供する（マネージドサービス）。</p>
+    </div>
+    <div class="side c">
+      <h3>クラウドネイティブ</h3>
+      <p>最初から<b>クラウドの強みを活かす前提で設計</b>したシステム。</p>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="tag">最初からクラウド用に作ると何がうれしいか</div>
+    <ul>
+      <li>同じハードウェアでも性能が出る</li>
+      <li>障害からの復旧が速い</li>
+      <li>負荷に合わせてすばやく増減できる</li>
+      <li>もっと大きなデータを扱える</li>
+    </ul>
+  </div>
+
+  <p class="fig-cap">本の表1-2：それぞれの代表例</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>用途</th><th class="s">セルフホスト型</th><th class="c">クラウドネイティブ</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ふだんの業務処理<br>（OLTP）</td><td>MySQL、PostgreSQL、MongoDB</td><td>AWS Aurora、Azure SQL DB Hyperscale、Google Cloud Spanner</td></tr>
+        <tr><td>分析<br>（OLAP）</td><td>Teradata、ClickHouse、Spark</td><td>Snowflake、Google BigQuery、Azure Synapse Analytics</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box note">
+    <div class="tag">補足（本にはない、AWSに当てはめた整理）</div>
+    <ul>
+      <li>EC2にMySQLを入れる → <b>セルフホスト</b>（IaaSの上で自分で運用）</li>
+      <li>RDS for MySQL → セルフホストできるソフトを、AWSが代わりに運用する<b>マネージドサービス</b></li>
+      <li>Aurora → 表1-2で<b>クラウドネイティブ</b>側に入っているもの</li>
+    </ul>
+  </div>
+
+  <div class="sub">
+    <div class="sec-no">1.2.2.1</div>
+    <h3>クラウドサービスは「積み木」になっている</h3>
+    <p>セルフホスト型のソフトが必要とするものは素朴です。OS、ファイルシステム、ネットワーク。つまり<b>普通のコンピュータ</b>があれば動きます。クラウドのVMも、すぐ用意できてサイズが選べること以外は普通のコンピュータと同じです。</p>
+    <p>クラウドネイティブは発想が違います。OSの上に直接乗るのではなく、<b>下位のクラウドサービスの上に、上位のサービスを積む</b>のです。</p>
+
+    <div class="stacks">
+      <div class="stack s">
+        <div class="ttl self">セルフホスト型</div>
+        <div class="layer top">データベースなどのソフト<small>MySQLなど</small></div>
+        <div class="up">▲ 乗っている</div>
+        <div class="layer">OS・ファイルシステム・TCP/IP</div>
+        <div class="up">▲</div>
+        <div class="layer base">1台のマシン（またはVM）<small>CPU・メモリ・ディスク・ネットワーク</small></div>
+      </div>
+      <div class="stack c">
+        <div class="ttl cloud">クラウドネイティブ</div>
+        <div class="layer">Snowflakeの上に作られたサービス</div>
+        <div class="up">▲ 乗っている</div>
+        <div class="layer">Snowflake<small>分析用データベース</small></div>
+        <div class="up">▲ データの保存に使う</div>
+        <div class="layer">オブジェクトストレージ<small>Amazon S3 など</small></div>
+        <div class="up">▲</div>
+        <div class="layer base">たくさんの物理マシン<small>利用者からは見えない</small></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="tag">オブジェクトストレージ（S3、Azure Blob Storage、Cloudflare R2 など）とは</div>
+      <p>大きなファイルを置く場所です。できることは普通のファイルシステムより少なく、基本は「ファイルを書く・読む」だけ。そのかわり<b>裏のマシンを意識しなくていい</b>。</p>
+      <ul>
+        <li>データは自動で多数のマシンに分散される。ディスク容量切れを心配しなくていい。</li>
+        <li>マシンやディスクが丸ごと壊れても、データは消えない。</li>
+      </ul>
+    </div>
+
+    <div class="box point">
+      <div class="tag">積み木のどの段を使うか</div>
+      <p>上の段ほど、特定の用途に特化しています。自分のやりたいことに合うなら、上の段を使うほうがずっと楽。合うものがなければ、下の段の部品から自分で組み立てるしかありません。唯一の正解はありません。</p>
+    </div>
+  </div>
+
+  <div class="sub">
+    <div class="sec-no">1.2.2.2</div>
+    <h3>ストレージとコンピュートの分離</h3>
+    <p>この節でいちばん大事な図です。「計算する係（CPU・メモリ）」と「データを覚えておく係（ディスク）」を、別々のものにします。</p>
+
+    <div class="machines">
+      <div class="box">
+        <div class="tag"><span class="self">従来</span>：1台が両方を担当</div>
+        <div class="pc">
+          <div class="parts">
+            <div class="part">CPU・メモリ<small>計算する係</small></div>
+            <div class="part">ディスク<small>覚えておく係</small></div>
+            <div class="part">ディスク（コピー）<small>RAIDで二重化</small></div>
+          </div>
+        </div>
+        <p class="fig-cap">「ディスクに書いたものは消えない」が前提。ディスク1本の故障には、同じマシンに複数のディスクをつないでコピーを持つ <b>RAID</b> で備える。</p>
+      </div>
+
+      <div class="box">
+        <div class="tag"><span class="cloud">クラウドネイティブ</span>：係を分ける</div>
+        <div class="split">
+          <div class="computes">
+            <div class="part">コンピュート<small>CPU・メモリ</small></div>
+            <div class="part">コンピュート<small>CPU・メモリ</small></div>
+            <div class="part ghost">＋ 増やす／減らす</div>
+          </div>
+          <div class="net">↑↓ ネットワーク越しに読み書き ↑↓</div>
+          <div class="store">ストレージサービス<small>データを長く保存する場所。多数のマシンに分散</small></div>
+        </div>
+        <p class="fig-cap">計算する側だけを増やしたり減らしたりできる。データは別の場所にあるので、計算マシンが消えても困らない。</p>
+      </div>
+    </div>
+
+    <p><b>なぜ分けるのか。</b>クラウドのVMについているローカルディスクは、当てにできないからです。VMが壊れたり、負荷に合わせて大きい（小さい）VMに取り替えられたりすると、別の物理マシンに移るので、元のローカルディスクにはもう届きません。</p>
+
+    <p>では、クラウドでデータをどこに置くか。3つの置き場所があります。</p>
+    <div class="opts">
+      <div class="opt">
+        <div>
+          <h3>VMのローカルディスク</h3>
+          <p>いつ消えてもおかしくない。<span class="verdict">→ 長期保存には使わず、一時的なキャッシュとして扱う。</span></p>
+        </div>
+      </div>
+      <div class="opt">
+        <div>
+          <h3>仮想ディスク（Amazon EBS など）</h3>
+          <p>あるVMから外して別のVMにつなぎ直せるディスク。正体は本物のディスクではなく、別のマシン群が「ディスクのふり」をしているサービス（ブロックデバイス。1ブロックはふつう4 KiB）。</p>
+          <p>良い点：ディスク前提の昔ながらのソフトがそのまま動く。<br>悪い点：ふりをする分のオーバーヘッドがある。読み書きが毎回ネットワーク通信になるので、ネットワークの調子に振り回されやすい。</p>
+        </div>
+      </div>
+      <div class="opt">
+        <div>
+          <h3>用途に合わせた専用ストレージサービス</h3>
+          <p><span class="verdict">クラウドネイティブはふつうこちら。</span>仮想ディスクを避け、ワークロード向けに最適化されたストレージサービスを土台にする。</p>
+          <p>S3のようなオブジェクトストレージは、数百KB〜数GBくらいの大きめのファイル向き。データベースの1行はずっと小さいので、クラウドDBでは<b>小さな値は別のサービスで管理し、たくさんの値をまとめた大きなブロックをオブジェクトストアに置く</b>のが一般的（くわしくは4章）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="box note">
+      <div class="tag">分けたことの代償</div>
+      <p>S3はファイルを置いておくだけです。そのデータを分析したければ、S3の外で計算する必要があり、<b>データをネットワーク越しに運ぶ</b>ことになります。この話は次の1.3（分散システム）につながります。</p>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>マルチテナント：一戸建てではなくマンション</h3>
+    <p>クラウドネイティブなシステムの多くは、顧客ごとに専用マシンを用意しません。<b>複数の顧客のデータと計算を、同じハードウェア・同じサービスで処理</b>します。</p>
+    <div class="tenants">
+      <div class="tn">
+        <h3 class="self">顧客ごとに専用マシン</h3>
+        <div class="houses">
+          <div class="house">A社<br>専用</div>
+          <div class="house">B社<br>専用</div>
+          <div class="house">C社<br>専用</div>
+        </div>
+        <p>隣の影響は受けないが、空いている分がもったいない。</p>
+      </div>
+      <div class="tn">
+        <h3 class="cloud">マルチテナント</h3>
+        <div class="building">
+          <div class="unit">A社</div>
+          <div class="unit">B社</div>
+          <div class="unit">C社</div>
+          <div class="ground">共有のハードウェア</div>
+        </div>
+        <p>ハードを無駄なく使え、拡張しやすく、管理もしやすい。</p>
+      </div>
+    </div>
+    <p class="fig-cap">そのかわり、ある顧客の使い方が他の顧客の性能やセキュリティに響かないよう、慎重な作り込みが必要になります。隣の部屋の騒音が聞こえないようにする壁の話です。</p>
+  </div>
+</section>
+
+<!-- ============ 1.2.3 ============ -->
+<section>
+  <div class="sec-no">1.2.3</div>
+  <h2>クラウド時代の運用</h2>
+  <p>「クラウドにすれば運用はいらない」は間違いです。この項の結論は<b>仕事の中身が変わるだけで、必要性は変わらない</b>です。</p>
+
+  <div class="sub">
+    <h3>運用する人の呼び名の変化</h3>
+    <div class="timeline">
+      <div class="tl"><i></i><div><b>DBA（データベース管理者）、システム管理者</b><br>サーバー側のデータ基盤を専門に管理する人たち。</div></div>
+      <div class="tl"><i></i><div><b>DevOps</b><br>開発と運用の役割をまとめ、バックエンドのサービスとデータ基盤の両方に1つのチームで責任を持つ考え方。</div></div>
+      <div class="tl"><i></i><div><b>SRE（Site Reliability Engineer）</b><br>その考え方をGoogleが形にしたもの。</div></div>
+    </div>
+    <div class="box">
+      <div class="tag">運用の仕事は大きく2つ</div>
+      <ul>
+        <li><b>ユーザーに確実に届ける</b>：インフラの設定、アプリのデプロイ</li>
+        <li><b>本番を安定させる</b>：信頼性をおびやかす問題の監視と診断</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>相手にするものが「マシン」から「サービス」へ</h3>
+    <div class="vs">
+      <div class="side s">
+        <h3>セルフホストの運用</h3>
+        <p>マシン1台ずつの世話が多い。</p>
+        <ul>
+          <li>ディスクの空きを見張り、足りなくなる前に足す</li>
+          <li>新しいマシンを用意する</li>
+          <li>サービスを別のマシンへ移す</li>
+          <li>OSにパッチを当てる</li>
+        </ul>
+      </div>
+      <div class="side c">
+        <h3>クラウドサービスを使う運用</h3>
+        <p>マシンはAPIの向こうに隠れている。</p>
+        <ul>
+          <li>固定サイズのディスクではなく<b>従量課金</b>。先に容量を決めなくても保存でき、使った分だけ払う</li>
+          <li>マシンが1台壊れても、サービスは動き続けることが多い</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="tag">DevOps／SREが大事にすること</div>
+      <ul>
+        <li>手作業の一発仕事より、<b>自動化</b>して繰り返せる手順にする</li>
+        <li>長生きするサーバーより、<b>使い捨てのVMやサービス</b>を使う</li>
+        <li>アプリを<b>こまめに更新</b>できるようにする</li>
+        <li><b>障害から学ぶ</b></li>
+        <li>人が入れ替わっても、システムの知識が<b>組織に残る</b>ようにする</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>運用は2種類に分かれた</h3>
+    <div class="vs">
+      <div class="side c">
+        <h3>クラウド会社の運用チーム</h3>
+        <p>大勢の顧客に、止まらないサービスを届けるための細かい技術を極める。</p>
+      </div>
+      <div class="side s">
+        <h3>クラウドを使う側</h3>
+        <p>インフラにはなるべく時間も手間もかけない。そのかわり別の仕事が出てくる（下）。</p>
+      </div>
+    </div>
+
+    <p>使う側の仕事はこう置き換わります。</p>
+    <div class="shift">
+      <div class="sh"><div class="from">キャパシティプランニング<br>（マシンは何台いる？）</div><div class="ar">→</div><div class="to">財務計画<br>（いくらかかる？）</div></div>
+      <div class="sh"><div class="from">パフォーマンス最適化<br>（もっと速く）</div><div class="ar">→</div><div class="to">コスト最適化<br>（もっと安く）</div></div>
+      <div class="sh"><div class="from">マシンの世話</div><div class="ar">→</div><div class="to">サービスを選ぶ、つなぐ、乗り換える</div></div>
+    </div>
+    <ul>
+      <li>従量課金は、使っていないリソースにも気づかないままお金が出ていく。<b>何を何のために使っているか</b>を把握し続ける。</li>
+      <li>クラウドサービスには上限（<b>クォータ</b>。同時に動かせるプロセス数など）がある。ぶつかる前に知って計画しておく。</li>
+      <li>いちばん大変なのは<b>サービス同士をつなぐこと</b>。いろいろな会社がいろいろなサービスを出しているのに、つなぎ方の標準が足りないので、手作業が多くなる。ETL（1.1.2）はその一部にすぎない。</li>
+    </ul>
+  </div>
+
+  <div class="sub">
+    <h3>クラウドに丸投げできないもの</h3>
+    <ul class="check">
+      <li>自分のアプリと、使っているライブラリのセキュリティ</li>
+      <li>自社のサービス同士のやりとりの管理</li>
+      <li>サービスにかかる負荷の監視</li>
+      <li>遅くなった、落ちた、というときの原因追跡</li>
+    </ul>
+    <div class="box point">
+      <div class="tag">1.2.3 の結論</div>
+      <p>クラウドは運用の役割を変えつつある。でも運用が必要なことは、これまでと何も変わらない。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ まとめ ============ -->
+<section>
+  <div class="sec-no">まとめ</div>
+  <h2>1.2 を1枚で</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th></th><th class="s">自分で動かす</th><th class="c">クラウドに任せる</th></tr></thead>
+      <tbody>
+        <tr><td>向いている状況</td><td>運用経験がある。負荷が読める。特殊な要件がある。</td><td>動かし方を知らない。負荷の波が大きい。</td></tr>
+        <tr><td>うれしい点</td><td>自社向けに細かく調整できる。中が全部見える。</td><td>早く始められる。伸び縮みできる。プロが運用する。</td></tr>
+        <tr><td>つらい点</td><td>人を雇って育てるのが高い。ピーク用のマシンが遊ぶ。</td><td>コントロールできない。ロックイン。中が見えない。</td></tr>
+        <tr><td>運用の中心</td><td>マシンの世話</td><td>サービス選び、統合、コスト管理</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>理解度チェック</h3>
+  <p class="fig-cap">質問をタップすると答えが開きます。</p>
+  <div class="quiz">
+    <details>
+      <summary>Q1. MySQLをクラウドのVMにインストールして使う。これはセルフホスト？ クラウドサービス？</summary>
+      <p>セルフホストです。マシンは借り物（IaaS）ですが、既製のソフトを自分でデプロイして自分で面倒を見ています。</p>
+    </details>
+    <details>
+      <summary>Q2. 負荷がほぼ一定で、運用のノウハウも社内にある。安くなりやすいのはどっち？</summary>
+      <p>自前でマシンを買って動かすほうが安いことが多いです。クラウドの「使い終わったら返す」強みが活きないからです。</p>
+    </details>
+    <details>
+      <summary>Q3. クラウドネイティブなシステムが、VMのローカルディスクを長期保存に使わないのはなぜ？</summary>
+      <p>VMが壊れたり、別のサイズのVMに取り替えられたりすると、そのローカルディスクにはもう届かなくなるからです。だから一時的なキャッシュとして扱い、データは別のストレージサービスに置きます。</p>
+    </details>
+    <details>
+      <summary>Q4. 仮想ディスク（EBSなど）の弱点は？</summary>
+      <p>ディスクのふりをするオーバーヘッドがあること。そして読み書きがすべてネットワーク通信になるので、ネットワークの不安定さの影響を受けやすいことです。</p>
+    </details>
+    <details>
+      <summary>Q5. 従量課金になると、キャパシティプランニングは何に変わる？</summary>
+      <p>財務計画に変わります。同じように、パフォーマンス最適化はコスト最適化になります。</p>
+    </details>
+  </div>
+</section>
+
+<footer>
+  『データ指向アプリケーションデザイン 第2版』1.2節の内容を、学習用に自分の言葉で要約・図解したものです。カレーやマンションのたとえ、負荷のグラフ、AWSへの当てはめは、理解のために足した補足で、本そのものの記述ではありません。
+</footer>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

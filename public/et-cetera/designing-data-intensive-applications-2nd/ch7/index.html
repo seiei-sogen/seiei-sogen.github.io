@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 第7章 シャーディング図解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: one reading column; every mechanism gets a bordered figure panel built from node boxes and shard chips. Dark only, by request. */
+  --bg:#0f1218;
+  --surface:#171c26;
+  --surface-2:#202736;
+  --line:#353f55;
+  --ink:#e8ebf2;
+  --muted:#a6afc4;
+  --accent:#ffd166;
+  --hot:#ff6b6b;
+  --ok:#7ddc7a;
+  --s0:#5fb0ff;
+  --s1:#c79bff;
+  --s2:#3fd0c9;
+  --s3:#ff9f5c;
+  --font-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:27px;
+  line-height:2;
+  font-weight:500;
+  overflow-wrap:anywhere;
+}
+main{max-width:1000px;margin:0 auto;padding:0 20px 120px}
+p{margin:0 0 1.2em}
+a{color:var(--s0)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+strong{font-weight:900}
+.term{color:var(--accent);font-weight:900}
+.hot{color:var(--hot);font-weight:900}
+.good{color:var(--ok);font-weight:900}
+code{font-family:var(--font-mono);font-size:.88em;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.1em .35em}
+pre{margin:0 0 1.2em;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;overflow-x:auto;line-height:1.7}
+pre code{background:none;border:0;padding:0;font-size:24px;white-space:pre}
+
+/* header */
+header.top{padding:72px 0 40px;border-bottom:1px solid var(--line);margin-bottom:56px}
+.eyebrow{font-family:var(--font-mono);font-size:20px;letter-spacing:.06em;color:var(--muted);line-height:1.6;margin:0 0 12px}
+h1{font-family:var(--font-display);font-weight:900;font-size:clamp(40px,11.5vw,104px);line-height:1.15;margin:0 0 28px;white-space:nowrap}
+h1 span{color:var(--accent)}
+.lead{font-size:30px;line-height:1.9;margin:0}
+
+h2{font-family:var(--font-display);font-weight:900;font-size:clamp(36px,7vw,50px);line-height:1.4;margin:0 0 32px;text-wrap:balance}
+h3{font-family:var(--font-display);font-weight:900;font-size:clamp(31px,6vw,38px);line-height:1.5;margin:72px 0 24px;text-wrap:balance}
+h4{font-family:var(--font-display);font-weight:900;font-size:30px;line-height:1.5;margin:56px 0 16px;color:var(--accent);text-wrap:balance}
+section{padding-top:96px}
+.secno{font-family:var(--font-mono);font-weight:700;font-size:22px;color:var(--accent);letter-spacing:.08em;line-height:1.4;margin:0 0 8px}
+
+/* table of contents */
+nav.toc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 28px;margin-top:56px}
+nav.toc p{font-family:var(--font-display);font-weight:900;margin:0 0 4px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc a{display:flex;gap:16px;text-decoration:none;color:var(--ink);padding:4px 0}
+nav.toc a span{font-family:var(--font-mono);color:var(--accent);flex:0 0 2.6em}
+nav.toc a:hover{color:var(--accent)}
+
+/* three-line summary */
+.gist{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));margin:0}
+.gist li{list-style:none;background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:14px;padding:20px 22px}
+.gist b{display:block;font-family:var(--font-mono);color:var(--accent);font-size:22px;line-height:1.4;margin-bottom:6px}
+ul.gist{padding:0}
+
+/* callouts */
+.note{border-left:6px solid var(--accent);background:var(--surface);border-radius:0 14px 14px 0;padding:20px 24px;margin:40px 0}
+.note > :last-child{margin-bottom:0}
+.note .label{display:block;font-family:var(--font-display);font-weight:900;color:var(--accent);line-height:1.5;margin-bottom:6px}
+.note.warn{border-left-color:var(--hot)}
+.note.warn .label{color:var(--hot)}
+.note.ok{border-left-color:var(--ok)}
+.note.ok .label{color:var(--ok)}
+
+/* cards */
+.cards{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin:32px 0 40px;padding:0}
+.cards > li,.cards > div{list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.cards h5{font-family:var(--font-display);font-weight:900;font-size:28px;line-height:1.5;margin:0 0 8px;color:var(--accent)}
+.cards p{margin:0}
+.cards .plus h5{color:var(--ok)}
+.cards .minus h5{color:var(--hot)}
+.used{font-size:23px;line-height:1.7;color:var(--muted);margin-top:12px !important}
+.used b{color:var(--ink)}
+ul.plain{padding-left:1.2em;margin:0 0 1.2em}
+ul.plain li{margin-bottom:.4em}
+
+/* figures */
+figure{margin:48px 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 20px}
+figcaption{font-size:23px;line-height:1.8;color:var(--muted);margin-top:20px;padding-top:16px;border-top:1px dashed var(--line)}
+figcaption b{color:var(--ink)}
+.figtitle{font-family:var(--font-display);font-weight:900;font-size:24px;line-height:1.5;margin:0 0 16px}
+.figtitle small{font-family:var(--font-body);font-weight:500;font-size:20px;color:var(--muted);margin-left:.4em}
+.panels{display:grid;gap:28px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.panel + .panel{}
+.nodes{display:flex;flex-wrap:wrap;gap:12px}
+.nodes.col{flex-direction:column}
+.node{flex:1 1 180px;background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:10px 14px 14px;font-size:20px;line-height:1.6}
+.node-name{font-family:var(--font-mono);font-weight:700;font-size:18px;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
+.node.node-new{border-color:var(--accent);border-style:dashed}
+.node.node-new .node-name{color:var(--accent)}
+.node.is-hot{border-color:var(--hot)}
+.node.is-hot .node-name{color:var(--hot)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;padding:3px 12px;border-radius:8px;font-size:20px;line-height:1.5;font-weight:900;color:#0c0f15;background:var(--c,var(--muted));border:2px solid var(--c,var(--muted));font-variant-numeric:tabular-nums}
+.chip.ghost{background:transparent;color:var(--c,var(--muted));border-style:dashed}
+.chip.stay{--c:#56617c;color:var(--ink)}
+.chip.moved{--c:var(--hot)}
+.chip.mono{font-family:var(--font-mono);font-weight:700;font-size:18px}
+.c0{--c:var(--s0)}.c1{--c:var(--s1)}.c2{--c:var(--s2)}.c3{--c:var(--s3)}.ch{--c:var(--hot)}.ca{--c:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:20px;line-height:1.6;color:var(--muted);margin-top:16px;align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.down{text-align:center;font-size:20px;line-height:1.5;color:var(--muted);margin:10px 0}
+.down::before{content:"";display:block;width:0;height:26px;border-left:3px solid var(--muted);margin:0 auto}
+.down::after{content:"";display:block;width:0;height:0;border:9px solid transparent;border-top:12px solid var(--muted);border-bottom:0;margin:0 auto}
+.down.hotline{color:var(--hot)}
+.down.hotline::before{border-left-color:var(--hot)}
+.down.hotline::after{border-top-color:var(--hot)}
+.box{background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:20px;line-height:1.6;text-align:center;font-weight:700}
+.box small{display:block;font-weight:500;color:var(--muted);font-size:18px}
+.box.em{border-color:var(--accent)}
+.box.bad{border-color:var(--hot)}
+.box.fine{border-color:var(--ok)}
+.dots{font-size:16px;letter-spacing:2px;color:var(--hot);line-height:1.4;word-break:break-all}
+.dots.calm{color:var(--ok)}
+.idle{color:var(--muted);font-size:18px}
+
+/* load bars */
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:3.6em 1fr;align-items:center;gap:10px;font-family:var(--font-mono);font-size:18px;line-height:1.4;color:var(--muted)}
+.bar i{display:block;height:22px;border-radius:5px;background:var(--s0);width:var(--w)}
+.bar.is-hot{color:var(--hot);font-weight:700}
+.bar.is-hot i{background:var(--hot)}
+
+/* book spines */
+.spines{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.spine{background:var(--surface-2);border:2px solid var(--line);border-radius:6px;padding:14px 2px;text-align:center;font-size:18px;line-height:1.5;font-weight:700}
+.spine small{display:block;font-family:var(--font-mono);font-size:15px;color:var(--muted);font-weight:500}
+.spine.pick{border-color:var(--accent);background:#3a3420;color:var(--accent)}
+.spine.pick small{color:var(--accent)}
+
+/* range rows */
+.rows{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:20px;line-height:1.6}
+.row .range{font-family:var(--font-mono);font-size:18px;color:var(--muted)}
+.row .landed{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px}
+.hashmap{display:grid;grid-template-columns:1fr auto auto;gap:10px 12px;align-items:center;font-family:var(--font-mono);font-size:19px;line-height:1.5}
+.hashmap .fn{color:var(--muted);font-size:17px;white-space:nowrap}
+.hashmap .out{color:var(--accent);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+
+/* token strip */
+.strip{display:flex;height:54px;border-radius:8px;overflow:hidden;border:2px solid var(--line)}
+.strip span{background:var(--c);display:flex;align-items:center;justify-content:center;color:#0c0f15;font-family:var(--font-mono);font-weight:700;font-size:16px;border-right:2px solid var(--bg);min-width:0}
+.strip span:last-child{border-right:0}
+.strip span.new{background:repeating-linear-gradient(135deg,var(--s3) 0 8px,#ffc59b 8px 16px)}
+.strip-ends{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:17px;color:var(--muted);line-height:1.6}
+.strip-label{font-size:20px;font-weight:700;line-height:1.6;margin:14px 0 4px}
+
+/* tables */
+.tablewrap{overflow-x:auto;margin:32px 0 40px}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.7}
+th{font-family:var(--font-display);color:var(--accent);font-weight:900;white-space:nowrap}
+td:first-child{white-space:nowrap}
+
+/* demo */
+.demo-controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.demo-controls button{font:inherit;font-size:22px;font-weight:700;line-height:1.4;color:var(--ink);background:var(--surface-2);border:2px solid var(--line);border-radius:999px;padding:8px 20px;cursor:pointer}
+.demo-controls button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#0c0f15}
+.demo-result{font-family:var(--font-display);font-weight:900;font-size:28px;line-height:1.6;margin:20px 0 0}
+.demo-result b{color:var(--hot);font-size:1.3em}
+
+/* steps */
+ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:grid;gap:0}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;font-size:22px;line-height:1.7;padding:10px 0;border-bottom:1px dashed var(--line)}
+ol.steps li:last-child{border-bottom:0}
+ol.steps li::before{content:counter(s);font-family:var(--font-mono);font-weight:700;font-size:20px;width:38px;height:38px;border-radius:50%;background:var(--hot);color:#0c0f15;display:flex;align-items:center;justify-content:center}
+
+/* index tables inside figures */
+.kv{font-family:var(--font-mono);font-size:17px;line-height:1.7;margin:0}
+.kv b{color:var(--accent)}
+.sub{font-size:17px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin:10px 0 2px;border-top:1px dashed var(--line);padding-top:8px}
+.sub:first-child{border-top:0;padding-top:0;margin-top:0}
+
+svg{display:block;width:100%;max-width:460px;height:auto;margin:0 auto;color:var(--ink)}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 22px;margin-bottom:14px}
+summary{cursor:pointer;font-weight:900}
+details p{margin:10px 0 0;color:var(--ok)}
+
+footer{margin-top:96px;padding-top:28px;border-top:1px solid var(--line);font-size:22px;line-height:1.8;color:var(--muted)}
+
+@media (max-width:480px){
+  figure{padding:18px 14px}
+  .note{padding:18px 18px}
+  .cards > li,.cards > div{padding:18px}
+}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<main>
+
+<header class="top">
+  <p class="eyebrow">データ指向アプリケーションデザイン 第2版 ／ 第7章</p>
+  <h1>シャー<span>ディ</span>ング</h1>
+  <p class="lead">データが1台のマシンに入りきらなくなったら、切り分けて何台かに配ります。この章は「どう切り分けるか」と「配ったあとに何が面倒になるか」の話です。</p>
+</header>
+
+<ul class="gist" aria-label="この章を3行で">
+  <li><b>1行目</b>シャーディングは、データを分割して別々のマシンに置くこと。目的は「書き込み」と「データ量」をさばくこと。</li>
+  <li><b>2行目</b>分け方は大きく2つ。キーの<span class="term">範囲</span>で分けるか、キーの<span class="term">ハッシュ</span>で分けるか。</li>
+  <li><b>3行目</b>分けたあとの面倒ごとは3つ。<span class="term">リバランシング</span>、<span class="term">ルーティング</span>、<span class="term">セカンダリインデックス</span>。</li>
+</ul>
+
+<nav class="toc" aria-label="目次">
+  <p>目次</p>
+  <ol>
+    <li><a href="#what"><span>7.0</span>そもそもシャーディングとは</a></li>
+    <li><a href="#proscons"><span>7.1</span>長所と短所</a></li>
+    <li><a href="#tenant"><span>7.2</span>マルチテナンシーのためのシャーディング</a></li>
+    <li><a href="#kv"><span>7.3</span>どのレコードをどこに置くか</a></li>
+    <li><a href="#routing"><span>7.4</span>リクエストルーティング</a></li>
+    <li><a href="#index"><span>7.5</span>セカンダリインデックス</a></li>
+    <li><a href="#summary"><span>7.6</span>まとめと確認クイズ</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ 7.0 -->
+<section id="what">
+  <p class="secno">7.0</p>
+  <h2>そもそもシャーディングとは</h2>
+
+  <p>データを複数のマシン（<span class="term">ノード</span>）に置く方法は2つあります。6章でやった<span class="term">レプリケーション</span>と、この章の<span class="term">シャーディング</span>です。</p>
+
+  <figure>
+    <div class="panels">
+      <div class="panel">
+        <p class="figtitle">レプリケーション<small>同じものを増やす</small></p>
+        <div class="nodes">
+          <div class="node"><div class="node-name">ノード1</div><div class="chips"><span class="chip c0">A〜Z 全部</span></div></div>
+          <div class="node"><div class="node-name">ノード2</div><div class="chips"><span class="chip c0">A〜Z 全部</span></div></div>
+          <div class="node"><div class="node-name">ノード3</div><div class="chips"><span class="chip c0">A〜Z 全部</span></div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="figtitle">シャーディング<small>違う部分に分ける</small></p>
+        <div class="nodes">
+          <div class="node"><div class="node-name">ノード1</div><div class="chips"><span class="chip c0">A〜H</span></div></div>
+          <div class="node"><div class="node-name">ノード2</div><div class="chips"><span class="chip c1">I〜P</span></div></div>
+          <div class="node"><div class="node-name">ノード3</div><div class="chips"><span class="chip c2">Q〜Z</span></div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>レプリケーションは全ノードが<b>同じデータ</b>を持つ。シャーディングは各ノードが<b>別々の部分</b>を持つ。分けた1かたまりを「シャード」と呼ぶ。</figcaption>
+  </figure>
+
+  <p>ルールは1つだけ。<strong>どのレコードも、必ずどれか1つのシャードに入る</strong>。シャード1個は「小さなデータベース」だと思って大丈夫です。</p>
+
+  <h3>ふつうは両方いっしょに使う</h3>
+  <p>シャードに分けたうえで、各シャードをさらに何台かにコピーします。分けるのは容量のため、コピーするのは壊れても平気にするためです。</p>
+
+  <figure>
+    <div class="nodes">
+      <div class="node"><div class="node-name">ノード1</div><div class="chips"><span class="chip c0">S1</span><span class="chip ghost c1">S2</span><span class="chip ghost c2">S3</span></div></div>
+      <div class="node"><div class="node-name">ノード2</div><div class="chips"><span class="chip c1">S2</span><span class="chip ghost c2">S3</span><span class="chip ghost c3">S4</span></div></div>
+      <div class="node"><div class="node-name">ノード3</div><div class="chips"><span class="chip c2">S3</span><span class="chip ghost c3">S4</span><span class="chip ghost c0">S1</span></div></div>
+      <div class="node"><div class="node-name">ノード4</div><div class="chips"><span class="chip c3">S4</span><span class="chip ghost c0">S1</span><span class="chip ghost c1">S2</span></div></div>
+    </div>
+    <div class="legend">
+      <span><span class="chip c0">S1</span>リーダー</span>
+      <span><span class="chip ghost c0">S1</span>フォロワー</span>
+    </div>
+    <figcaption>4つのシャード（S1〜S4）を4ノードに置いた例。どのシャードも<b>リーダーは1つだけ</b>、フォロワーは別のノードにいる。1つのノードは、あるシャードのリーダーをやりながら別のシャードのフォロワーもやる。</figcaption>
+  </figure>
+
+  <p>分け方（シャーディング）とコピーの仕方（レプリケーション）は、ほぼ別々に選べます。なのでこの章では、コピーのことはいったん忘れて「分け方」だけを考えます。</p>
+
+  <h3>呼び名がバラバラ問題</h3>
+  <p>同じものなのに、製品ごとに名前が違います。ドキュメントを読むときに混乱しがちなので、対応表を置いておきます。</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>製品</th><th>シャードの呼び名</th></tr></thead>
+      <tbody>
+        <tr><td>Kafka</td><td>パーティション</td></tr>
+        <tr><td>CockroachDB</td><td>レンジ</td></tr>
+        <tr><td>HBase、TiDB</td><td>リージョン</td></tr>
+        <tr><td>Couchbase</td><td>vBucket</td></tr>
+        <tr><td>Riak</td><td>vnode</td></tr>
+        <tr><td>Cassandra</td><td>トークンレンジ</td></tr>
+        <tr><td>Bigtable、YugabyteDB、ScyllaDB</td><td>タブレット</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <span class="label">まぎらわしい言葉 2つ</span>
+    <p><strong>PostgreSQL のパーティショニング</strong>は、大きなテーブルを<em>同じマシンの中で</em>複数ファイルに分ける機能です。複数マシンに分けるほうをシャーディングと呼んで区別します。ほかの多くのシステムでは、この2語は同じ意味です。</p>
+    <p><strong>ネットワーク分断（network partition）</strong>は、ノード間の通信が切れる障害のこと。データを分ける話とは無関係です（9章で登場）。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 7.1 -->
+<section id="proscons">
+  <p class="secno">7.1</p>
+  <h2>シャーディングの長所と短所</h2>
+
+  <p>やる理由は1つ、<span class="term">スケーラビリティ</span>です。マシンを大きくする代わりに、台数を増やして容量を増やせます（水平スケーリング、スケールアウト）。</p>
+
+  <p>ただし効くのは<strong>データ量</strong>と<strong>書き込み</strong>が1台の限界を超えたときです。読み込みが多いだけなら、6章のリードレプリカを増やせば足ります。</p>
+
+  <div class="note">
+    <span class="label">著者のおすすめ</span>
+    <p>1台でさばける間は、シャーディングしない。最近のマシンは1台でもかなり強いです。シャーディングは大規模向けの「重い」解決策で、入れた瞬間にシステムが複雑になります。</p>
+  </div>
+
+  <h3>何が複雑になるのか</h3>
+  <ul class="cards">
+    <li class="minus"><h5>パーティションキー選び</h5><p>どのレコードをどのシャードに入れるかを決めるキーです。同じキーのレコードは同じシャードに入ります。居場所がわかれば速い。わからなければ全シャードを探すはめになります。あとから変えるのも大変です。</p></li>
+    <li class="minus"><h5>インデックスと結合</h5><p>キーバリュー型は分けやすい。リレーショナルは、セカンダリインデックスでの検索や、別シャードにあるレコードどうしの結合が難しくなります（7.5で詳しく）。</p></li>
+    <li class="minus"><h5>分散トランザクション</h5><p>1回の書き込みが複数シャードにまたがると、全体のつじつまを合わせる仕組みが必要です。単一ノードのトランザクションよりずっと遅く、ボトルネックになることもあります（8章）。</p></li>
+  </ul>
+
+  <div class="note ok">
+    <span class="label">豆知識：1台の中でもシャーディング</span>
+    <p>Redis、VoltDB、FoundationDB は、CPUコアごとに1プロセスを動かし、コアの間でデータを分けています。1台のマシンの並列性を使い切るためのシャーディングです。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 7.2 -->
+<section id="tenant">
+  <p class="secno">7.2</p>
+  <h2>マルチテナンシーのためのシャーディング</h2>
+
+  <p>SaaSでは、契約している会社（<span class="term">テナント</span>）ごとにデータが独立しています。A社の顧客リストとB社の顧客リストが混ざることはありません。それなら、テナントごとにシャードを分けてしまおう、という使い方です。</p>
+
+  <figure>
+    <div class="nodes">
+      <div class="node"><div class="node-name">シャード1</div><div class="chips"><span class="chip c0">A社（大口）</span></div></div>
+      <div class="node"><div class="node-name">シャード2</div><div class="chips"><span class="chip c1">B社（大口）</span></div></div>
+      <div class="node"><div class="node-name">シャード3</div><div class="chips"><span class="chip c2">C社</span><span class="chip c2">D社</span><span class="chip c2">E社</span></div></div>
+    </div>
+    <figcaption>大きなテナントには専用のシャード。小さなテナントは何社かまとめて1つのシャードに同居させる。</figcaption>
+  </figure>
+
+  <h3>うれしいこと7つ</h3>
+  <ul class="cards">
+    <li class="plus"><h5>リソース分離</h5><p>ある会社が重い処理を走らせても、別シャードの会社は巻き添えを食いにくい。</p></li>
+    <li class="plus"><h5>パーミッション分離</h5><p>アクセス制御にバグがあっても、置き場所が物理的に別なら他社のデータが見えてしまう事故は起きにくい。</p></li>
+    <li class="plus"><h5>セルベースアーキテクチャ</h5><p>DBだけでなくアプリのサーバーも含めて、テナント群ごとに「セル」という箱にまとめる。障害がそのセルの中で止まります。</p></li>
+    <li class="plus"><h5>テナント単位のバックアップ</h5><p>ある会社がデータを消してしまっても、その会社のシャードだけを巻き戻せます。</p></li>
+    <li class="plus"><h5>規制対応</h5><p>GDPRやCCPAの「自分のデータを出して」「消して」という要求に、そのシャードのエクスポートと削除で応えられます。</p></li>
+    <li class="plus"><h5>データレジデンシー</h5><p>「このテナントのデータはこの国に置く」という決まりを、シャードの置き場所で満たせます。</p></li>
+    <li class="plus"><h5>段階的なスキーマ変更</h5><p>マイグレーションを1テナントずつ進められる。全員に広がる前に問題に気づけます。</p></li>
+  </ul>
+
+  <h3>つらいこと3つ</h3>
+  <ul class="cards">
+    <li class="minus"><h5>巨大テナント</h5><p>1社が1台に収まらないほど大きいと、その会社の中でまたシャーディングが必要。ふりだしに戻ります。</p></li>
+    <li class="minus"><h5>小さいテナントが大量</h5><p>1社1シャードは無駄が大きい。まとめて同居させると、育った会社をどう引っ越すかという問題が出ます。</p></li>
+    <li class="minus"><h5>テナントをまたぐ機能</h5><p>複数の会社のデータを組み合わせる機能は、シャードをまたぐ結合になり、作るのが難しい。</p></li>
+  </ul>
+</section>
+
+<!-- ============================================================ 7.3 -->
+<section id="kv">
+  <p class="secno">7.3</p>
+  <h2>どのレコードをどこに置くか</h2>
+
+  <p>ここが章の本丸です。目標は、データと負荷を<strong>全ノードに均等に</strong>配ること。均等に配れれば、10台で1台の10倍をさばけます。</p>
+
+  <figure>
+    <div class="panels">
+      <div class="panel">
+        <p class="figtitle">理想<small>均等</small></p>
+        <div class="bars">
+          <div class="bar" style="--w:20%"><span>ノード0</span><i></i></div>
+          <div class="bar" style="--w:20%"><span>ノード1</span><i></i></div>
+          <div class="bar" style="--w:20%"><span>ノード2</span><i></i></div>
+          <div class="bar" style="--w:20%"><span>ノード3</span><i></i></div>
+          <div class="bar" style="--w:20%"><span>ノード4</span><i></i></div>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="figtitle">スキュー<small>偏り</small></p>
+        <div class="bars">
+          <div class="bar" style="--w:3%"><span>ノード0</span><i></i></div>
+          <div class="bar" style="--w:3%"><span>ノード1</span><i></i></div>
+          <div class="bar is-hot" style="--w:92%"><span>ノード2</span><i></i></div>
+          <div class="bar" style="--w:3%"><span>ノード3</span><i></i></div>
+          <div class="bar" style="--w:3%"><span>ノード4</span><i></i></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>棒の長さは各ノードの負荷。右のように1か所に集中すると、台数を増やした意味がなくなる。全体の速さは、いちばん忙しい1台で決まってしまう。</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>用語</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td>スキュー</td><td>シャードごとのデータ量や負荷が偏っていること</td></tr>
+        <tr><td>ホットシャード</td><td>負荷が集中しているシャード（ホットスポットとも）</td></tr>
+        <tr><td>ホットキー</td><td>負荷が集中している1つのキー（例：有名人のアカウント）</td></tr>
+        <tr><td>リバランシング</td><td>ノードを足したり引いたりしたとき、均等になるよう配り直すこと</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>必要なのは、<strong>パーティションキーを渡すとシャードを返す関数</strong>です。しかも、あとで配り直しやすい関数でなければなりません。候補を順に見ていきます。</p>
+
+  <!-- ---------- 7.3.1 -->
+  <h3 id="range">7.3.1　キーの範囲で分ける</h3>
+
+  <p>紙の百科事典と同じやり方です。「この巻はここからここまで」と、キーの連続した範囲をシャードに割り当てます。</p>
+
+  <figure>
+    <div class="spines">
+      <div class="spine">1巻<small>A–B</small></div>
+      <div class="spine">2巻<small>C–D</small></div>
+      <div class="spine">3巻<small>E–G</small></div>
+      <div class="spine pick">4巻<small>H–L</small></div>
+      <div class="spine">5巻<small>M–S</small></div>
+      <div class="spine">6巻<small>T–Z</small></div>
+    </div>
+    <div class="down">「Kafka」を調べたい → K は H〜L の間 → 4巻</div>
+    <figcaption>範囲さえ知っていれば、どの巻かすぐわかる。1巻は2文字ぶん、6巻は7文字ぶんと<b>幅がそろっていない</b>のは、巻の厚さ（データ量）をそろえるため。境界はデータに合わせて決める。</figcaption>
+  </figure>
+
+  <ul class="cards">
+    <li class="plus"><h5>得意なこと</h5><p>シャードの中はキー順に並んでいます。だから「11月の計測値を全部」のような<strong>範囲スキャン</strong>が速い。</p></li>
+    <li class="minus"><h5>苦手なこと</h5><p>近いキーに書き込みが集中すると、そのシャードだけが忙しくなります。</p></li>
+  </ul>
+
+  <h4>典型的な事故：タイムスタンプをキーにする</h4>
+  <p>センサーの計測値を、時刻をキーにして保存するとします。シャードは「9月分」「10月分」「11月分」のようになります。今の時刻の書き込みは、すべて今月のシャードに行きます。</p>
+
+  <figure>
+    <div class="panels">
+      <div class="panel">
+        <p class="figtitle">キー＝時刻<small>事故</small></p>
+        <div class="nodes col">
+          <div class="node"><div class="node-name">9月のシャード</div><span class="idle">ひま</span></div>
+          <div class="node"><div class="node-name">10月のシャード</div><span class="idle">ひま</span></div>
+          <div class="node is-hot"><div class="node-name">11月のシャード（今月）</div><div class="dots">●●●●●●●●●●●●●●●●●●</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="figtitle">キー＝センサーID＋時刻<small>対策</small></p>
+        <div class="nodes col">
+          <div class="node"><div class="node-name">センサー A〜F</div><div class="dots calm">●●●●●●</div></div>
+          <div class="node"><div class="node-name">センサー G〜M</div><div class="dots calm">●●●●●●</div></div>
+          <div class="node"><div class="node-name">センサー N〜Z</div><div class="dots calm">●●●●●●</div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>●は今この瞬間の書き込み。キーの先頭をセンサーIDにすると、書き込みはセンサーの数だけ散らばる。代わりに「全センサーの11月分」が欲しいときは、センサーごとに別々の範囲クエリが必要になる。</figcaption>
+  </figure>
+
+  <h4>範囲方式のリバランシング：大きくなったら割る</h4>
+  <p>シャードが育ちすぎたら2つに割り、片方を別のノードに移します。データが減ったら、隣どうしをくっつけます。Bツリーのページ分割と同じ発想です。</p>
+
+  <figure>
+    <div class="box bad">シャード A〜Z<small>10 GB を超えた</small></div>
+    <div class="down">分割（全データを新しいファイルに書き直す）</div>
+    <div class="panels" style="grid-template-columns:1fr 1fr;gap:12px">
+      <div class="box fine">シャード A〜K<small>約 5 GB</small></div>
+      <div class="box fine">シャード L〜Z<small>約 5 GB → 別ノードへ</small></div>
+    </div>
+    <figcaption>HBase は標準で 10 GB が分割の目安。サイズではなく、書き込みが多すぎるシャードを割るシステムもある。</figcaption>
+  </figure>
+
+  <ul class="cards">
+    <li class="plus"><h5>いいところ</h5><p>シャードの数がデータ量についてきます。少ないうちは少数、増えたら自動で増える。</p></li>
+    <li class="minus"><h5>つらいところ</h5><p>分割は重い作業です。しかも割りたいシャードは、たいてい今いちばん忙しい。追い打ちになります。</p></li>
+    <li><h5>事前分割</h5><p>空のDBに最初からシャードを切っておく機能（HBase、MongoDB）。キーの分布を前もって知っている必要があります。</p></li>
+  </ul>
+  <p class="used"><b>使っている製品：</b>境界を手で決める Vitess。自動で決める Bigtable、HBase、MongoDB（範囲オプション）、CockroachDB、RethinkDB、FoundationDB。YugabyteDB は両対応。</p>
+
+  <!-- ---------- 7.3.2 -->
+  <h3 id="hash">7.3.2　キーのハッシュで分ける</h3>
+
+  <p>「近いキーを近くに置きたい」という事情がないなら、キーをハッシュ関数に通してバラバラにしてしまうのが定番です。ハッシュ関数は、似た入力からでも似ても似つかない数を出します。同じ入力なら必ず同じ数です。</p>
+
+  <figure>
+    <div class="hashmap">
+      <span>10:00:01</span><span class="fn">→ hash →</span><span class="out">41,203</span>
+      <span>10:00:02</span><span class="fn">→ hash →</span><span class="out">7,718</span>
+      <span>10:00:03</span><span class="fn">→ hash →</span><span class="out">59,340</span>
+    </div>
+    <figcaption>1秒ずつしか違わないキーが、まったく離れた数になる（数字はイメージ）。これで「近いキーに書き込みが集中する」問題が消える。</figcaption>
+  </figure>
+
+  <div class="note warn">
+    <span class="label">言語に組み込みのハッシュは使えない</span>
+    <p>Java の <code>Object.hashCode()</code> や Ruby の <code>Object#hash</code> は、同じキーでもプロセスが違うと別の値になることがあります。シャーディングには不向きです。MongoDB は MD5、Cassandra と ScyllaDB は Murmur3 を使っています。暗号として強い必要はありません。</p>
+  </div>
+
+  <p>問題はここからです。<strong>出てきたハッシュ値を、どうやってシャードに結びつけるか</strong>。4つの方法を、ダメなものから順に見ます。</p>
+
+  <h4>方法① ノード数で割った余り（ダメな例）</h4>
+  <p>最初に思いつくのはこれでしょう。</p>
+<pre><code>const node = hash(key) % nodeCount;</code></pre>
+  <p>計算は簡単です。でも<code>nodeCount</code>が変わった瞬間、ほとんどのキーの答えが変わります。下のボタンでノードを増やしてみてください。</p>
+
+  <figure id="modn-demo">
+    <div class="demo-controls" role="group" aria-label="ノードを何台に増やすか">
+      <button type="button" data-n="4" aria-pressed="true">3台 → 4台</button>
+      <button type="button" data-n="5" aria-pressed="false">3台 → 5台</button>
+      <button type="button" data-n="6" aria-pressed="false">3台 → 6台</button>
+    </div>
+    <div class="panels">
+      <div class="panel">
+        <p class="figtitle">増やす前<small>hash % 3</small></p>
+        <div class="nodes col">
+          <div class="node"><div class="node-name">ノード0</div><div class="chips"><span class="chip stay">0</span><span class="chip stay">3</span><span class="chip stay">6</span><span class="chip stay">9</span></div></div>
+          <div class="node"><div class="node-name">ノード1</div><div class="chips"><span class="chip stay">1</span><span class="chip stay">4</span><span class="chip stay">7</span><span class="chip stay">10</span></div></div>
+          <div class="node"><div class="node-name">ノード2</div><div class="chips"><span class="chip stay">2</span><span class="chip stay">5</span><span class="chip stay">8</span><span class="chip stay">11</span></div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="figtitle">増やした後<small id="modn-formula">hash % 4</small></p>
+        <div class="nodes col" id="modn-after">
+          <div class="node"><div class="node-name">ノード0</div><div class="chips"><span class="chip stay">0</span><span class="chip moved">4</span><span class="chip moved">8</span></div></div>
+          <div class="node"><div class="node-name">ノード1</div><div class="chips"><span class="chip stay">1</span><span class="chip moved">5</span><span class="chip moved">9</span></div></div>
+          <div class="node"><div class="node-name">ノード2</div><div class="chips"><span class="chip stay">2</span><span class="chip moved">6</span><span class="chip moved">10</span></div></div>
+          <div class="node node-new"><div class="node-name">ノード3（新入り）</div><div class="chips"><span class="chip moved">3</span><span class="chip moved">7</span><span class="chip moved">11</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="chip stay">0</span>動かなかったキー</span>
+      <span><span class="chip moved">3</span>引っ越したキー</span>
+    </div>
+    <p class="demo-result" id="modn-result">12個のうち <b>9</b> 個が引っ越し</p>
+    <figcaption>数字はキーのハッシュ値。1台足しただけで、新入りに関係ないキーまで大移動する。本当は新入りのぶん（12個中3個）だけ動けば十分なはず。</figcaption>
+  </figure>
+
+  <h4>方法② シャードの数を最初に固定する</h4>
+  <p>単純なのに広く使われている方法です。ノード数よりずっと多いシャードを最初に作ってしまい、1つのノードにたくさん持たせます。たとえば10ノードに1,000シャード（1台あたり100個）。キーの行き先は <code>hash(key) % 1000</code> で決め、この「1000」は二度と変えません。</p>
+
+  <figure>
+    <div class="panels">
+      <div class="panel">
+        <p class="figtitle">増やす前<small>3ノード・12シャード</small></p>
+        <div class="nodes col">
+          <div class="node"><div class="node-name">ノード0</div><div class="chips"><span class="chip stay">s0</span><span class="chip stay">s1</span><span class="chip stay">s2</span><span class="chip stay">s3</span></div></div>
+          <div class="node"><div class="node-name">ノード1</div><div class="chips"><span class="chip stay">s4</span><span class="chip stay">s5</span><span class="chip stay">s6</span><span class="chip stay">s7</span></div></div>
+          <div class="node"><div class="node-name">ノード2</div><div class="chips"><span class="chip stay">s8</span><span class="chip stay">s9</span><span class="chip stay">s10</span><span class="chip stay">s11</span></div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="figtitle">増やした後<small>4ノード・12シャード</small></p>
+        <div class="nodes col">
+          <div class="node"><div class="node-name">ノード0</div><div class="chips"><span class="chip stay">s0</span><span class="chip stay">s1</span><span class="chip stay">s2</span></div></div>
+          <div class="node"><div class="node-name">ノード1</div><div class="chips"><span class="chip stay">s4</span><span class="chip stay">s5</span><span class="chip stay">s6</span></div></div>
+          <div class="node"><div class="node-name">ノード2</div><div class="chips"><span class="chip stay">s8</span><span class="chip stay">s9</span><span class="chip stay">s10</span></div></div>
+          <div class="node node-new"><div class="node-name">ノード3（新入り）</div><div class="chips"><span class="chip moved">s3</span><span class="chip moved">s7</span><span class="chip moved">s11</span></div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>各ノードがシャードを1個ずつ新入りに渡すだけ。動いたのは12個中3個。<b>キー→シャードの対応は変わらない</b>。変わるのはシャード→ノードの対応だけ。</figcaption>
+  </figure>
+
+  <ul class="cards">
+    <li class="plus"><h5>いいところ</h5><p>シャードを丸ごと運ぶだけなので、分割より安い。性能の高いノードに多めに持たせる、という調整もできます。</p></li>
+    <li class="minus"><h5>弱点1：上限がある</h5><p>シャード数より多いノードは持てません。足りなくなったら、全シャードを割り直す重い作業（リシャーディング）が待っています。止めないとできないシステムもあります。</p></li>
+    <li class="minus"><h5>弱点2：ちょうどいい数がわからない</h5><p>シャード数が固定だと、データが増えるほど1シャードが太ります。太すぎると引っ越しと復旧が重い。細かすぎると管理の無駄が増える。将来のデータ量が読めないと決めにくい。</p></li>
+  </ul>
+  <p class="used"><b>使っている製品：</b>Citus（PostgreSQLのシャーディング層）、Riak、Elasticsearch、Couchbase。</p>
+  <p>引っ越しには時間がかかります。運んでいる最中の読み書きは、古い割り当てのまま処理されます。</p>
+
+  <h4>方法③ ハッシュ値の範囲で分ける</h4>
+  <p>シャード数を前もって読めないなら、範囲方式の「大きくなったら割る」を借りてきます。ただし範囲を切る対象は、キーそのものではなく<strong>ハッシュ値</strong>です。</p>
+
+  <figure>
+    <div class="rows">
+      <div class="row"><span class="chip c0">シャード0</span><span class="range">0 〜 16,383</span><div class="landed"><span class="chip mono ghost c0">10:00:02 → 7,718</span></div></div>
+      <div class="row"><span class="chip c1">シャード1</span><span class="range">16,384 〜 32,767</span></div>
+      <div class="row"><span class="chip c2">シャード2</span><span class="range">32,768 〜 49,151</span><div class="landed"><span class="chip mono ghost c2">10:00:01 → 41,203</span></div></div>
+      <div class="row"><span class="chip c3">シャード3</span><span class="range">49,152 〜 65,535</span><div class="landed"><span class="chip mono ghost c3">10:00:03 → 59,340</span></div></div>
+    </div>
+    <figcaption>16ビットのハッシュ（0〜65,535）を4等分した例。さっきの3つのキーは、連続した時刻なのに別々のシャードに落ちる。あるシャードが太ったら、その範囲を2つに割ればいい。</figcaption>
+  </figure>
+
+  <ul class="cards">
+    <li class="plus"><h5>いいところ</h5><p>負荷が散らばる。そのうえ、シャード数をデータ量に合わせて後から増やせます。</p></li>
+    <li class="minus"><h5>失うもの</h5><p>パーティションキーでの範囲クエリです。「10:00〜10:05のキー」は全シャードに散らばっているので、全部に聞くしかありません。</p></li>
+  </ul>
+
+  <div class="note ok">
+    <span class="label">範囲クエリを取り戻す技：複合キー</span>
+    <p>キーを <code>(user_id, timestamp)</code> の2列にして、ハッシュにかけるのは先頭の <code>user_id</code> だけにします。同じユーザーのレコードは全部同じシャードに入り、その中では時刻順に並びます。「このユーザーの先週分」は1シャードの範囲スキャンで済みます。</p>
+  </div>
+  <p class="used"><b>使っている製品：</b>YugabyteDB、DynamoDB。MongoDB でもオプションで選べる。</p>
+
+  <h4>方法③の変形：Cassandra と ScyllaDB</h4>
+  <p>ハッシュ値の空間を<strong>ランダムな位置</strong>で区切り、1つのノードに複数の範囲を持たせます。範囲の大きさはバラバラですが、何個も持てば平均されます。</p>
+
+  <figure>
+    <p class="strip-label">3ノードのとき</p>
+    <div class="strip" role="img" aria-label="0から1024までのハッシュ空間が9つの範囲に分かれ、3つのノードが3つずつ持っている">
+      <span class="c0" style="flex:90">0</span><span class="c1" style="flex:140">1</span><span class="c2" style="flex:100">2</span><span class="c0" style="flex:140">0</span><span class="c1" style="flex:130">1</span><span class="c2" style="flex:90">2</span><span class="c1" style="flex:110">1</span><span class="c2" style="flex:120">2</span><span class="c0" style="flex:104">0</span>
+    </div>
+    <div class="strip-ends"><span>0</span><span>1024</span></div>
+    <p class="strip-label">ノード3を足したあと</p>
+    <div class="strip" role="img" aria-label="ノード3が既存の4つの範囲の一部を引き取り、4つのノードでほぼ均等になっている">
+      <span class="c0" style="flex:90">0</span><span class="c1" style="flex:70">1</span><span class="new" style="flex:70">3</span><span class="c2" style="flex:100">2</span><span class="c0" style="flex:70">0</span><span class="new" style="flex:70">3</span><span class="c1" style="flex:70">1</span><span class="new" style="flex:60">3</span><span class="c2" style="flex:90">2</span><span class="c1" style="flex:110">1</span><span class="c2" style="flex:50">2</span><span class="new" style="flex:70">3</span><span class="c0" style="flex:104">0</span>
+    </div>
+    <div class="strip-ends"><span>0</span><span>1024</span></div>
+    <div class="legend">
+      <span><span class="chip c0">0</span>ノード0</span>
+      <span><span class="chip c1">1</span>ノード1</span>
+      <span><span class="chip c2">2</span>ノード2</span>
+      <span><span class="chip c3">3</span>新入りのノード3</span>
+    </div>
+    <figcaption>帯の中の数字は、その範囲を持っているノード。新入りは既存の範囲の<b>一部だけ</b>を切り取ってもらう（しま模様の部分）。ほかの部分はまったく動かない。実際の1ノードあたりの範囲数は Cassandra が標準16、ScyllaDB が256。</figcaption>
+  </figure>
+
+  <div class="note">
+    <span class="label">データウェアハウスにも同じ考え方がある</span>
+    <p>BigQuery は「パーティションキー」でパーティションを決め、「クラスタカラム」でその中の並び順を決めます。Snowflake は「マイクロパーティション」と「クラスタキー」。Delta Lake にもパーティションとクラスタキーがあります。呼び名が違うだけで、複合キーの技と同じ構造です。</p>
+  </div>
+
+  <h4>方法④ コンシステントハッシング</h4>
+  <p>特定のアルゴリズムの名前というより、次の2つを満たす方式の総称です。</p>
+  <ul class="plain">
+    <li>各シャードに入るキーの数が、だいたい同じ。</li>
+    <li>シャードの数が変わっても、引っ越すキーができるだけ少ない。</li>
+  </ul>
+  <p>方法①は2つめを満たさないので失格。Cassandra と ScyllaDB の方式は、この考え方の元祖に近いものです。ほかに<span class="term">ランデブーハッシング</span>や<span class="term">ジャンプコンシステントハッシング</span>があります。こちらは範囲を切り取るのではなく、全ノードから少しずつ個々のキーを集めて新入りに渡します。</p>
+
+  <div class="note warn">
+    <span class="label">ここでの「コンシステント」は別の意味</span>
+    <p>レプリカの一貫性（6章）とも、ACIDのC（8章）とも関係ありません。「キーがなるべく同じ場所に居続ける」という意味です。</p>
+  </div>
+
+  <!-- ---------- 7.3.3 -->
+  <h3 id="hot">7.3.3　それでも残るホットスポット</h3>
+
+  <p>ハッシュが均等にしてくれるのは<strong>キーの数</strong>です。<strong>負荷</strong>ではありません。フォロワーが何百万人もいる有名人が投稿すると、その1つのキーに読み書きが殺到します。キーが1つである以上、ハッシュではばらせません。</p>
+
+  <ul class="cards">
+    <li><h5>対策A：専用シャードを与える</h5><p>範囲で区切る方式なら、ホットキー1つだけのシャードを作れます。専用のマシンを割り当てることもできます。</p></li>
+    <li><h5>対策B：アプリ側でキーを割る</h5><p>ホットキーの末尾にランダムな数字を付けて、別々のキーとして書き込みます。</p></li>
+  </ul>
+
+  <figure>
+    <div class="box bad">user:777<small>書き込みが殺到</small></div>
+    <div class="down hotline">末尾に 00〜99 をランダムに付けて書く</div>
+    <div class="nodes">
+      <div class="node"><div class="node-name">シャード0</div><div class="chips"><span class="chip mono c0">user:777_03</span><span class="chip mono c0">user:777_58</span></div></div>
+      <div class="node"><div class="node-name">シャード1</div><div class="chips"><span class="chip mono c1">user:777_17</span><span class="chip mono c1">user:777_92</span></div></div>
+      <div class="node"><div class="node-name">シャード2</div><div class="chips"><span class="chip mono c2">user:777_41</span><span class="chip mono c2">user:777_66</span></div></div>
+    </div>
+    <figcaption>2桁付けるだけで、1つのキーへの書き込みが100個のキーに分かれ、別々のシャードに散る。</figcaption>
+  </figure>
+
+  <div class="note warn">
+    <span class="label">対策Bの代償</span>
+    <ul class="plain">
+      <li>読むときは100個のキーを全部読んで、合体させる必要がある。</li>
+      <li>散るのは書き込みだけ。読み込みの負荷は減らない。</li>
+      <li>全キーにやると無駄なので、ホットなキーだけにしたい。すると「どのキーを割ったか」の管理が要る。</li>
+    </ul>
+  </div>
+
+  <p>さらに厄介なのは、負荷が時間で変わることです。バズった投稿は数日で静かになります。書き込みで熱いキーと読み込みで熱いキーでは、打つ手も違います。大規模なクラウドサービスはここを自動化していて、Amazon は<span class="term">ヒートマネジメント</span>や<span class="term">アダプティブキャパシティ</span>と呼んでいます。</p>
+
+  <!-- ---------- 7.3.4 -->
+  <h3 id="ops">7.3.4　リバランシングは自動か、手動か</h3>
+
+  <ul class="cards">
+    <li class="plus"><h5>全自動</h5><p>運用が楽です。負荷に合わせて増減するオートスケールもできます。DynamoDB は、負荷の大きな増減に数分で追いつけるとうたっています。</p></li>
+    <li class="plus"><h5>人間が承認</h5><p>遅いけれど、予想外の事故を防げます。大型セールやチケット発売のように、混む日がわかっているなら先回りして配り直せます。</p></li>
+    <li><h5>その中間</h5><p>Couchbase と Riak は、配り直しの案をシステムが作ります。管理者が承認するまで実行されません。</p></li>
+  </ul>
+
+  <p>全自動が怖いのは、「落ちたノードを自動で検知する仕組み」と組み合わさったときです。</p>
+
+  <figure>
+    <p class="figtitle">連鎖障害の起こり方</p>
+    <ol class="steps">
+      <li>ノードAが忙しすぎて、返事が一時的に遅くなる。</li>
+      <li>ほかのノードが「Aは死んだ」と判断する。</li>
+      <li>Aの担当ぶんを、ほかのノードへ自動で配り直す。</li>
+      <li>データの移動と肩代わりで、ノードBも忙しくなり返事が遅れる。</li>
+      <li>今度は「Bも死んだ」と判断される。以下くり返し。</li>
+    </ol>
+    <figcaption>リバランシング自体が重い作業なので、弱っているクラスタに自動で追い打ちをかけてしまう。人間を1人はさむと、この連鎖を止められる。</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 7.4 -->
+<section id="routing">
+  <p class="secno">7.4</p>
+  <h2>リクエストルーティング</h2>
+
+  <p>配り方が決まったら、次の疑問はこれです。<strong>「このキーを読みたい。どのIPアドレスの、どのポートにつなげばいい？」</strong></p>
+
+  <p>アプリのサーバーなら、どのインスタンスも同じ仕事ができるので、ロードバランサーが適当に振り分ければ済みます。データベースは違います。そのキーを持っているノードしか答えられません。</p>
+
+  <p>やり方は3通りあります。</p>
+
+  <figure>
+    <div class="panels">
+      <div class="panel">
+        <p class="figtitle">① どのノードに聞いてもいい</p>
+        <div class="box">クライアント</div>
+        <div class="down">適当なノードへ</div>
+        <div class="box">ノード0<small>このキーは持ってない</small></div>
+        <div class="down">持ち主へ転送</div>
+        <div class="box fine">ノード2<small>持ってる</small></div>
+      </div>
+      <div class="panel">
+        <p class="figtitle">② 受付係を置く</p>
+        <div class="box">クライアント</div>
+        <div class="down">まず受付へ</div>
+        <div class="box em">ルーティング層<small>住所録を持つ。自分では処理しない</small></div>
+        <div class="down">持ち主へ転送</div>
+        <div class="box fine">ノード2<small>持ってる</small></div>
+      </div>
+      <div class="panel">
+        <p class="figtitle">③ クライアントが住所録を持つ</p>
+        <div class="box em">クライアント<small>どのシャードがどのノードか知っている</small></div>
+        <div class="down">直行</div>
+        <div class="box fine">ノード2<small>持ってる</small></div>
+      </div>
+    </div>
+    <figcaption>黄色い枠が「シャード→ノードの住所録」を持っている場所。①はノード自身、②は専用のルーティング層、③はクライアント。</figcaption>
+  </figure>
+
+  <h3>どの方式でも出てくる3つの難問</h3>
+  <ul class="cards">
+    <li><h5>誰が配置を決める？</h5><p>決める係（コーディネーター）は1つがいちばん単純。でもそれが落ちたら？ 交代のときに決める係が2人になったら（スプリットブレイン）？</p></li>
+    <li><h5>変更をどう知る？</h5><p>シャードが別のノードに移ったことを、住所録を持つ側はどうやって知るのか。</p></li>
+    <li><h5>引っ越し中は？</h5><p>新しいノードが引き継ぐ途中で、古いノードに向かって飛んでいるリクエストをどうするか。</p></li>
+  </ul>
+
+  <h3>よくある答え：住所録の管理を専門家に任せる</h3>
+  <p>多くのシステムは、ZooKeeper や etcd のような<span class="term">コーディネーションサービス</span>に住所録を預けます。これらは合意アルゴリズム（10章）を使っていて、一部が落ちても動き続け、スプリットブレインも防ぎます。</p>
+
+  <figure>
+    <svg viewBox="0 0 400 760" role="img" aria-label="各ノードがZooKeeperに登録し、ZooKeeperが割り当ての変更をルーティング層に通知し、ルーティング層がクライアントのリクエストを正しいノードに転送する">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+        <marker id="ah-y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ffd166"/></marker>
+        <marker id="ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a6afc4"/></marker>
+      </defs>
+      <g font-family="'Zen Kaku Gothic New','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif" fill="currentColor">
+        <rect x="120" y="16" width="264" height="176" rx="10" fill="#202736" stroke="#ffd166" stroke-width="2.5"/>
+        <text x="252" y="50" text-anchor="middle" font-size="22" font-weight="900" fill="#ffd166">ZooKeeper</text>
+        <text x="252" y="76" text-anchor="middle" font-size="16" fill="#a6afc4">正式な住所録</text>
+        <line x1="136" y1="88" x2="368" y2="88" stroke="#353f55" stroke-width="1.5"/>
+        <text x="252" y="116" text-anchor="middle" font-size="18">シャード0 → ノード0</text>
+        <text x="252" y="146" text-anchor="middle" font-size="18" font-weight="900" fill="#c79bff">シャード1 → ノード2</text>
+        <text x="252" y="176" text-anchor="middle" font-size="18">シャード2 → ノード1</text>
+
+        <rect x="16" y="240" width="150" height="60" rx="10" fill="#202736" stroke="#353f55" stroke-width="2"/>
+        <text x="91" y="277" text-anchor="middle" font-size="20" font-weight="700">クライアント</text>
+
+        <rect x="16" y="400" width="230" height="84" rx="10" fill="#202736" stroke="#353f55" stroke-width="2"/>
+        <text x="131" y="436" text-anchor="middle" font-size="20" font-weight="700">ルーティング層</text>
+        <text x="131" y="464" text-anchor="middle" font-size="16" fill="#a6afc4">住所録のコピーを持つ</text>
+
+        <rect x="16" y="640" width="116" height="100" rx="10" fill="#202736" stroke="#353f55" stroke-width="2"/>
+        <text x="74" y="682" text-anchor="middle" font-size="19" font-weight="700">ノード0</text>
+        <text x="74" y="712" text-anchor="middle" font-size="16" fill="#a6afc4">シャード0</text>
+        <rect x="142" y="640" width="116" height="100" rx="10" fill="#202736" stroke="#353f55" stroke-width="2"/>
+        <text x="200" y="682" text-anchor="middle" font-size="19" font-weight="700">ノード1</text>
+        <text x="200" y="712" text-anchor="middle" font-size="16" fill="#a6afc4">シャード2</text>
+        <rect x="268" y="640" width="116" height="100" rx="10" fill="#202736" stroke="#c79bff" stroke-width="2.5"/>
+        <text x="326" y="682" text-anchor="middle" font-size="19" font-weight="700">ノード2</text>
+        <text x="326" y="712" text-anchor="middle" font-size="16" font-weight="900" fill="#c79bff">シャード1</text>
+
+        <line x1="91" y1="300" x2="91" y2="394" stroke="currentColor" stroke-width="2.5" marker-end="url(#ah)"/>
+        <text x="104" y="342" font-size="17">① 読みたい</text>
+        <text x="104" y="366" font-size="14" fill="#a6afc4">（シャード1のキー）</text>
+
+        <polyline points="330,192 330,442 254,442" fill="none" stroke="#ffd166" stroke-width="2.5" marker-end="url(#ah-y)"/>
+        <text x="320" y="330" text-anchor="end" font-size="17" fill="#ffd166">変更を通知</text>
+
+        <line x1="190" y1="484" x2="308" y2="634" stroke="currentColor" stroke-width="2.5" marker-end="url(#ah)"/>
+        <text x="228" y="586" text-anchor="end" font-size="17">② 持ち主へ転送</text>
+
+        <line x1="366" y1="640" x2="366" y2="200" stroke="#a6afc4" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#ah-m)"/>
+        <text x="356" y="524" text-anchor="end" font-size="15" fill="#a6afc4">各ノードが登録</text>
+      </g>
+    </svg>
+    <figcaption>各ノードは ZooKeeper に自分を登録する。ZooKeeper が持つのが正式な住所録。ルーティング層はそれを購読していて、シャードの持ち主が変わるとすぐ通知を受け取る。</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>住所録の管理方法</th><th>使っている製品</th></tr></thead>
+      <tbody>
+        <tr><td>ZooKeeper</td><td>HBase、SolrCloud</td></tr>
+        <tr><td>etcd</td><td>Kubernetes（どのサービスがどこで動いているかの管理）</td></tr>
+        <tr><td>自前の専用サーバー</td><td>MongoDB（コンフィグサーバー＋ルーティング層の mongos）</td></tr>
+        <tr><td>組み込みの Raft</td><td>Kafka、YugabyteDB、TiDB、ScyllaDB</td></tr>
+        <tr><td>ゴシッププロトコル</td><td>Riak</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Riak だけ毛色が違います。ノードどうしがうわさ話のように状態を伝え合う方式で、合意プロトコルより保証が弱く、ノードによって住所録が食い違うこともあります。リーダーレスのデータベースはもともと一貫性の保証が弱いので、それを受け入れられます。</p>
+
+  <div class="note">
+    <span class="label">補足2つ</span>
+    <p>最初につなぐ先（ルーティング層や適当なノード）のIPアドレスは、めったに変わらないので DNS で十分なことが多いです。</p>
+    <p>ここまでの話は「1つのキーを読み書きする」OLTP向けです。分析系のクエリは、たくさんのシャードを並列に読んで集計します。そちらは11章で。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 7.5 -->
+<section id="index">
+  <p class="secno">7.5</p>
+  <h2>シャーディングとセカンダリインデックス</h2>
+
+  <p>ここまでの方式には、隠れた前提がありました。<strong>読みたいレコードのパーティションキーを知っている</strong>ことです。</p>
+
+  <p>でも実際のアプリは「赤い車を全部」「この単語を含む記事を全部」のように、キー以外でも検索します。そのための<span class="term">セカンダリインデックス</span>は、シャードときれいに対応しません。赤い車はどのシャードにもいるからです。</p>
+
+  <p>中古車サイトを例にします。出品IDがパーティションキーで、ID 0〜499 がシャード0、500〜999 がシャード1。色（color）とメーカー（make）で絞り込みたいとします。</p>
+
+  <h3>7.5.1　ローカルインデックス：各シャードが自分のぶんだけ索引を持つ</h3>
+
+  <figure>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-name">シャード0（ID 0〜499）</div>
+        <p class="sub">データ</p>
+        <p class="kv">120 → red, Toyota<br>245 → black, Mazda<br>388 → red, Honda</p>
+        <p class="sub">このシャード専用の索引</p>
+        <p class="kv"><b>color:red</b> → [120, 388]<br>color:black → [245]<br>make:Honda → [388]<br>make:Mazda → [245]<br>make:Toyota → [120]</p>
+      </div>
+      <div class="node">
+        <div class="node-name">シャード1（ID 500〜999）</div>
+        <p class="sub">データ</p>
+        <p class="kv">530 → white, Honda<br>712 → red, Subaru<br>904 → white, Toyota</p>
+        <p class="sub">このシャード専用の索引</p>
+        <p class="kv"><b>color:red</b> → [712]<br>color:white → [530, 904]<br>make:Honda → [530]<br>make:Subaru → [712]<br>make:Toyota → [904]</p>
+      </div>
+    </div>
+    <div class="down">「赤い車を全部」→ 両方のシャードに聞いて、結果を合体</div>
+    <div class="box em">[120, 388] ＋ [712] ＝ 赤い車 3台</div>
+    <figcaption>索引は、同じシャードのレコードだけを指す。赤い車は両方にいるので、<b>全シャードに聞かないと全部は集まらない</b>。別名はドキュメント分割インデックス。</figcaption>
+  </figure>
+
+  <ul class="cards">
+    <li class="plus"><h5>書き込みは楽</h5><p>車を1台追加するとき、触るのはその車が入るシャード1つだけ。データと索引が同じ場所にあるからです。</p></li>
+    <li class="minus"><h5>読み込みは重い</h5><p>全シャードに問い合わせます。並列に聞いても、いちばん遅い1つを待つことになる（末尾遅延の増幅）。シャードを増やしてもクエリの処理能力は上がりません。全クエリが全シャードに行くからです。</p></li>
+  </ul>
+  <p>例外もあります。パーティションキーがわかっていれば、そのシャードだけに聞けます。全部ではなく何件かあれば足りるなら、どれか1つのシャードで済みます。</p>
+  <p class="used"><b>使っている製品：</b>MongoDB、Riak、Cassandra、Elasticsearch、SolrCloud、VoltDB。弱点はあっても広く使われている。</p>
+
+  <h3>7.5.2　グローバルインデックス：全体をカバーする索引を、別の切り口で分ける</h3>
+
+  <p>全シャードのデータをまとめた索引を作ります。ただし1台に置くとそこが詰まるので、索引もシャーディングします。分ける基準は出品IDではなく、<strong>索引の値そのもの</strong>です。</p>
+
+  <figure>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-name">索引シャード0</div>
+        <p class="sub">color が a〜r</p>
+        <p class="kv">color:black → [245]<br><b>color:red</b> → [120, 388, 712]</p>
+        <p class="sub">make が a〜m</p>
+        <p class="kv">make:Honda → [388, 530]<br>make:Mazda → [245]</p>
+      </div>
+      <div class="node">
+        <div class="node-name">索引シャード1</div>
+        <p class="sub">color が s〜z</p>
+        <p class="kv">color:white → [530, 904]</p>
+        <p class="sub">make が n〜z</p>
+        <p class="kv">make:Subaru → [712]<br>make:Toyota → [120, 904]</p>
+      </div>
+    </div>
+    <div class="down">「赤い車を全部」→ red は r だから索引シャード0だけ</div>
+    <div class="box em">[120, 388, 712] が1か所で手に入る</div>
+    <figcaption>さっきと同じ6台。赤い車のIDが、元のシャードに関係なく1か所にまとまっている。別名はターム分割インデックス（ターム＝索引で検索できる値）。分け方は、この図のような範囲でも、値のハッシュでもいい。</figcaption>
+  </figure>
+
+  <ul class="cards">
+    <li class="plus"><h5>読み込みが速い</h5><p>条件が1つなら、索引シャード1つを読めばIDのリスト（<span class="term">ポスティングリスト</span>）が手に入ります。</p></li>
+    <li class="minus"><h5>ただし本体は別</h5><p>手に入るのはIDだけ。車の情報そのものが欲しければ、そのIDを持つ各シャードへ取りに行きます。</p></li>
+    <li class="minus"><h5>AND検索</h5><p>「赤」かつ「Toyota」は、2つのリストが別々の索引シャードにあるのがふつう。両方をネットワーク越しに集めて共通部分を取ります。リストが長いと遅い。</p></li>
+    <li class="minus"><h5>書き込みが難しい</h5><p>車を1台追加すると、色の索引とメーカーの索引、別々のシャードを更新することになります。データと索引をずれなく保つには、分散トランザクション（8章）が1つの手です。</p></li>
+  </ul>
+  <p class="used"><b>使っている製品：</b>CockroachDB、TiDB、YugabyteDB。DynamoDB はローカルとグローバルの両方に対応。</p>
+
+  <div class="note warn">
+    <span class="label">DynamoDB のグローバルインデックスは遅れて反映される</span>
+    <p>書き込みは非同期で索引に届きます。そのため、索引から読むと少し古いデータが返ることがあります。6章のレプリケーションラグと同じ種類の現象です。</p>
+  </div>
+
+  <h3>ひと目で比較</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th></th><th>ローカル</th><th>グローバル</th></tr></thead>
+      <tbody>
+        <tr><td>索引の置き場所</td><td>データと同じシャード</td><td>索引の値で別に分ける</td></tr>
+        <tr><td>書き込み</td><td class="good">1シャードで済む</td><td class="hot">複数の索引シャードに波及</td></tr>
+        <tr><td>索引の検索</td><td class="hot">全シャードに聞く</td><td class="good">1シャードで済む</td></tr>
+        <tr><td>別名</td><td>ドキュメント分割</td><td>ターム分割</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>読み込みが書き込みよりずっと多く、ポスティングリストが長すぎないなら、グローバルが有利です。</p>
+
+  <div class="note warn">
+    <span class="label">キーバリューストアで索引を自作したくなったら</span>
+    <p>「値→IDの対応表」をアプリのコードで持てば、索引の代わりになります。ただし、同時書き込みの競合や、片方だけ保存に成功する失敗で、データと索引がずれやすい。細心の注意が要ります（8章のマルチオブジェクトトランザクションの話につながります）。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 7.6 -->
+<section id="summary">
+  <p class="secno">7.6</p>
+  <h2>まとめ</h2>
+
+  <h3>分け方の早見表</h3>
+  <ul class="cards">
+    <li>
+      <h5>キー範囲</h5>
+      <p><span class="good">範囲クエリが速い。</span>シャード数がデータ量についてくる。<span class="hot">近いキーへの書き込みでホットスポット。</span>育ったら分割。</p>
+    </li>
+    <li>
+      <h5>hash % ノード数</h5>
+      <p><span class="hot">使わない。</span>ノード数を変えるとほぼ全キーが引っ越す。</p>
+    </li>
+    <li>
+      <h5>固定数のシャード</h5>
+      <p><span class="good">シャード丸ごとの移動で済む。</span><span class="hot">数を最初に決める必要があり、外すと高くつく。</span></p>
+    </li>
+    <li>
+      <h5>ハッシュ範囲</h5>
+      <p><span class="good">負荷が散り、シャード数も後から増やせる。</span><span class="hot">パーティションキーでの範囲クエリは非効率。</span>複合キーで補う。</p>
+    </li>
+  </ul>
+
+  <p>よくある落としどころは、<strong>キーの先頭部分でシャードを決め、残りの部分でシャード内を並べる</strong>形です。同じパーティションキーの中なら範囲クエリが効きます。</p>
+
+  <h3>章全体の流れ</h3>
+  <figure>
+    <div class="box">データが1台に収まらない</div>
+    <div class="down">分ける</div>
+    <div class="box em">どう分ける？<small>キー範囲 ／ ハッシュ</small></div>
+    <div class="down">ノードが増減したら</div>
+    <div class="box em">どう配り直す？<small>分割 ／ シャードごと移動。自動 ／ 手動</small></div>
+    <div class="down">配った先に</div>
+    <div class="box em">どうたどり着く？<small>ルーティング。住所録は ZooKeeper などに預ける</small></div>
+    <div class="down">キー以外で探したいとき</div>
+    <div class="box em">索引はどうする？<small>ローカル ／ グローバル</small></div>
+    <figcaption>この章で答えた4つの問い。各シャードがほぼ独立して動くからこそ、台数を増やせばスケールする。</figcaption>
+  </figure>
+
+  <div class="note">
+    <span class="label">次章への宿題</span>
+    <p>複数のシャードに書き込む操作で、片方は成功して、もう片方は失敗したら？ この問いが8章（トランザクション）以降のテーマです。</p>
+  </div>
+
+  <h3>確認クイズ</h3>
+  <p>タップすると答えが開きます。</p>
+  <details>
+    <summary>Q1. 読み込みが多すぎて遅い。まずシャーディング？</summary>
+    <p>いいえ。読み込みだけならリードレプリカを増やせば足ります。シャーディングが効くのは、書き込みやデータ量が1台の限界を超えたときです。</p>
+  </details>
+  <details>
+    <summary>Q2. 時刻をキーにしてキー範囲で分けると何が起きる？</summary>
+    <p>書き込みが「今」のシャードに集中してホットシャードになります。キーの先頭にセンサーIDなど別の要素を付けて散らします。</p>
+  </details>
+  <details>
+    <summary>Q3. hash % ノード数 がダメな理由は？</summary>
+    <p>ノード数が変わると、ほとんどのキーの行き先が変わるからです。配り直しのデータ移動が大きすぎます。</p>
+  </details>
+  <details>
+    <summary>Q4. 固定数のシャード方式で、ノードを足したとき変わる対応と変わらない対応は？</summary>
+    <p>変わらないのはキー→シャード。変わるのはシャード→ノードだけです。</p>
+  </details>
+  <details>
+    <summary>Q5. ローカルインデックスで「赤い車を全部」探すと？</summary>
+    <p>全シャードに問い合わせて結果を合体させます。書き込みは1シャードで済む代わりに、検索が重くなります。</p>
+  </details>
+  <details>
+    <summary>Q6. グローバルインデックスのいちばんの弱点は？</summary>
+    <p>1レコードの書き込みが複数の索引シャードに波及することです。データと索引を同期させ続けるのが難しくなります。</p>
+  </details>
+
+  <footer>
+    <p>『データ指向アプリケーションデザイン 第2版』第7章「シャーディング」の学習ノート。図と例は理解用に描き直したもので、数値はイメージを含みます。</p>
+  </footer>
+</section>
+
+</main>
+
+<script>
+(function(){
+  var KEYS=12, BASE=3;
+  var after=document.getElementById('modn-after');
+  var result=document.getElementById('modn-result');
+  var formula=document.getElementById('modn-formula');
+  var buttons=document.querySelectorAll('#modn-demo button[data-n]');
+  if(!after||!result||!buttons.length) return;
+  function render(n){
+    var html='', moved=0;
+    for(var node=0;node<n;node++){
+      var isNew=node>=BASE;
+      html+='<div class="node'+(isNew?' node-new':'')+'"><div class="node-name">ノード'+node+(isNew?'（新入り）':'')+'</div><div class="chips">';
+      for(var h=0;h<KEYS;h++){
+        if(h%n!==node) continue;
+        var m=(h%BASE)!==node;
+        if(m) moved++;
+        html+='<span class="chip '+(m?'moved':'stay')+'">'+h+'</span>';
+      }
+      html+='</div></div>';
+    }
+    after.innerHTML=html;
+    formula.textContent='hash % '+n;
+    result.innerHTML=KEYS+'個のうち <b>'+moved+'</b> 個が引っ越し';
+  }
+  buttons.forEach(function(b){
+    b.addEventListener('click',function(){
+      buttons.forEach(function(x){x.setAttribute('aria-pressed', x===b ? 'true':'false');});
+      render(parseInt(b.getAttribute('data-n'),10));
+    });
+  });
+})();
+</script>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

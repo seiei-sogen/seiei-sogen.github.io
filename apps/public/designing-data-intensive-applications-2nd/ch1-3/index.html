@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 1.3 分散システムと単一ノード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 1カラムの読み物。図はスマホ幅(340)を基準に描く。本文21px・行間2。
+     色の役割: 琥珀=単一ノード / 青緑=分散 / 朱=失敗 */
+  --bg:#0f1420;
+  --panel:#171e2e;
+  --panel2:#1f2840;
+  --line:#2f3a5a;
+  --text:#ebe7dc;
+  --mute:#9aa4bb;
+  --solo:#f3b54a;
+  --dist:#58cfc2;
+  --bad:#ff7d6e;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  --font-label:"M PLUS 1 Code","SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:21px;line-height:2;
+  -webkit-text-size-adjust:100%;
+}
+main{max-width:36em;margin:0 auto;padding:40px 18px 96px}
+h1,h2,h3{line-height:1.5;text-wrap:balance;margin:0}
+h1{font-size:clamp(31px,7.6vw,46px);font-weight:900;letter-spacing:.01em}
+h2{font-size:clamp(27px,6.4vw,34px);font-weight:900;margin-top:96px;padding-top:28px;border-top:2px solid var(--line)}
+h3{font-size:24px;font-weight:700;margin-top:56px}
+p{margin:22px 0}
+strong{font-weight:700;color:#fff}
+a{color:var(--dist)}
+a:focus-visible{outline:2px solid var(--dist);outline-offset:3px;border-radius:4px}
+.eyebrow{font-family:var(--font-label);font-size:16px;line-height:1.7;color:var(--mute);letter-spacing:.04em;margin:0 0 10px}
+h2 .num{display:block;font-family:var(--font-label);font-size:17px;font-weight:700;color:var(--dist);letter-spacing:.06em;margin-bottom:4px}
+.solo{color:var(--solo)} .dist{color:var(--dist)} .bad{color:var(--bad)}
+
+.gist{background:var(--panel);border-left:6px solid var(--solo);border-radius:0 14px 14px 0;padding:18px 20px;margin:32px 0}
+.gist .tag{font-family:var(--font-label);font-size:16px;color:var(--solo);letter-spacing:.06em;display:block;line-height:1.8}
+.gist p{margin:6px 0 0}
+.gist.teal{border-left-color:var(--dist)} .gist.teal .tag{color:var(--dist)}
+.gist.red{border-left-color:var(--bad)} .gist.red .tag{color:var(--bad)}
+
+nav.toc{display:flex;flex-direction:column;gap:6px;margin:28px 0 0;padding:16px 20px;background:var(--panel);border-radius:14px}
+nav.toc a{text-decoration:none;display:block;padding:2px 0}
+nav.toc a span{font-family:var(--font-label);color:var(--mute);margin-right:.6em}
+
+figure{margin:32px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 14px 8px}
+figure svg{display:block;width:100%;max-width:540px;height:auto;margin:0 auto}
+figcaption{color:var(--mute);margin-top:10px;padding:0 4px 8px}
+figcaption b{color:var(--text)}
+
+/* 図の部品 */
+svg text{font-family:var(--font-body);font-size:15px;fill:var(--text)}
+svg .t-sm{font-size:13px}
+svg .t-b{font-weight:700}
+svg .t-mute{fill:var(--mute)}
+svg .t-solo{fill:var(--solo)}
+svg .t-dist{fill:var(--dist)}
+svg .t-bad{fill:var(--bad)}
+svg .box{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+svg .box-solo{fill:rgba(243,181,74,.13);stroke:var(--solo);stroke-width:1.5}
+svg .box-dist{fill:rgba(88,207,194,.13);stroke:var(--dist);stroke-width:1.5}
+svg .box-bad{fill:rgba(255,125,110,.13);stroke:var(--bad);stroke-width:1.5}
+svg .zone{fill:rgba(255,255,255,.035);stroke:none}
+svg .ln{stroke:var(--mute);stroke-width:1.6;fill:none}
+svg .ln-dist{stroke:var(--dist);stroke-width:2;fill:none}
+svg .ln-bad{stroke:var(--bad);stroke-width:2;fill:none}
+svg .ln-solo{stroke:var(--solo);stroke-width:2;fill:none}
+svg .dash{stroke-dasharray:5 5}
+svg .sep{stroke:var(--line);stroke-width:1.5}
+svg .f-mute{fill:var(--mute)} svg .f-dist{fill:var(--dist)} svg .f-bad{fill:var(--bad)} svg .f-solo{fill:var(--solo)}
+svg .a-dist{fill:rgba(88,207,194,.22)} svg .a-solo{fill:rgba(243,181,74,.14)}
+svg .dot{fill:var(--panel2);stroke:var(--dist);stroke-width:2}
+
+.cards{display:grid;gap:14px;margin:28px 0;padding:0;list-style:none}
+.cards li{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.cards .no{font-family:var(--font-label);font-size:16px;color:var(--dist);letter-spacing:.06em;display:block;line-height:1.6}
+.cards h4{font-size:22px;margin:0;line-height:1.6}
+.cards p{margin:4px 0 0}
+.eg{display:block;margin-top:8px;color:var(--mute)}
+.eg i{font-style:normal;font-family:var(--font-label);font-size:15px;color:var(--solo);border:1px solid var(--solo);border-radius:6px;padding:1px 7px;margin-right:8px;white-space:nowrap}
+@media (min-width:760px){.cards.two{grid-template-columns:1fr 1fr}}
+
+.scale{display:grid;gap:12px;margin:28px 0}
+.scale div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.scale .k{color:var(--mute);display:block}
+.scale .v{font-size:34px;font-weight:900;line-height:1.4;font-variant-numeric:tabular-nums}
+@media (min-width:600px){.scale{grid-template-columns:1fr 1fr}}
+
+ul.plain{margin:18px 0;padding-left:1.2em}
+ul.plain li{margin:6px 0}
+.pc{display:grid;gap:14px;margin:28px 0}
+.pc section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.pc h4{margin:0;font-size:22px;line-height:1.7}
+.pc ul{margin:6px 0 4px;padding-left:1.1em}
+@media (min-width:760px){.pc{grid-template-columns:1fr 1fr}}
+
+.cmp{display:grid;gap:14px;margin:28px 0}
+.cmp article{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.cmp h4{margin:0 0 4px;font-size:22px;line-height:1.7}
+.cmp dl{margin:0}
+.cmp dt{font-family:var(--font-label);font-size:16px;letter-spacing:.05em;line-height:1.8;margin-top:6px}
+.cmp dd{margin:0}
+.cmp dt.h{color:var(--solo)} .cmp dt.c{color:var(--dist)}
+
+.next{margin:20px 0;padding-left:1.2em}
+footer{margin-top:80px;padding-top:20px;border-top:1px solid var(--line);color:var(--mute)}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-mute" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="ah-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-dist" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="ah-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-bad" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="ah-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-solo" d="M0 0L10 5L0 10z"/></marker>
+  </defs>
+</svg>
+
+<main>
+
+<header>
+  <p class="eyebrow">データ指向アプリケーションデザイン 第2版 ／ 第1章</p>
+  <h1>1.3 分散システムと<br>単一ノードシステム</h1>
+
+  <div class="gist">
+    <span class="tag">この節を一文で</span>
+    <p>分散システムは強い。でも高くつく。<strong>1台で済むなら1台でやれ。</strong>分散するなら「なぜ分散するのか」を言えるようにしておけ。</p>
+  </div>
+
+  <nav class="toc" aria-label="目次">
+    <a href="#words"><span>0</span>まず言葉をそろえる</a>
+    <a href="#why"><span>1.3</span>なぜわざわざ分散するのか</a>
+    <a href="#cost"><span>1.3.1</span>分散のツケ</a>
+    <a href="#micro"><span>1.3.2</span>マイクロサービスとサーバーレス</a>
+    <a href="#hpc"><span>1.3.3</span>クラウドとスパコン</a>
+    <a href="#wrap"><span>∑</span>まとめ</a>
+  </nav>
+</header>
+
+<!-- ===================== 0 ===================== -->
+<h2 id="words"><span class="num">0</span>まず言葉をそろえる</h2>
+
+<p>ラーメン屋で考えます。店主ひとりが厨房もレジも全部やる店が<strong class="solo">単一ノード</strong>です。支店をいくつも出して、電話で連絡を取り合いながら回すチェーン店が<strong class="dist">分散システム</strong>です。</p>
+
+<p>コンピュータの話に戻すと、こうなります。</p>
+
+<ul class="plain">
+  <li><strong>分散システム</strong>：複数のマシンがネットワーク越しにやり取りして動くシステム</li>
+  <li><strong>ノード</strong>：そのシステムに参加している1つ1つのプロセス</li>
+</ul>
+
+<figure>
+  <svg viewBox="0 0 340 310" role="img" aria-label="単一ノードは1台の中にアプリとDBが入る。分散システムは複数のノードがネットワークで会話する。">
+    <text x="170" y="22" text-anchor="middle" class="t-solo t-b">単一ノード</text>
+    <rect class="box-solo" x="95" y="34" width="150" height="72" rx="10"/>
+    <text x="170" y="66" text-anchor="middle" class="t-b">アプリ ＋ DB</text>
+    <text x="170" y="90" text-anchor="middle" class="t-sm t-mute">ぜんぶ1台の中</text>
+    <line class="sep" x1="10" y1="132" x2="330" y2="132"/>
+    <text x="170" y="162" text-anchor="middle" class="t-dist t-b">分散システム</text>
+    <rect class="box-dist" x="14" y="176" width="88" height="60" rx="10"/>
+    <rect class="box-dist" x="126" y="176" width="88" height="60" rx="10"/>
+    <rect class="box-dist" x="238" y="176" width="88" height="60" rx="10"/>
+    <text x="58" y="212" text-anchor="middle">ノードA</text>
+    <text x="170" y="212" text-anchor="middle">ノードB</text>
+    <text x="282" y="212" text-anchor="middle">ノードC</text>
+    <line class="ln-dist" x1="102" y1="206" x2="126" y2="206"/>
+    <line class="ln-dist" x1="214" y1="206" x2="238" y2="206"/>
+    <path class="ln-dist" d="M58 236 Q170 300 282 236"/>
+    <text x="170" y="300" text-anchor="middle" class="t-sm t-mute">線はぜんぶネットワーク</text>
+  </svg>
+  <figcaption>違いは<b>線</b>があるかどうか。分散システムの苦労は、ほぼ全部この線から生まれます。</figcaption>
+</figure>
+
+<!-- ===================== 1 ===================== -->
+<h2 id="why"><span class="num">1.3</span>なぜわざわざ分散するのか</h2>
+
+<p>本はここで理由を9つ挙げています。数は多いですが、「望んでそうする」ものと「そうならざるを得ない」ものが混ざっているだけです。順番に見ます。</p>
+
+<h3>そうならざるを得ない2つ</h3>
+
+<ul class="cards two">
+  <li>
+    <span class="no">理由 1</span>
+    <h4>もともと分散している</h4>
+    <p>2人以上が、それぞれ自分の端末で使うアプリは、その時点で分散システムです。端末同士はネットワークで話すしかありません。</p>
+    <span class="eg"><i>例</i>チャット、共同編集</span>
+  </li>
+  <li>
+    <span class="no">理由 2</span>
+    <h4>クラウドのサービス同士が話す</h4>
+    <p>データを置くサービスと、それを処理するサービスが別なら、間はネットワークです。クラウドネイティブな構成もマイクロサービスも、自動的に分散システムになります。</p>
+    <span class="eg"><i>例</i>LambdaがS3のファイルを読む</span>
+  </li>
+</ul>
+
+<h3>落ちたくない</h3>
+
+<ul class="cards">
+  <li>
+    <span class="no">理由 3</span>
+    <h4>耐障害性・高可用性</h4>
+    <p>1台しかなければ、その1台が死んだら終わりです。複数台あれば、1台が壊れても別のマシンが代わりを務めます。マシン単位だけでなく、ネットワークやデータセンター丸ごとの障害にも同じ考え方で備えます。</p>
+    <span class="eg"><i>例</i>RDSのマルチAZ</span>
+  </li>
+</ul>
+
+<figure>
+  <svg viewBox="0 0 340 232" role="img" aria-label="3台のうちノードAが故障しても、ユーザーのリクエストは残りのノードBとCが処理する。">
+    <rect class="box" x="115" y="10" width="110" height="40" rx="10"/>
+    <text x="170" y="36" text-anchor="middle">ユーザー</text>
+    <line class="ln-bad dash" x1="148" y1="50" x2="72" y2="136" marker-end="url(#ah-b)"/>
+    <line class="ln-dist" x1="170" y1="50" x2="170" y2="136" marker-end="url(#ah-d)"/>
+    <line class="ln-dist" x1="192" y1="50" x2="268" y2="136" marker-end="url(#ah-d)"/>
+    <rect class="box-bad" x="14" y="140" width="88" height="56" rx="10"/>
+    <rect class="box-dist" x="126" y="140" width="88" height="56" rx="10"/>
+    <rect class="box-dist" x="238" y="140" width="88" height="56" rx="10"/>
+    <text x="58" y="164" text-anchor="middle">ノードA</text>
+    <text x="58" y="184" text-anchor="middle" class="t-sm t-bad t-b">✕ 故障</text>
+    <text x="170" y="164" text-anchor="middle">ノードB</text>
+    <text x="170" y="184" text-anchor="middle" class="t-sm t-dist">稼働中</text>
+    <text x="282" y="164" text-anchor="middle">ノードC</text>
+    <text x="282" y="184" text-anchor="middle" class="t-sm t-dist">稼働中</text>
+    <text x="170" y="222" text-anchor="middle" class="t-sm t-mute">残りの2台がそのまま引き継ぐ</text>
+  </svg>
+  <figcaption>予備がいるから止まらない。これを<b>冗長性</b>と呼びます。詳しくは2.3節と6章。</figcaption>
+</figure>
+
+<h3>さばききれない・ムダを払いたくない</h3>
+
+<ul class="cards two">
+  <li>
+    <span class="no">理由 4</span>
+    <h4>スケーラビリティ</h4>
+    <p>データ量や計算量が1台の限界を超えたら、複数台に負荷を割り振ります。</p>
+    <span class="eg"><i>例</i>リードレプリカ、シャーディング</span>
+  </li>
+  <li>
+    <span class="no">理由 6</span>
+    <h4>弾力性（elasticity）</h4>
+    <p>混む時間と暇な時間の差が大きいなら、クラウドで台数を増減させて、使った分だけ払えます。</p>
+    <span class="eg"><i>例</i>Auto Scaling</span>
+  </li>
+</ul>
+
+<figure>
+  <svg viewBox="0 0 340 228" role="img" aria-label="1日の負荷のグラフ。1台で持つ場合は常にピーク分の性能を確保するため、負荷が低い時間帯は大半が使われない。">
+    <path class="a-solo" d="M36 52 L324 52 L324 166 L300 98 L276 62 L252 84 L216 122 L180 112 L144 140 L108 172 L72 182 L36 176 Z"/>
+    <path class="a-dist" d="M36 196 L36 176 L72 182 L108 172 L144 140 L180 112 L216 122 L252 84 L276 62 L300 98 L324 166 L324 196 Z"/>
+    <polyline class="ln-dist" points="36,176 72,182 108,172 144,140 180,112 216,122 252,84 276,62 300,98 324,166"/>
+    <line class="ln-solo" x1="36" y1="52" x2="324" y2="52"/>
+    <line class="ln" x1="36" y1="30" x2="36" y2="196"/>
+    <line class="ln" x1="36" y1="196" x2="326" y2="196"/>
+    <text x="42" y="42" class="t-sm t-solo">1台の性能＝いつもピーク分</text>
+    <text x="52" y="96" class="t-sm t-solo">使わないのに確保</text>
+    <text x="226" y="172" class="t-sm t-dist">実際の負荷</text>
+    <text x="36" y="216" text-anchor="middle" class="t-sm t-mute">0時</text>
+    <text x="180" y="216" text-anchor="middle" class="t-sm t-mute">12時</text>
+    <text x="324" y="216" text-anchor="end" class="t-sm t-mute">24時</text>
+    <text x="4" y="24" class="t-sm t-mute">負荷</text>
+  </svg>
+  <figcaption>1台だと、暇な深夜も<b class="solo">ピーク時と同じ性能</b>を抱えたままです。クラウドなら<b class="dist">青緑の部分</b>に近い分だけ払えば済みます。</figcaption>
+</figure>
+
+<h3>遠い</h3>
+
+<ul class="cards">
+  <li>
+    <span class="no">理由 5</span>
+    <h4>レイテンシ（遅延）</h4>
+    <p>ユーザーが世界中にいるなら、各地にサーバーを置いて近いところから返します。パケットが地球を半周するのを待たずに済みます。</p>
+    <span class="eg"><i>例</i>CloudFront、マルチリージョン</span>
+  </li>
+</ul>
+
+<figure>
+  <svg viewBox="0 0 340 208" role="img" aria-label="札幌のユーザーから見て、東京のサーバーは往復が短く、米国のサーバーは往復が長い。">
+    <rect class="box" x="8" y="78" width="96" height="54" rx="10"/>
+    <text x="56" y="101" text-anchor="middle">札幌の</text>
+    <text x="56" y="121" text-anchor="middle">ユーザー</text>
+    <rect class="box-dist" x="236" y="12" width="96" height="56" rx="10"/>
+    <text x="284" y="36" text-anchor="middle">東京の</text>
+    <text x="284" y="56" text-anchor="middle">サーバー</text>
+    <rect class="box" x="236" y="140" width="96" height="56" rx="10"/>
+    <text x="284" y="164" text-anchor="middle">米国の</text>
+    <text x="284" y="184" text-anchor="middle">サーバー</text>
+    <line class="ln-dist" x1="106" y1="94" x2="232" y2="46" marker-end="url(#ah-d)" marker-start="url(#ah-d)"/>
+    <line class="ln dash" x1="106" y1="116" x2="232" y2="164" marker-end="url(#ah)" marker-start="url(#ah)"/>
+    <text x="106" y="42" class="t-sm t-dist">近い：数十ms</text>
+    <text x="100" y="190" class="t-sm t-mute">遠い：百数十ms〜</text>
+  </svg>
+  <figcaption>光の速さは変えられないので、<b>距離を縮める</b>しかありません。数値は往復時間のおおよその目安です。詳しくは2.2節。</figcaption>
+</figure>
+
+<h3>適材適所・法律・電気</h3>
+
+<ul class="cards">
+  <li>
+    <span class="no">理由 7</span>
+    <h4>専用ハードウェア</h4>
+    <p>仕事の種類ごとに、向いたマシンを使い分けられます。</p>
+  </li>
+</ul>
+
+<figure>
+  <svg viewBox="0 0 340 172" role="img" aria-label="保存用はディスクが多いマシン、分析用はCPUとメモリが多いマシン、機械学習用はGPUを積んだマシン。">
+    <rect class="box" x="8" y="8" width="100" height="156" rx="10"/>
+    <rect class="box" x="120" y="8" width="100" height="156" rx="10"/>
+    <rect class="box" x="232" y="8" width="100" height="156" rx="10"/>
+    <text x="58" y="34" text-anchor="middle" class="t-b">保存係</text>
+    <text x="170" y="34" text-anchor="middle" class="t-b">分析係</text>
+    <text x="282" y="34" text-anchor="middle" class="t-b">学習係</text>
+    <rect class="box-dist" x="28" y="48" width="60" height="10" rx="3"/>
+    <rect class="box-dist" x="28" y="62" width="60" height="10" rx="3"/>
+    <rect class="box-dist" x="28" y="76" width="60" height="10" rx="3"/>
+    <rect class="box-dist" x="28" y="90" width="60" height="10" rx="3"/>
+    <rect class="box-dist" x="148" y="52" width="44" height="44" rx="5"/>
+    <rect class="box-dist" x="160" y="64" width="20" height="20" rx="2"/>
+    <line class="ln-dist" x1="154" y1="46" x2="154" y2="52"/><line class="ln-dist" x1="170" y1="46" x2="170" y2="52"/><line class="ln-dist" x1="186" y1="46" x2="186" y2="52"/>
+    <line class="ln-dist" x1="154" y1="96" x2="154" y2="102"/><line class="ln-dist" x1="170" y1="96" x2="170" y2="102"/><line class="ln-dist" x1="186" y1="96" x2="186" y2="102"/>
+    <rect class="box-dist" x="246" y="56" width="72" height="36" rx="5"/>
+    <circle class="box-dist" cx="266" cy="74" r="10"/>
+    <circle class="box-dist" cx="298" cy="74" r="10"/>
+    <text x="58" y="126" text-anchor="middle" class="t-sm">ディスク多め</text>
+    <text x="58" y="146" text-anchor="middle" class="t-sm t-mute">CPUは少し</text>
+    <text x="170" y="126" text-anchor="middle" class="t-sm">CPU・メモリ</text>
+    <text x="170" y="146" text-anchor="middle" class="t-sm t-mute">たっぷり</text>
+    <text x="282" y="126" text-anchor="middle" class="t-sm">GPU搭載</text>
+    <text x="282" y="146" text-anchor="middle" class="t-sm t-mute">学習が速い</text>
+  </svg>
+  <figcaption>オブジェクトストア、データ分析、機械学習。それぞれ欲しい部品が違います。1台に全部盛りにするより、分けたほうが効率的です。</figcaption>
+</figure>
+
+<ul class="cards two">
+  <li>
+    <span class="no">理由 8</span>
+    <h4>法的コンプライアンス</h4>
+    <p>「自国民のデータは国内に置いて処理せよ」という法律（データレジデンシー法）を持つ国があります。対象は医療や金融だけのこともあれば、もっと広いこともあります。複数の国にユーザーがいれば、サーバーも複数の国に置くことになります。</p>
+    <span class="eg"><i>例</i>国ごとにリージョンを分ける</span>
+  </li>
+  <li>
+    <span class="no">理由 9</span>
+    <h4>持続可能性</h4>
+    <p>急がないジョブなら、再生可能エネルギーが余っている時間や場所で動かせます。CO₂排出が減り、電気代が安くなることもあります。</p>
+    <span class="eg"><i>例</i>夜間バッチの実行場所を選ぶ</span>
+  </li>
+</ul>
+
+<p>この9つは、自分で書くアプリケーションにも、データベースのような出来合いのソフトにも当てはまります。</p>
+
+<!-- ===================== 1.3.1 ===================== -->
+<h2 id="cost"><span class="num">1.3.1</span>分散のツケ</h2>
+
+<p>ここからが本題です。分散にはいいことがたくさんある。その代わりに払うものが4つあります。</p>
+
+<h3>ツケ① 返事が来ないとき、何が起きたか分からない</h3>
+
+<p>友達にメッセージを送って返事がない場面を想像してください。届いていないのか。読んだ直後に寝落ちしたのか。返信を送ってくれたのに電波が悪くて消えたのか。こちらからは区別がつきません。</p>
+
+<p>ネットワーク越しの呼び出しは全部これです。ネットワークが切れることも、相手が過負荷や障害で落ちることもあり、そのときリクエストは<strong>タイムアウト</strong>します。</p>
+
+<figure>
+  <svg viewBox="0 0 340 456" role="img" aria-label="タイムアウトの3つの可能性。リクエストが届いていない、相手が処理中に落ちた、処理は終わったが返事が消えた。">
+    <rect class="zone" x="0" y="0" width="340" height="140" rx="12"/>
+    <text x="14" y="28" class="t-b">① そもそも届いていない</text>
+    <rect class="box" x="14" y="44" width="72" height="48" rx="8"/><text x="50" y="74" text-anchor="middle">自分</text>
+    <rect class="box" x="254" y="44" width="72" height="48" rx="8"/><text x="290" y="74" text-anchor="middle">相手</text>
+    <line class="ln-bad dash" x1="88" y1="60" x2="158" y2="60"/>
+    <text x="170" y="66" text-anchor="middle" class="t-bad t-b">✕</text>
+    <text x="170" y="122" text-anchor="middle" class="t-sm t-mute">相手は何もしていない</text>
+
+    <rect class="zone" x="0" y="158" width="340" height="140" rx="12"/>
+    <text x="14" y="186" class="t-b">② 処理の途中で相手が落ちた</text>
+    <rect class="box" x="14" y="202" width="72" height="48" rx="8"/><text x="50" y="232" text-anchor="middle">自分</text>
+    <rect class="box-bad" x="254" y="202" width="72" height="48" rx="8"/><text x="290" y="232" text-anchor="middle" class="t-bad t-b">✕ 相手</text>
+    <line class="ln-dist" x1="88" y1="218" x2="250" y2="218" marker-end="url(#ah-d)"/>
+    <text x="170" y="280" text-anchor="middle" class="t-sm t-mute">処理は半端に終わったかもしれない</text>
+
+    <rect class="zone" x="0" y="316" width="340" height="140" rx="12"/>
+    <text x="14" y="344" class="t-b">③ 返事だけが消えた</text>
+    <rect class="box" x="14" y="360" width="72" height="48" rx="8"/><text x="50" y="390" text-anchor="middle">自分</text>
+    <rect class="box-dist" x="254" y="360" width="72" height="48" rx="8"/><text x="290" y="390" text-anchor="middle">相手</text>
+    <line class="ln-dist" x1="88" y1="376" x2="250" y2="376" marker-end="url(#ah-d)"/>
+    <line class="ln-bad dash" x1="252" y1="394" x2="182" y2="394"/>
+    <text x="170" y="400" text-anchor="middle" class="t-bad t-b">✕</text>
+    <text x="170" y="438" text-anchor="middle" class="t-sm t-mute">処理は完了している</text>
+  </svg>
+  <figcaption>3つとも、自分から見えるのは<b class="bad">「返事が来ない」</b>だけです。</figcaption>
+</figure>
+
+<div class="gist red">
+  <span class="tag">だから怖い</span>
+  <p>「とりあえずもう1回送る」が安全とは限りません。③の状況で決済リクエストを送り直すと、<strong>二重に課金</strong>されます。この話は9章でじっくり扱われます。</p>
+</div>
+
+<h3>ツケ② ネットワーク越しは遅い</h3>
+
+<p>データセンター内のネットワークは高速です。それでも、同じプロセス内で関数を呼ぶのに比べれば桁違いに遅い。人間の時間に置き換えるとこのくらいの差です。</p>
+
+<div class="scale">
+  <div><span class="k">関数呼び出しを</span><span class="v solo">1秒</span><span class="k">とすると</span></div>
+  <div><span class="k">ネットワーク越しの呼び出しは</span><span class="v dist">半日〜数日</span><span class="k">（よく言われる目安）</span></div>
+</div>
+
+<p>ここから大事な発想が出てきます。データが大きいときは、<strong>データを計算機に運ぶより、計算をデータのある場所に運ぶ</strong>ほうが速いことがある。</p>
+
+<figure>
+  <svg viewBox="0 0 340 262" role="img" aria-label="大量のデータを計算マシンへ転送するより、小さなコードをデータのあるマシンへ送って計算するほうが速い。">
+    <text x="14" y="24" class="t-b">データを運ぶ <tspan class="t-bad">→ 遅い</tspan></text>
+    <rect class="box" x="14" y="38" width="104" height="60" rx="10"/>
+    <text x="66" y="63" text-anchor="middle">保存マシン</text>
+    <text x="66" y="84" text-anchor="middle" class="t-sm t-mute">データ 1TB</text>
+    <rect class="box" x="222" y="38" width="104" height="60" rx="10"/>
+    <text x="274" y="63" text-anchor="middle">計算マシン</text>
+    <text x="274" y="84" text-anchor="middle" class="t-sm t-mute">ここで計算</text>
+    <line class="ln-bad" x1="120" y1="72" x2="218" y2="72" marker-end="url(#ah-b)"/>
+    <text x="169" y="58" text-anchor="middle" class="t-sm t-bad">1TBを転送</text>
+    <line class="sep" x1="10" y1="128" x2="330" y2="128"/>
+    <text x="14" y="160" class="t-b">計算を運ぶ <tspan class="t-dist">→ 速い</tspan></text>
+    <rect class="box-dist" x="14" y="174" width="104" height="60" rx="10"/>
+    <text x="66" y="199" text-anchor="middle">保存マシン</text>
+    <text x="66" y="220" text-anchor="middle" class="t-sm t-dist">ここで計算</text>
+    <rect class="box" x="222" y="174" width="104" height="60" rx="10"/>
+    <text x="274" y="210" text-anchor="middle">依頼する側</text>
+    <line class="ln-dist" x1="220" y1="204" x2="122" y2="204" marker-end="url(#ah-d)"/>
+    <text x="171" y="194" text-anchor="middle" class="t-sm t-dist">コード数KB</text>
+  </svg>
+  <figcaption>引っ越しにたとえると、家具を全部運ぶか、職人に来てもらうか、の違いです。</figcaption>
+</figure>
+
+<p>もう1つ、直感に反する事実があります。<strong>ノードを増やせば速くなるとは限りません。</strong>1台のマシンで動く素朴なシングルスレッドのプログラムが、100コア超のクラスタに大差で勝つケースも報告されています。台数を増やすと、連絡の手間も増えるからです。</p>
+
+<h3>ツケ③ どこが悪いのか調べにくい</h3>
+
+<p>「なんか遅い」と言われたとき、1台なら見る場所は1つです。分散システムだと、容疑者がサービスの数だけいます。</p>
+
+<p>この調査技術の分野が<strong>オブザーバビリティ</strong>です。システムの動きに関するデータを集めておき、全体の傾向（メトリクス）も、個々の出来事（イベント）も、後から問い合わせて調べられるようにします。</p>
+
+<p>代表的な道具が<strong>トレーシング</strong>。1つのリクエストが、どのサービスからどのサービスへ渡り、それぞれ何ミリ秒かかったかを記録します。OpenTelemetry、Zipkin、Jaeger がその例です。</p>
+
+<figure>
+  <svg viewBox="0 0 340 250" role="img" aria-label="トレースの例。全体300ミリ秒のうち、決済サービスが190ミリ秒を占めている。">
+    <text x="20" y="22" class="t-sm">入口のAPI　300ms</text>
+    <rect class="box" x="20" y="30" width="300" height="14" rx="4"/>
+    <text x="38" y="74" class="t-sm">注文サービス　265ms</text>
+    <rect class="box" x="38" y="82" width="265" height="14" rx="4"/>
+    <text x="52" y="126" class="t-sm">在庫サービス　40ms</text>
+    <rect class="box-dist" x="52" y="134" width="40" height="14" rx="4"/>
+    <text x="106" y="178" class="t-sm t-bad t-b">決済サービス　190ms ← 犯人</text>
+    <rect class="box-bad" x="106" y="186" width="190" height="14" rx="4"/>
+    <line class="ln" x1="20" y1="218" x2="320" y2="218"/>
+    <text x="20" y="240" class="t-sm t-mute">0ms</text>
+    <text x="320" y="240" text-anchor="end" class="t-sm t-mute">300ms</text>
+  </svg>
+  <figcaption>横軸が時間です。棒の長さを見れば、<b class="bad">どこで時間を食っているか</b>が一目で分かります。</figcaption>
+</figure>
+
+<h3>ツケ④ サービスをまたぐと、つじつまが合わなくなる</h3>
+
+<p>データベース1つの中なら、データの整合性を守る仕組みをDBが用意してくれます（6章と8章）。問題は、サービスごとに別々のDBを持つ場合です。</p>
+
+<figure>
+  <svg viewBox="0 0 340 214" role="img" aria-label="注文サービスは注文を書き込んだが、在庫サービスへの呼び出しが失敗し、在庫は減っていない。">
+    <rect class="box" x="14" y="12" width="130" height="50" rx="10"/>
+    <text x="79" y="43" text-anchor="middle">注文サービス</text>
+    <rect class="box" x="196" y="12" width="130" height="50" rx="10"/>
+    <text x="261" y="43" text-anchor="middle">在庫サービス</text>
+    <line class="ln-bad dash" x1="146" y1="37" x2="194" y2="37"/>
+    <text x="170" y="30" text-anchor="middle" class="t-bad t-b">✕</text>
+    <line class="ln" x1="79" y1="62" x2="79" y2="100"/>
+    <line class="ln" x1="261" y1="62" x2="261" y2="100"/>
+    <path class="box-dist" d="M29 112 v46 a50 10 0 0 0 100 0 v-46"/>
+    <ellipse class="box-dist" cx="79" cy="112" rx="50" ry="10"/>
+    <text x="79" y="150" text-anchor="middle" class="t-sm">注文：1件</text>
+    <path class="box-bad" d="M211 112 v46 a50 10 0 0 0 100 0 v-46"/>
+    <ellipse class="box-bad" cx="261" cy="112" rx="50" ry="10"/>
+    <text x="261" y="150" text-anchor="middle" class="t-sm">在庫：そのまま</text>
+    <text x="79" y="198" text-anchor="middle" class="t-sm t-dist">書き込み済み</text>
+    <text x="261" y="198" text-anchor="middle" class="t-sm t-bad">✕ 減っていない</text>
+  </svg>
+  <figcaption>注文は入ったのに在庫が減っていない。このズレを直すのはDBではなく<b>アプリケーション側の仕事</b>になります。</figcaption>
+</figure>
+
+<p>複数のDBをまとめて守る<strong>分散トランザクション</strong>という手もあります（8章）。ただしマイクロサービスではめったに使われません。理由は2つ。サービス同士を独立させたいという狙いに逆行すること、そして対応していないDBが多いことです。</p>
+
+<div class="gist">
+  <span class="tag">1.3.1 の結論</span>
+  <p>こうした事情から、<strong>1台で済ませるほうがずっと単純で安い</strong>ことが多い。CPUもメモリもディスクも、年々大きく、速く、壊れにくくなっています。DuckDB、SQLite、KùzuDB のような単一ノード向けDBと組み合わせれば、いまや相当な仕事が1台でこなせます（4章）。</p>
+</div>
+
+<!-- ===================== 1.3.2 ===================== -->
+<h2 id="micro"><span class="num">1.3.2</span>マイクロサービスとサーバーレス</h2>
+
+<h3>基本形はクライアントとサーバー</h3>
+
+<p>システムを複数のマシンに分ける定番の形は、頼む側（クライアント）と応える側（サーバー）に分けることです。通信はたいていHTTP（5.2.2節）。そして1つのプロセスが両方の役を兼ねることもあります。</p>
+
+<figure>
+  <svg viewBox="0 0 340 126" role="img" aria-label="ブラウザが注文APIを呼び、注文APIが決済APIを呼ぶ。注文APIはサーバーでありクライアントでもある。">
+    <text x="170" y="22" text-anchor="middle" class="t-sm t-dist t-b">サーバー兼クライアント</text>
+    <rect class="box" x="6" y="36" width="84" height="48" rx="10"/>
+    <rect class="box-dist" x="128" y="36" width="84" height="48" rx="10"/>
+    <rect class="box" x="250" y="36" width="84" height="48" rx="10"/>
+    <text x="48" y="66" text-anchor="middle">ブラウザ</text>
+    <text x="170" y="66" text-anchor="middle">注文API</text>
+    <text x="292" y="66" text-anchor="middle">決済API</text>
+    <line class="ln" x1="92" y1="60" x2="124" y2="60" marker-end="url(#ah)"/>
+    <line class="ln" x1="214" y1="60" x2="246" y2="60" marker-end="url(#ah)"/>
+    <text x="48" y="110" text-anchor="middle" class="t-sm t-mute">頼むだけ</text>
+    <text x="170" y="110" text-anchor="middle" class="t-sm t-mute">頼まれて、頼む</text>
+    <text x="292" y="110" text-anchor="middle" class="t-sm t-mute">応えるだけ</text>
+  </svg>
+  <figcaption>真ん中の注文APIは、ブラウザから見ればサーバー、決済APIから見ればクライアントです。</figcaption>
+</figure>
+
+<h3>SOAからマイクロサービスへ</h3>
+
+<p>このやり方は昔から<strong>サービス指向アーキテクチャ（SOA）</strong>と呼ばれてきました。それを磨き上げたのが<strong>マイクロサービス</strong>です。決まりごとは3つ。</p>
+
+<ul class="plain">
+  <li>1つのサービスは<strong>目的を1つ</strong>だけ持つ（S3ならファイルの保管）</li>
+  <li>ネットワーク越しに呼べる<strong>APIを公開</strong>する</li>
+  <li>面倒を見る<strong>チームが1つ</strong>決まっている</li>
+</ul>
+
+<figure>
+  <svg viewBox="0 0 340 396" role="img" aria-label="モノリスは全チームが1つのコードと1つのDBを共有する。マイクロサービスはサービスごとにチームとDBが分かれ、APIで連携する。">
+    <text x="14" y="22" class="t-solo t-b">モノリス</text>
+    <rect class="box-solo" x="14" y="34" width="312" height="118" rx="12"/>
+    <rect class="box" x="28" y="48" width="84" height="40" rx="8"/>
+    <rect class="box" x="128" y="48" width="84" height="40" rx="8"/>
+    <rect class="box" x="228" y="48" width="84" height="40" rx="8"/>
+    <text x="70" y="74" text-anchor="middle">注文</text>
+    <text x="170" y="74" text-anchor="middle">在庫</text>
+    <text x="270" y="74" text-anchor="middle">決済</text>
+    <rect class="box" x="100" y="102" width="140" height="36" rx="8"/>
+    <text x="170" y="126" text-anchor="middle" class="t-sm">共有のDB 1つ</text>
+    <text x="170" y="176" text-anchor="middle" class="t-sm t-mute">全チームが同じコードとDBを触る</text>
+    <line class="sep" x1="10" y1="196" x2="330" y2="196"/>
+    <text x="14" y="226" class="t-dist t-b">マイクロサービス</text>
+    <text x="58" y="252" text-anchor="middle" class="t-sm t-mute">チームA</text>
+    <text x="170" y="252" text-anchor="middle" class="t-sm t-mute">チームB</text>
+    <text x="282" y="252" text-anchor="middle" class="t-sm t-mute">チームC</text>
+    <rect class="box-dist" x="14" y="262" width="88" height="44" rx="8"/>
+    <rect class="box-dist" x="126" y="262" width="88" height="44" rx="8"/>
+    <rect class="box-dist" x="238" y="262" width="88" height="44" rx="8"/>
+    <text x="58" y="290" text-anchor="middle">注文</text>
+    <text x="170" y="290" text-anchor="middle">在庫</text>
+    <text x="282" y="290" text-anchor="middle">決済</text>
+    <line class="ln-dist" x1="102" y1="284" x2="126" y2="284"/>
+    <line class="ln-dist" x1="214" y1="284" x2="238" y2="284"/>
+    <text x="114" y="322" text-anchor="middle" class="t-sm t-dist">API</text>
+    <text x="226" y="322" text-anchor="middle" class="t-sm t-dist">API</text>
+    <line class="ln" x1="58" y1="306" x2="58" y2="332"/>
+    <line class="ln" x1="170" y1="306" x2="170" y2="332"/>
+    <line class="ln" x1="282" y1="306" x2="282" y2="332"/>
+    <rect class="box" x="23" y="332" width="70" height="34" rx="8"/>
+    <rect class="box" x="135" y="332" width="70" height="34" rx="8"/>
+    <rect class="box" x="247" y="332" width="70" height="34" rx="8"/>
+    <text x="58" y="354" text-anchor="middle" class="t-sm">DB</text>
+    <text x="170" y="354" text-anchor="middle" class="t-sm">DB</text>
+    <text x="282" y="354" text-anchor="middle" class="t-sm">DB</text>
+    <text x="170" y="388" text-anchor="middle" class="t-sm t-mute">サービスごとにチームもDBも別</text>
+  </svg>
+  <figcaption>クラウドネイティブな構成はサービス分割を多用しますが、オンプレミスでも同じ考え方は使えます。</figcaption>
+</figure>
+
+<h3>なぜDBを共有しないのか</h3>
+
+<p>各サービスは自分専用のDBを持ち、他のサービスと共有しないのが定石です。共有すると何が起きるか。</p>
+
+<figure>
+  <svg viewBox="0 0 340 196" role="img" aria-label="2つのサービスが1つのDBを共有すると、テーブル構造の変更が両方のサービスに影響する。">
+    <rect class="box" x="20" y="12" width="120" height="46" rx="10"/>
+    <rect class="box" x="200" y="12" width="120" height="46" rx="10"/>
+    <text x="80" y="41" text-anchor="middle">サービスA</text>
+    <text x="260" y="41" text-anchor="middle">サービスB</text>
+    <line class="ln-bad" x1="84" y1="58" x2="146" y2="106" marker-end="url(#ah-b)"/>
+    <line class="ln-bad" x1="256" y1="58" x2="194" y2="106" marker-end="url(#ah-b)"/>
+    <rect class="box-bad" x="110" y="110" width="120" height="46" rx="10"/>
+    <text x="170" y="139" text-anchor="middle">共有DB</text>
+    <text x="170" y="184" text-anchor="middle" class="t-sm t-bad">列名を変えたら両方こわれる</text>
+  </svg>
+  <figcaption>DBの構造そのものが、事実上<b>APIの一部</b>になってしまい、変更しづらくなります。片方の重いクエリが、もう片方を遅くする問題も起きます。</figcaption>
+</figure>
+
+<h3>いいところ、つらいところ</h3>
+
+<div class="pc">
+  <section>
+    <h4 class="dist">いいところ</h4>
+    <ul>
+      <li>サービスごとに独立してリリースできる。チーム間の調整が減る</li>
+      <li>サービスごとに必要なハードウェアを割り当てられる</li>
+      <li>中身をAPIの裏に隠せる。呼ぶ側に影響を与えずに実装を変えられる</li>
+    </ul>
+  </section>
+  <section>
+    <h4 class="bad">つらいところ</h4>
+    <ul>
+      <li>開発中のテストが大変。依存先のサービスも全部動かす必要がある</li>
+      <li>サービスごとに、デプロイ、リソース調整、ログ収集、監視、オンコール通知の仕組みが要る。Kubernetes が広まったのは、この土台を提供してくれるから</li>
+      <li>APIを変えるのが難しい</li>
+    </ul>
+  </section>
+</div>
+
+<p>最後の「APIを変えるのが難しい」は実感しやすい話です。呼ぶ側は「このフィールドがあるはず」と期待しています。ビジネスの都合でフィールドを足したり消したりすると、呼ぶ側が壊れる。しかもそれが発覚するのは、ステージングや本番に出した後、つまり開発の終盤です。OpenAPI や gRPC のようなAPI記述の標準が、ここを助けてくれます（5章）。</p>
+
+<div class="gist teal">
+  <span class="tag">いちばん大事な一言</span>
+  <p>マイクロサービスが解いているのは、技術の問題というより<strong>人と組織の問題</strong>です。チーム同士がいちいち調整せずに進められる、というのが本当の価値。だからチームが多い大企業では効きます。チームが少ない小さな会社では余計な荷物になりやすく、できるだけ素直な作りにしたほうがよい、と本は言っています。</p>
+</div>
+
+<h3>サーバーレス（FaaS）</h3>
+
+<p>サービスを動かすもう1つの方法が<strong>サーバーレス</strong>、別名 <strong>FaaS</strong>（Function as a Service）です。インフラの面倒をクラウド事業者に丸投げします。</p>
+
+<p>VMなら、いつ起動していつ止めるかを自分で決めます。サーバーレスでは、リクエストが来たら事業者が自動でリソースを割り当て、終われば片付けます。払うのは<strong>コードが動いていた時間の分だけ</strong>。事前に容量を見積もる必要がありません。クラウドストレージが「ディスクを何台買うか」の悩みを従量課金に変えたのと同じことを、コードの実行でもやったわけです。</p>
+
+<figure>
+  <svg viewBox="0 0 340 244" role="img" aria-label="VMはリクエストがない時間も起動し続けて課金される。サーバーレスはリクエストを処理した時間だけ課金される。">
+    <text x="14" y="22" class="t-solo t-b">VM（EC2など）</text>
+    <g class="f-mute">
+      <rect x="59" y="34" width="2" height="14"/><rect x="71" y="34" width="2" height="14"/>
+      <rect x="149" y="34" width="2" height="14"/>
+      <rect x="239" y="34" width="2" height="14"/><rect x="249" y="34" width="2" height="14"/><rect x="261" y="34" width="2" height="14"/>
+    </g>
+    <text x="326" y="22" text-anchor="end" class="t-sm t-mute">縦線＝リクエスト</text>
+    <rect class="box-solo" x="14" y="56" width="312" height="30" rx="6"/>
+    <text x="170" y="76" text-anchor="middle" class="t-sm">ずっと起動 ＝ ずっと課金</text>
+    <line class="sep" x1="10" y1="112" x2="330" y2="112"/>
+    <text x="14" y="140" class="t-dist t-b">サーバーレス（Lambdaなど）</text>
+    <g class="f-mute">
+      <rect x="59" y="152" width="2" height="14"/><rect x="71" y="152" width="2" height="14"/>
+      <rect x="149" y="152" width="2" height="14"/>
+      <rect x="239" y="152" width="2" height="14"/><rect x="249" y="152" width="2" height="14"/><rect x="261" y="152" width="2" height="14"/>
+    </g>
+    <rect class="box-dist" x="54" y="174" width="30" height="30" rx="6"/>
+    <rect class="box-dist" x="144" y="174" width="18" height="30" rx="6"/>
+    <rect class="box-dist" x="234" y="174" width="40" height="30" rx="6"/>
+    <line class="ln" x1="14" y1="204" x2="326" y2="204"/>
+    <text x="14" y="230" class="t-sm">動いた時間だけ課金</text>
+    <text x="326" y="230" text-anchor="end" class="t-sm t-mute">時間 →</text>
+  </svg>
+  <figcaption>縦の細い線がリクエストです。VMは<b class="solo">暇な時間も課金</b>され、サーバーレスは<b class="dist">働いた分だけ</b>課金されます。</figcaption>
+</figure>
+
+<p>うまい話には条件がつきます。</p>
+
+<ul class="plain">
+  <li><strong>実行時間に上限</strong>がある</li>
+  <li><strong>実行環境に制約</strong>がある</li>
+  <li>初回の呼び出しが遅い（<strong>スロースタート</strong>。いわゆるコールドスタート）</li>
+</ul>
+
+<p>名前にも注意が必要です。「サーバーレス」と言っても、サーバーは存在します。自分で管理しないだけです。しかも次の実行は別のサーバーで動くかもしれません。最近は BigQuery や各種 Kafka 製品のようなインフラサービスも「サーバーレス」を名乗ります。この場合の意味は「自動でスケールして、マシン台数ではなく使用量で課金します」です。</p>
+
+<!-- ===================== 1.3.3 ===================== -->
+<h2 id="hpc"><span class="num">1.3.3</span>クラウドとスパコン</h2>
+
+<p>大規模な計算システムを作る道は、クラウドだけではありません。もう1つが <strong>HPC</strong>（High-Performance Computing）、いわゆる<strong>スーパーコンピューティング</strong>です。どちらもマシンを大量に並べますが、大事にしているものが違います。</p>
+
+<div class="cmp">
+  <article>
+    <h4>何に使うか</h4>
+    <dl>
+      <dt class="h">スパコン</dt><dd>天気予報、気候モデル、分子の動きのシミュレーションなど、計算がひたすら重い科学技術計算</dd>
+      <dt class="c">クラウド</dt><dd>オンラインサービスや業務システムなど、ユーザーのリクエストに止まらず応え続ける仕事</dd>
+    </dl>
+  </article>
+  <article>
+    <h4>ノードが壊れたら</h4>
+    <dl>
+      <dt class="h">スパコン</dt><dd>計算の途中経過をときどきディスクに保存（チェックポイント）しておく。壊れたら全体を止め、直して、保存地点から再開</dd>
+      <dt class="c">クラウド</dt><dd>全体を止めるのは避けたい。ユーザーへの提供をなるべく途切れさせない</dd>
+    </dl>
+  </article>
+</div>
+
+<figure>
+  <svg viewBox="0 0 340 246" role="img" aria-label="スパコンは故障時に全体を止めて修理し、チェックポイントから再開する。クラウドは1台が落ちても残りのノードでサービスを続ける。">
+    <text x="14" y="22" class="t-solo t-b">スパコン：いったん全部止める</text>
+    <rect class="box-solo" x="14" y="34" width="110" height="30" rx="6"/>
+    <rect class="box-bad" x="124" y="34" width="100" height="30" rx="6"/>
+    <rect class="box-solo" x="224" y="34" width="102" height="30" rx="6"/>
+    <text x="69" y="54" text-anchor="middle" class="t-sm">計算</text>
+    <text x="174" y="54" text-anchor="middle" class="t-sm t-bad">停止・修理</text>
+    <text x="275" y="54" text-anchor="middle" class="t-sm">再開</text>
+    <text x="14" y="90" class="t-sm t-mute">故障 → 全停止 → 保存地点からやり直し</text>
+    <line class="sep" x1="10" y1="112" x2="330" y2="112"/>
+    <text x="14" y="140" class="t-dist t-b">クラウド：止めずに走り続ける</text>
+    <rect class="box-dist" x="14" y="154" width="312" height="14" rx="4"/>
+    <rect class="box-dist" x="14" y="176" width="130" height="14" rx="4"/>
+    <text x="152" y="188" class="t-sm t-bad t-b">✕ 故障</text>
+    <rect class="box-dist" x="14" y="198" width="312" height="14" rx="4"/>
+    <text x="14" y="236" class="t-sm t-mute">1台落ちても残りがサービスを継続</text>
+  </svg>
+  <figcaption>横軸は時間です。<b class="solo">バッチ計算</b>は止めてもやり直せる。<b class="dist">オンラインサービス</b>は止めた瞬間にユーザーが困る。この差が設計を分けます。</figcaption>
+</figure>
+
+<div class="cmp">
+  <article>
+    <h4>通信と信頼</h4>
+    <dl>
+      <dt class="h">スパコン</dt><dd>共有メモリやRDMAで通信する。帯域が広く遅延も小さい。ただし利用者同士が強く信頼し合っている前提</dd>
+      <dt class="c">クラウド</dt><dd>互いを信頼していない組織がネットワークとマシンを共有する。VMなどによるリソース分離、暗号化、認証が必要</dd>
+    </dl>
+  </article>
+  <article>
+    <h4>ネットワークの形</h4>
+    <dl>
+      <dt class="h">スパコン</dt><dd>多次元メッシュやトーラスといった専用の形。通信パターンが事前に分かっている計算で高性能</dd>
+      <dt class="c">クラウド</dt><dd>IPとイーサネットが土台。Closトポロジーで組み、高いバイセクション帯域幅（ネットワーク全体の性能の指標）を確保</dd>
+    </dl>
+  </article>
+</div>
+
+<figure>
+  <svg viewBox="0 0 340 204" role="img" aria-label="Closトポロジーは上段と下段のスイッチを総当たりでつなぐ。トーラスは格子状につなぎ、端と端もつなぐ。">
+    <text x="85" y="20" text-anchor="middle" class="t-dist t-b">Clos</text>
+    <g class="ln">
+      <line x1="55" y1="50" x2="25" y2="130"/><line x1="55" y1="50" x2="65" y2="130"/><line x1="55" y1="50" x2="105" y2="130"/><line x1="55" y1="50" x2="145" y2="130"/>
+      <line x1="115" y1="50" x2="25" y2="130"/><line x1="115" y1="50" x2="65" y2="130"/><line x1="115" y1="50" x2="105" y2="130"/><line x1="115" y1="50" x2="145" y2="130"/>
+    </g>
+    <circle class="dot" cx="55" cy="50" r="10"/><circle class="dot" cx="115" cy="50" r="10"/>
+    <circle class="dot" cx="25" cy="130" r="10"/><circle class="dot" cx="65" cy="130" r="10"/><circle class="dot" cx="105" cy="130" r="10"/><circle class="dot" cx="145" cy="130" r="10"/>
+    <text x="85" y="168" text-anchor="middle" class="t-sm">クラウド向き</text>
+    <text x="85" y="190" text-anchor="middle" class="t-sm t-mute">上下を総当たり</text>
+    <line class="sep" x1="170" y1="10" x2="170" y2="196"/>
+    <text x="255" y="20" text-anchor="middle" class="t-solo t-b">トーラス</text>
+    <g class="ln">
+      <line x1="215" y1="56" x2="295" y2="56"/><line x1="215" y1="94" x2="295" y2="94"/><line x1="215" y1="132" x2="295" y2="132"/>
+      <line x1="215" y1="56" x2="215" y2="132"/><line x1="255" y1="56" x2="255" y2="132"/><line x1="295" y1="56" x2="295" y2="132"/>
+    </g>
+    <g class="ln dash">
+      <path d="M215 56 Q255 28 295 56"/><path d="M215 94 Q255 66 295 94"/><path d="M215 132 Q255 104 295 132"/>
+      <path d="M215 56 Q187 94 215 132"/><path d="M255 56 Q227 94 255 132"/><path d="M295 56 Q323 94 295 132"/>
+    </g>
+    <g>
+      <circle class="dot" cx="215" cy="56" r="8"/><circle class="dot" cx="255" cy="56" r="8"/><circle class="dot" cx="295" cy="56" r="8"/>
+      <circle class="dot" cx="215" cy="94" r="8"/><circle class="dot" cx="255" cy="94" r="8"/><circle class="dot" cx="295" cy="94" r="8"/>
+      <circle class="dot" cx="215" cy="132" r="8"/><circle class="dot" cx="255" cy="132" r="8"/><circle class="dot" cx="295" cy="132" r="8"/>
+    </g>
+    <text x="255" y="168" text-anchor="middle" class="t-sm">スパコン向き</text>
+    <text x="255" y="190" text-anchor="middle" class="t-sm t-mute">端と端もつなぐ</text>
+  </svg>
+  <figcaption>Closは<b>誰が誰と話しても</b>そこそこ速い形。トーラスは<b>隣同士でよく話す</b>と分かっている計算に強い形です。点線は端から端へ戻る配線です。</figcaption>
+</figure>
+
+<div class="cmp">
+  <article>
+    <h4>置き場所</h4>
+    <dl>
+      <dt class="h">スパコン</dt><dd>全ノードが近くに固まっている前提</dd>
+      <dt class="c">クラウド</dt><dd>複数の地域（リージョン）にノードを散らせる</dd>
+    </dl>
+  </article>
+</div>
+
+<p>大規模な分析システムにはスパコンに近い性質を持つものもあるので、その方面の仕事をするなら知っておく価値があります。ただしこの本が主に相手にするのは、<strong>止まらずに動き続けることが求められるサービス</strong>のほうです。</p>
+
+<!-- ===================== まとめ ===================== -->
+<h2 id="wrap"><span class="num">∑</span>まとめ</h2>
+
+<figure>
+  <svg viewBox="0 0 340 290" role="img" aria-label="判断の流れ。1台でさばけて、止まっても許されるなら単一ノード。そうでなければ分散システム。">
+    <rect class="box" x="50" y="10" width="240" height="64" rx="12"/>
+    <text x="170" y="38" text-anchor="middle" class="t-b">1台でさばける？</text>
+    <text x="170" y="60" text-anchor="middle" class="t-b">止まっても許される？</text>
+    <line class="ln-solo" x1="112" y1="74" x2="86" y2="122" marker-end="url(#ah-s)"/>
+    <line class="ln-dist" x1="228" y1="74" x2="254" y2="122" marker-end="url(#ah-d)"/>
+    <text x="84" y="102" text-anchor="end" class="t-sm t-solo t-b">はい</text>
+    <text x="256" y="102" class="t-sm t-dist t-b">いいえ</text>
+    <rect class="box-solo" x="8" y="126" width="152" height="118" rx="12"/>
+    <text x="84" y="154" text-anchor="middle" class="t-b t-solo">単一ノード</text>
+    <text x="84" y="182" text-anchor="middle" class="t-sm">単純</text>
+    <text x="84" y="204" text-anchor="middle" class="t-sm">安い</text>
+    <text x="84" y="226" text-anchor="middle" class="t-sm">調べやすい</text>
+    <rect class="box-dist" x="180" y="126" width="152" height="118" rx="12"/>
+    <text x="256" y="154" text-anchor="middle" class="t-b t-dist">分散システム</text>
+    <text x="256" y="182" text-anchor="middle" class="t-sm">強い。そのかわり</text>
+    <text x="256" y="204" text-anchor="middle" class="t-sm">失敗・遅さ・調査難</text>
+    <text x="256" y="226" text-anchor="middle" class="t-sm">不整合がついてくる</text>
+    <text x="170" y="276" text-anchor="middle" class="t-b">迷ったら左から始める</text>
+  </svg>
+  <figcaption>分散は目的ではなく手段。9つの理由のどれかに当てはまるときに選びます。</figcaption>
+</figure>
+
+<ul class="plain">
+  <li><strong>分散する理由</strong>は9つ。避けられないもの（複数端末、サービス間通信）と、選んでやるもの（落ちない、さばける、近い、伸び縮み、適材適所、法律、電気）</li>
+  <li><strong>分散のツケ</strong>は4つ。返事が来ない理由が分からない、遅い、調べにくい、サービス間でつじつまが合わない</li>
+  <li><strong>マイクロサービス</strong>は組織の問題への答え。小さいチームには重い</li>
+  <li><strong>サーバーレス</strong>は、動いた分だけ払う実行モデル。制限とスロースタートつき</li>
+  <li><strong>スパコン</strong>は止めてやり直す世界、<strong>クラウド</strong>は止めない世界。この本は後者の話</li>
+</ul>
+
+<h3>この節から先へのつながり</h3>
+<ul class="next">
+  <li>信頼性・スケーラビリティ・性能の測り方 → 2章</li>
+  <li>単一ノードでどこまでやれるか → 4章</li>
+  <li>APIの互換性、RESTとRPC → 5章</li>
+  <li>レプリケーション → 6章</li>
+  <li>トランザクション、分散トランザクション → 8章</li>
+  <li>タイムアウトやリトライなど分散の難しさ → 9章</li>
+</ul>
+
+<footer>
+  <p>「例」として挙げたAWSのサービス名、レイテンシの数値、「1秒と半日〜数日」の換算、ラーメン屋やメッセージのたとえは、理解を助けるためにこちらで足した補足です。本の記述そのものではありません。</p>
+</footer>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

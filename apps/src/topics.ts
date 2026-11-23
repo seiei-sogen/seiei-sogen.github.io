@@ -30,4 +30,10 @@ export const TOPICS: readonly Topic[] = [
     description:
       '圏論の考え方を、3Dの図を動かしながら、できるだけやさしく説明する。まずは自然変換から。',
   },
+  {
+    to: '/designing-data-intensive-applications-2nd',
+    title: 'データ指向アプリケーションデザイン 第2版 図解ノート',
+    description:
+      '『データ指向アプリケーションデザイン 第2版』を読みながら、章ごとに作った図解ノート。レプリケーション、シャーディング、トランザクションなど。',
+  },
 ];

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 4章 ストレージと検索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@500;700&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 1カラムの読み物。図はスマホ幅(340)基準で描き、幅に合わせて伸縮。本文27px・行間2。常にダーク。
+     色の役割: 琥珀=ログ構造化(LSM) / 青緑=同一位置更新(Bツリー) / 藤=分析(列指向・ベクトル) / 朱=コスト・問題 */
+  --bg:#0f1420;
+  --panel:#171e2e;
+  --panel2:#1f2840;
+  --line:#34405f;
+  --text:#ebe7dc;
+  --mute:#a3adc4;
+  --lsm:#f3b54a;
+  --bt:#58cfc2;
+  --col:#b9a2ff;
+  --bad:#ff8372;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic",sans-serif;
+  --font-label:"M PLUS 1 Code","SFMono-Regular",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:27px;line-height:2;font-weight:400;
+  -webkit-text-size-adjust:100%;overflow-wrap:anywhere;line-break:strict;
+}
+main{max-width:36em;margin:0 auto;padding:36px 18px 140px}
+h1,h2,h3,h4{text-wrap:balance;word-break:auto-phrase;margin:0}
+h1{font-size:42px;line-height:1.4;font-weight:900;margin:6px 0 28px}
+h2{font-size:36px;line-height:1.5;font-weight:900;margin:120px 0 28px;padding-top:28px;border-top:3px solid var(--line)}
+h3{font-size:31px;line-height:1.5;font-weight:900;margin:84px 0 20px}
+h4{font-size:28px;line-height:1.6;font-weight:900;margin:60px 0 12px;color:var(--text)}
+h2 .num,h3 .num{font-family:var(--font-label);font-weight:700;color:var(--mute);margin-right:.4em}
+p{margin:0 0 30px}
+b,strong{font-weight:900}
+b.lsm{color:var(--lsm)} b.bt{color:var(--bt)} b.col{color:var(--col)} b.bad{color:var(--bad)}
+a{color:var(--bt);text-underline-offset:.2em}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--bt);outline-offset:4px;border-radius:6px}
+.eyebrow{font-family:var(--font-label);font-weight:700;color:var(--mute);margin:0}
+.lead{font-weight:500}
+ul,ol{margin:0 0 30px;padding-left:1.25em}
+li{margin:0 0 14px}
+li::marker{color:var(--mute);font-family:var(--font-label);font-weight:700}
+
+code{font-family:var(--font-label);font-size:.85em;background:var(--panel2);padding:2px 7px;border-radius:7px;overflow-wrap:anywhere}
+pre{font-family:var(--font-label);font-size:20px;line-height:1.8;background:#0a0e17;border:1.5px solid var(--line);
+  border-radius:14px;padding:18px;margin:0 0 30px;overflow-x:auto;white-space:pre;color:var(--text)}
+pre code{font-size:inherit;background:none;padding:0}
+
+nav.toc{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px 22px;margin:48px 0 0}
+nav.toc p{margin:0 0 6px;font-weight:900}
+nav.toc ol{list-style:none;padding:0;margin:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:6px 0;text-decoration:none;color:var(--text)}
+nav.toc a .num{font-family:var(--font-label);color:var(--mute);margin-right:.5em}
+
+/* 囲み。左の帯の色が役割を表す */
+.box{background:var(--panel);border:1.5px solid var(--line);border-left:8px solid var(--mute);border-radius:14px;padding:18px 20px;margin:0 0 30px}
+.box>:last-child{margin-bottom:0}
+.box .lab{display:block;font-family:var(--font-label);font-weight:700;color:var(--mute);line-height:1.6;margin-bottom:6px}
+.box.key{border-left-color:var(--text)} .box.key .lab{color:var(--text)}
+.box.lsm{border-left-color:var(--lsm)} .box.lsm .lab{color:var(--lsm)}
+.box.bt{border-left-color:var(--bt)} .box.bt .lab{color:var(--bt)}
+.box.col{border-left-color:var(--col)} .box.col .lab{color:var(--col)}
+.box.bad{border-left-color:var(--bad)} .box.bad .lab{color:var(--bad)}
+.box.extra{border-style:dashed;border-left-style:solid}
+
+/* 2つを並べて比べる */
+.cmp{display:grid;gap:14px;margin:0 0 30px}
+@media (min-width:900px){.cmp{grid-template-columns:1fr 1fr}}
+.cmp .side{background:var(--panel);border:1.5px solid var(--line);border-top:8px solid var(--mute);border-radius:14px;padding:14px 20px 18px}
+.cmp .side>:last-child{margin-bottom:0}
+.cmp .tag{display:block;font-family:var(--font-label);font-weight:700}
+.cmp .lsm{border-top-color:var(--lsm)} .cmp .lsm .tag{color:var(--lsm)}
+.cmp .bt{border-top-color:var(--bt)} .cmp .bt .tag{color:var(--bt)}
+.cmp .col{border-top-color:var(--col)} .cmp .col .tag{color:var(--col)}
+.cmp .bad{border-top-color:var(--bad)} .cmp .bad .tag{color:var(--bad)}
+
+/* 図 */
+figure.fig{margin:8px 0 34px}
+.canvas{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:14px 8px}
+.canvas svg{display:block;width:100%;height:auto;max-width:680px;margin:0 auto}
+figcaption{color:var(--mute);line-height:1.8;margin-top:14px}
+svg text{font-family:var(--font-body);fill:var(--text);font-weight:500}
+.t{font-size:15px} .ts{font-size:13px} .tb{font-size:16px;font-weight:900}
+.tm{font-family:var(--font-label);font-size:13px} .tmx{font-family:var(--font-label);font-size:12px} .tn{font-family:var(--font-label);font-size:11px}
+svg .c-mute{fill:var(--mute)} svg .c-lsm{fill:var(--lsm)} svg .c-bt{fill:var(--bt)} svg .c-col{fill:var(--col)} svg .c-bad{fill:var(--bad)}
+.f-panel{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+.f-none{fill:none;stroke:var(--line);stroke-width:1.5}
+.f-lsm{fill:rgba(243,181,74,.2);stroke:var(--lsm);stroke-width:1.5}
+.f-bt{fill:rgba(88,207,194,.18);stroke:var(--bt);stroke-width:1.5}
+.f-col{fill:rgba(185,162,255,.2);stroke:var(--col);stroke-width:1.5}
+.f-bad{fill:rgba(255,131,114,.18);stroke:var(--bad);stroke-width:1.5}
+.f-lsm.solid{fill:var(--lsm)} .f-bt.solid{fill:var(--bt)}
+.zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5}
+.ring{fill:none;stroke:var(--text);stroke-width:2.2}
+.ring-bt{fill:none;stroke:var(--bt);stroke-width:2.5}
+.band{fill:rgba(255,131,114,.16);stroke:none}
+.pg-on{fill:var(--text);fill-opacity:.82;stroke:none}
+.pg-off{fill:none;stroke:var(--mute);stroke-width:1.2;stroke-dasharray:3 3}
+.s-mute{fill:var(--mute)} .s-lsm{fill:var(--lsm)} .s-bt{fill:var(--bt)} .s-col{fill:var(--col)} .s-bad{fill:var(--bad)} .s-tx{fill:var(--text)}
+.ln,.ln-lsm,.ln-bt,.ln-col,.ln-bad,.ln-tx{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ln{stroke:var(--mute)} .ln-lsm{stroke:var(--lsm)} .ln-bt{stroke:var(--bt)} .ln-col{stroke:var(--col)} .ln-bad{stroke:var(--bad)} .ln-tx{stroke:var(--text)}
+.thin{stroke-width:1.2} .dash{stroke-dasharray:5 4}
+.hd{fill:var(--mute)} .hd-lsm{fill:var(--lsm)} .hd-bt{fill:var(--bt)} .hd-col{fill:var(--col)} .hd-bad{fill:var(--bad)} .hd-tx{fill:var(--text)}
+svg .dim{opacity:.45}
+
+/* まとめ */
+ol.sum{list-style:none;padding:0;counter-reset:s}
+ol.sum li{counter-increment:s;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:16px 20px;margin:0 0 14px}
+ol.sum li::before{content:counter(s);font-family:var(--font-label);font-weight:700;color:var(--mute);display:block;line-height:1.4}
+dl.pick{margin:0 0 30px}
+dl.pick div{border-bottom:1.5px solid var(--line);padding:14px 0}
+dl.pick dt{color:var(--mute)}
+dl.pick dd{margin:0;font-weight:700}
+
+details{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;margin:0 0 14px}
+summary{cursor:pointer;padding:16px 20px;font-weight:700}
+details .ans{padding:0 20px 18px;border-top:1.5px dashed var(--line);margin-top:4px;padding-top:14px}
+details .ans>:last-child{margin-bottom:0}
+details.col-note summary{color:var(--mute)}
+.foot{color:var(--mute);margin-top:96px;border-top:1.5px solid var(--line);padding-top:28px}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<main>
+
+<header>
+<p class="eyebrow">データ指向アプリケーションデザイン 第2版</p>
+<h1>4章 ストレージと検索</h1>
+<p class="lead">データベースの仕事は、つきつめると2つだけです。渡されたデータを<b>しまう</b>こと。頼まれたら<b>取り出す</b>こと。4章は、その裏側でデータベースが何をしているかの話です。</p>
+
+<div class="box key">
+<span class="lab">ひとことで</span>
+<p>しまい方には大きく3つの流派があります。書き込みに強い<b class="lsm">ログ構造化（LSMツリー）</b>、読み取りに強い<b class="bt">Bツリー</b>、集計に強い<b class="col">列指向</b>。どれも「何を速くして、何をあきらめるか」が違います。</p>
+</div>
+
+<figure class="fig" id="fig-map"><div class="canvas"><svg viewBox="0 0 340 300" role="img" aria-label="この章の地図。OLTP向けにログ構造化のLSMツリーと同一位置更新のBツリー、分析向けに列指向ストレージ、さらに多次元・全文・ベクトルの検索がある"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">OLTP向け：少しの行を速く読み書き</text><rect x="8.0" y="28.0" width="158.0" height="86.0" rx="6" class="f-lsm"/><text x="87.0" y="54.0" class="ts c-lsm" text-anchor="middle">ログ構造化</text><text x="87.0" y="78.0" class="tb" text-anchor="middle">LSMツリー</text><text x="87.0" y="100.0" class="ts" text-anchor="middle">書き込みに強い</text><rect x="174.0" y="28.0" width="158.0" height="86.0" rx="6" class="f-bt"/><text x="253.0" y="54.0" class="ts c-bt" text-anchor="middle">同一位置更新</text><text x="253.0" y="78.0" class="tb" text-anchor="middle">Bツリー</text><text x="253.0" y="100.0" class="ts" text-anchor="middle">読み取りに強い</text><text x="8.0" y="142.0" class="ts c-mute" text-anchor="start">分析向け：大量の行をまとめて集計</text><rect x="8.0" y="152.0" width="324.0" height="60.0" rx="6" class="f-col"/><text x="170.0" y="178.0" class="tb" text-anchor="middle">列指向ストレージ</text><text x="170.0" y="200.0" class="ts" text-anchor="middle">使う列だけ読む＋よく縮む</text><text x="8.0" y="240.0" class="ts c-mute" text-anchor="start">もっと複雑な検索</text><rect x="8.0" y="250.0" width="102.0" height="46.0" rx="6" class="f-panel"/><text x="59.0" y="270.0" class="t" text-anchor="middle">多次元</text><text x="59.0" y="288.0" class="ts c-mute" text-anchor="middle">地図の範囲</text><rect x="119.0" y="250.0" width="102.0" height="46.0" rx="6" class="f-panel"/><text x="170.0" y="270.0" class="t" text-anchor="middle">全文検索</text><text x="170.0" y="288.0" class="ts c-mute" text-anchor="middle">キーワード</text><rect x="230.0" y="250.0" width="102.0" height="46.0" rx="6" class="f-panel"/><text x="281.0" y="270.0" class="t" text-anchor="middle">ベクトル</text><text x="281.0" y="288.0" class="ts c-mute" text-anchor="middle">意味の近さ</text></svg></div><figcaption>この章の地図。色は、このページの最後まで同じ意味で使います。</figcaption></figure>
+
+<p>自分でデータベースを作ることは、たぶんありません。でも、たくさんある中から<b>選ぶ</b>ことと、設定を<b>調整する</b>ことはあります。中で何が起きているかを大まかに知っていれば、その判断ができます。それがこの章を読む理由です。</p>
+
+<nav class="toc" aria-label="目次">
+<p>目次</p>
+<ol>
+<li><a href="#s41"><span class="num">4.1</span>OLTPのためのストレージ</a></li>
+<li><a href="#s411"><span class="num">4.1.1</span>ログ構造化（LSMツリー）</a></li>
+<li><a href="#s412"><span class="num">4.1.2</span>Bツリー</a></li>
+<li><a href="#s413"><span class="num">4.1.3</span>2つの比較</a></li>
+<li><a href="#s414"><span class="num">4.1.4</span>セカンダリインデックスほか</a></li>
+<li><a href="#s42"><span class="num">4.2</span>分析のためのストレージ</a></li>
+<li><a href="#s43"><span class="num">4.3</span>多次元・全文・ベクトル</a></li>
+<li><a href="#s44"><span class="num">4.4</span>まとめと確認問題</a></li>
+</ol>
+</nav>
+</header>
+
+<!-- ===================================================== 4.1 -->
+<h2 id="s41"><span class="num">4.1</span>OLTPのためのストレージとインデックス</h2>
+
+<h3>世界一シンプルなデータベース</h3>
+<p>本は、たった2つのbash関数で作ったデータベースから始めます。</p>
+<pre><code>db_set () {
+  echo "$1,$2" &gt;&gt; database
+}
+
+db_get () {
+  grep "^$1," database \
+    | sed -e "s/^$1,//" \
+    | tail -n 1
+}</code></pre>
+<p><code>db_set</code> は、ファイルの末尾に「キー,値」を1行足すだけです。<code>db_get</code> は、ファイルを全部読んで、そのキーの<b>最後の</b>行を返します。同じキーを何度書いても古い行は消えません。いちばん後ろの行が最新です。</p>
+
+<figure class="fig" id="fig-log"><div class="canvas"><svg viewBox="0 0 340 216" role="img" aria-label="databaseファイルに3行が追記されている。キー42は2回書かれ、古い行も残る。読むときは先頭から全部見る"><text x="70.0" y="20.0" class="ts c-mute" text-anchor="start">database ファイル</text><rect x="70.0" y="28.0" width="262.0" height="126.0" rx="8" class="f-panel"/><rect x="80.0" y="38.0" width="242.0" height="32.0" rx="5" class="f-none"/><text x="90.0" y="59.0" class="tm" text-anchor="start">12,London</text><rect x="80.0" y="76.0" width="242.0" height="32.0" rx="5" class="f-none dim"/><text x="90.0" y="97.0" class="tm dim" text-anchor="start">42,GoldenGate</text><text x="314.0" y="97.0" class="ts c-mute" text-anchor="end">古い</text><rect x="80.0" y="114.0" width="242.0" height="32.0" rx="5" class="f-lsm"/><text x="90.0" y="135.0" class="tm" text-anchor="start">42,Exploratorium</text><text x="314.0" y="135.0" class="ts c-lsm" text-anchor="end">最新</text><polygon points="36.0,150.0 32.0,142.0 40.0,142.0" class="hd-bad"/><line x1="36.0" y1="34.0" x2="36.0" y2="142.0" class="ln-bad"/><polygon points="78.0,130.0 70.0,134.0 70.0,126.0" class="hd-lsm"/><line x1="50.0" y1="130.0" x2="70.0" y2="130.0" class="ln-lsm"/><text x="8.0" y="180.0" class="ts c-bad" text-anchor="start">読む：先頭から全部見る（遅い）</text><text x="8.0" y="204.0" class="ts c-lsm" text-anchor="start">書く：末尾に1行足すだけ（速い）</text></svg></div><figcaption>キー42は2回書かれています。古い行は残ったままで、後ろにあるほうが最新です。</figcaption></figure>
+
+<p>この作りは、良いところと悪いところがはっきりしています。</p>
+<ul>
+<li><b class="lsm">書き込みはとても速い。</b>末尾に足すだけだからです。これより単純な書き込みはありません。</li>
+<li><b class="bad">読み取りは遅い。</b>毎回、先頭から最後まで全部見るからです。データが2倍になれば、時間も2倍かかります。</li>
+</ul>
+
+<div class="box">
+<span class="lab">用語：ログ</span>
+<p>この本でいう<b>ログ</b>は、「末尾に足すことしかしない記録の並び」のことです。アプリが出すエラーログより広い意味で、人間には読めないバイナリのこともあります。この先、何度も出てきます。</p>
+</div>
+
+<h3>インデックスは、読みを速くして書きを遅くする</h3>
+<p>読み取りを速くするには、探しものの場所を教えてくれる別のデータが要ります。それが<b>インデックス</b>です。データ本体から作る、おまけの構造です。</p>
+<p>おまけなので、足しても消してもデータの中身は変わりません。変わるのは速さだけです。ただし、タダではありません。データを書くたびに、インデックスも直す必要があるからです。</p>
+
+<figure class="fig" id="fig-idxcost"><div class="canvas"><svg viewBox="0 0 340 202" role="img" aria-label="書き込み1回が、データ本体に加えてインデックスA、B、Cの更新も引き起こす"><rect x="8.0" y="70.0" width="92.0" height="56.0" rx="6" class="f-panel"/><text x="54.0" y="94.0" class="t" text-anchor="middle">書き込み</text><text x="54.0" y="114.0" class="t" text-anchor="middle">1回</text><rect x="196.0" y="8.0" width="136.0" height="36.0" rx="6" class="f-panel"/><text x="264.0" y="31.0" class="t" text-anchor="middle">データ本体</text><polygon points="194.0,26.0 190.1,34.0 185.2,27.7" class="hd-tx"/><line x1="100.0" y1="98.0" x2="187.6" y2="30.9" class="ln-tx"/><rect x="196.0" y="58.0" width="136.0" height="36.0" rx="6" class="f-bad"/><text x="264.0" y="81.0" class="t" text-anchor="middle">インデックスA</text><polygon points="194.0,76.0 187.1,81.7 185.3,73.9" class="hd-bad"/><line x1="100.0" y1="98.0" x2="186.2" y2="77.8" class="ln-bad"/><rect x="196.0" y="108.0" width="136.0" height="36.0" rx="6" class="f-bad"/><text x="264.0" y="131.0" class="t" text-anchor="middle">インデックスB</text><polygon points="194.0,126.0 185.2,127.5 187.5,119.9" class="hd-bad"/><line x1="100.0" y1="98.0" x2="186.3" y2="123.7" class="ln-bad"/><rect x="196.0" y="158.0" width="136.0" height="36.0" rx="6" class="f-bad"/><text x="264.0" y="181.0" class="t" text-anchor="middle">インデックスC</text><polygon points="194.0,176.0 185.3,174.0 190.4,167.8" class="hd-bad"/><line x1="100.0" y1="98.0" x2="187.8" y2="170.9" class="ln-bad"/></svg></div><figcaption>インデックスを増やすほど、1回の書き込みで直す場所が増えます。ディスクも余分に使います。</figcaption></figure>
+
+<div class="box key">
+<span class="lab">この章でいちばん大事なトレードオフ</span>
+<p>うまく選んだインデックスは読み取りを速くします。でも、どのインデックスも書き込みを遅くし、ディスクを使います。だからデータベースは、勝手に全部の列へインデックスを張りません。よく使うクエリを知っている<b>あなた</b>が選びます。</p>
+</div>
+
+<!-- ----------------------------------------------------- 4.1.1 -->
+<h3 id="s411"><span class="num">4.1.1</span>ログ構造化ストレージ</h3>
+<p>まずは<b class="lsm">ログ構造化</b>です。ファイルを書き換えず、末尾に足していく方式です。「末尾に足すだけ」の速さを保ったまま、読み取りを速くする工夫を、順番に積み上げていきます。</p>
+
+<h4>工夫1：メモリにハッシュマップを持つ</h4>
+<p>いちばん素朴な方法は、「キー → ファイルの何バイト目にあるか」の対応表をメモリに持つことです。書くたびに表を更新し、読むときは表を見てその場所へ直行します。</p>
+
+<figure class="fig" id="fig-hash"><div class="canvas"><svg viewBox="0 0 340 280" role="img" aria-label="メモリ上のハッシュマップが、キー12を位置0、キー42を位置24に対応づけ、ディスク上の追記ログの該当箇所を指している"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">メモリ：ハッシュマップ</text><rect x="60.0" y="28.0" width="220.0" height="88.0" rx="6" class="f-panel"/><line x1="60.0" y1="56.0" x2="280.0" y2="56.0" class="ln thin"/><line x1="60.0" y1="86.0" x2="280.0" y2="86.0" class="ln thin"/><line x1="130.0" y1="28.0" x2="130.0" y2="116.0" class="ln thin"/><text x="95.0" y="47.0" class="ts c-mute" text-anchor="middle">キー</text><text x="205.0" y="47.0" class="ts c-mute" text-anchor="middle">最新の位置</text><text x="95.0" y="76.0" class="tm" text-anchor="middle">12</text><text x="205.0" y="76.0" class="tm" text-anchor="middle">0</text><text x="95.0" y="106.0" class="tm" text-anchor="middle">42</text><text x="205.0" y="106.0" class="tm" text-anchor="middle">24（前は10）</text><rect x="8.0" y="170.0" width="77.0" height="40.0" rx="4" class="f-lsm"/><text x="14.0" y="195.0" class="tmx" text-anchor="start">12,London</text><text x="8.0" y="228.0" class="tmx c-mute" text-anchor="start">0</text><rect x="87.0" y="170.0" width="108.6" height="40.0" rx="4" class="f-none dim"/><text x="93.0" y="195.0" class="tmx dim" text-anchor="start">42,GoldenGate</text><text x="87.0" y="228.0" class="tmx c-mute" text-anchor="start">10</text><rect x="197.7" y="170.0" width="132.3" height="40.0" rx="4" class="f-lsm"/><text x="203.7" y="195.0" class="tmx" text-anchor="start">42,Exploratorium</text><text x="197.7" y="228.0" class="tmx c-mute" text-anchor="start">24</text><polygon points="34.0,166.0 32.3,157.2 40.0,159.3" class="hd-lsm"/><line x1="60.0" y1="71.0" x2="36.1" y2="158.3" class="ln-lsm"/><polygon points="263.7,166.0 261.7,157.3 269.5,159.2" class="hd-lsm"/><line x1="280.0" y1="101.0" x2="265.6" y2="158.2" class="ln-lsm"/><text x="8.0" y="252.0" class="ts c-mute" text-anchor="start">ディスク：追記専用のログ</text><text x="8.0" y="270.0" class="ts c-mute" text-anchor="start">下の数字は先頭からのバイト数</text></svg></div><figcaption>本の図4-1にあたる図です（値は説明用に短くしました）。キー42の最新の値は24バイト目から始まります。</figcaption></figure>
+
+<p>全部読むよりずっと速くなります。でも、問題が4つ残ります。</p>
+<ol>
+<li>古い行が消えないので、書き続けるといつかディスクが埋まる。</li>
+<li>表はメモリにしかないので、再起動のたびにファイル全体を読んで作り直す。</li>
+<li>キーが多すぎると、表がメモリに入りきらない。</li>
+<li>範囲で探せない。「10000から19999まで全部」と言われても、1個ずつ引くしかない。</li>
+</ol>
+
+<h4>工夫2：キーの順に並べる（SSTable）</h4>
+<p>そこで実際のデータベースは、データを<b>キーの順に並べて</b>持ちます。キー順に並んだファイルを<b>SSTable</b>（Sorted Strings Table）と呼びます。1つのファイルの中に、同じキーは1回しか出てきません。</p>
+<p>並んでいると、全部のキーを覚えなくてよくなります。ファイルを数キロバイトの<b>ブロック</b>に区切り、各ブロックの<b>最初のキーだけ</b>を覚えれば十分です。この、まばらな索引を<b>スパースインデックス</b>と呼びます。</p>
+
+<figure class="fig" id="fig-sstable"><div class="canvas"><svg viewBox="0 0 340 322" role="img" aria-label="スパースインデックスにはhammock、handbag、handsomeだけがある。handiworkはhandbagとhandsomeの間なので、handbagのブロックに飛んでそこから順に読む"><rect x="8.0" y="8.0" width="324.0" height="34.0" rx="17" class="f-panel"/><text x="170.0" y="30.0" class="t" text-anchor="middle">handiwork を探したい</text><text x="8.0" y="66.0" class="ts c-mute" text-anchor="start">スパースインデックス</text><rect x="8.0" y="74.0" width="120.0" height="32.0" rx="5" class="f-panel"/><text x="18.0" y="95.0" class="tm" text-anchor="start">hammock</text><rect x="8.0" y="108.0" width="120.0" height="32.0" rx="5" class="f-lsm"/><text x="18.0" y="129.0" class="tm" text-anchor="start">handbag</text><rect x="8.0" y="142.0" width="120.0" height="32.0" rx="5" class="f-panel"/><text x="18.0" y="163.0" class="tm" text-anchor="start">handsome</text><text x="8.0" y="200.0" class="ts c-lsm" text-anchor="start">handbag と</text><text x="8.0" y="218.0" class="ts c-lsm" text-anchor="start">handsome の</text><text x="8.0" y="236.0" class="ts c-lsm" text-anchor="start">間にあるはず</text><text x="150.0" y="66.0" class="ts c-mute" text-anchor="start">SSTable（キー順）</text><rect x="150.0" y="74.0" width="182.0" height="30.0" rx="6" class="f-panel dim"/><text x="160.0" y="94.0" class="tm dim" text-anchor="start">hammock …</text><rect x="150.0" y="110.0" width="182.0" height="146.0" rx="6" class="f-panel"/><rect x="156.0" y="191.0" width="150.0" height="24.0" rx="4" class="f-lsm"/><text x="162.0" y="130.0" class="tm" text-anchor="start">handbag</text><text x="162.0" y="156.0" class="tm" text-anchor="start">handcuffs</text><text x="162.0" y="182.0" class="tm" text-anchor="start">handful</text><text x="162.0" y="208.0" class="tm" text-anchor="start">handiwork</text><text x="162.0" y="234.0" class="tm" text-anchor="start">handkerchief</text><rect x="150.0" y="262.0" width="182.0" height="30.0" rx="6" class="f-panel dim"/><text x="160.0" y="282.0" class="tm dim" text-anchor="start">handsome …</text><polygon points="150.0,124.0 142.0,128.0 142.0,120.0" class="hd-lsm"/><line x1="128.0" y1="124.0" x2="142.0" y2="124.0" class="ln-lsm"/><polygon points="320.0,202.0 316.0,194.0 324.0,194.0" class="hd-lsm"/><line x1="320.0" y1="120.0" x2="320.0" y2="194.0" class="ln-lsm"/><text x="150.0" y="312.0" class="ts c-mute" text-anchor="start">1ブロック＝数キロバイト</text></svg></div><figcaption>本の図4-2にあたる図です。handiwork は索引にありません。でもキー順なので、handbag と handsome の間にあるとわかります。handbag のブロックへ飛んで、そこから順に読めば見つかります。</figcaption></figure>
+
+<div class="box extra">
+<span class="lab">補足（本にはないたとえ）</span>
+<p>紙の辞書と同じ仕組みです。辞書の各ページの上には、そのページの最初の単語が書いてあります。全部の単語の場所を覚えていなくても、目当ての単語がどのページにあるかはすぐわかります。</p>
+</div>
+
+<p>ブロックごとに圧縮もできます。ディスクの節約になり、読み書きするデータ量も減ります。代わりにCPUを少し使います。</p>
+
+<h4>工夫3：メモリで受けて、まとめて書き出す</h4>
+<p>SSTableは読むには良いのですが、書くのが難しくなります。キー順を保つには、途中に割り込ませる必要があるからです。そのたびにファイル全体を書き直すわけにはいきません。</p>
+<p>解決策は、追記ログとキー順ファイルのいいとこ取りです。</p>
+<ol>
+<li>書き込みは、まずメモリ上の「キー順を保てる木」に入れる。これを<b>メムテーブル</b>と呼ぶ。</li>
+<li>メムテーブルが数メガバイトにたまったら、キー順のままSSTableとしてディスクに書き出す。この1ファイルを<b>セグメント</b>と呼ぶ。書き出している間も、新しいメムテーブルで書き込みを受け続ける。</li>
+<li>読むときは、メムテーブル、新しいセグメント、古いセグメントの順に探す。最後まで無ければ、そのキーは存在しない。</li>
+<li>裏で、セグメント同士を<b>マージ</b>して、上書きされた値や消された値を捨てる。これを<b>コンパクション</b>と呼ぶ。</li>
+</ol>
+
+<figure class="fig" id="fig-lsm"><div class="canvas"><svg viewBox="0 0 340 402" role="img" aria-label="書き込みはメモリ上のメムテーブルとディスク上のログに入る。メムテーブルがたまるとSSTableのセグメントとして書き出され、裏でマージされる。読み取りはメムテーブル、新しいセグメント、古いセグメントの順に探す"><text x="16.0" y="20.0" class="ts c-mute" text-anchor="start">メモリ</text><rect x="8.0" y="28.0" width="324.0" height="84.0" rx="10" class="zone"/><rect x="24.0" y="42.0" width="180.0" height="56.0" rx="6" class="f-lsm"/><text x="36.0" y="66.0" class="tb" text-anchor="start">メムテーブル</text><text x="36.0" y="86.0" class="ts" text-anchor="start">キー順に持つ</text><text x="194.0" y="76.0" class="tb c-bt" text-anchor="end">①</text><text x="268.0" y="60.0" class="t" text-anchor="start">書き込み</text><polygon points="206.0,72.0 214.0,68.0 214.0,76.0" class="hd-tx"/><line x1="326.0" y1="72.0" x2="214.0" y2="72.0" class="ln-tx"/><polygon points="290.0,170.0 286.0,162.0 294.0,162.0" class="hd-tx"/><line x1="290.0" y1="72.0" x2="290.0" y2="162.0" class="ln-tx dash"/><text x="16.0" y="140.0" class="ts c-mute" text-anchor="start">ディスク</text><rect x="8.0" y="148.0" width="324.0" height="246.0" rx="10" class="zone"/><polygon points="114.0,170.0 110.0,162.0 118.0,162.0" class="hd-lsm"/><line x1="114.0" y1="98.0" x2="114.0" y2="162.0" class="ln-lsm"/><text x="122.0" y="134.0" class="ts c-lsm" text-anchor="start">たまったら書き出す</text><rect x="24.0" y="172.0" width="180.0" height="38.0" rx="6" class="f-panel"/><text x="36.0" y="196.0" class="t" text-anchor="start">セグメント3（新）</text><text x="194.0" y="197.0" class="tb c-bt" text-anchor="end">②</text><rect x="24.0" y="218.0" width="180.0" height="38.0" rx="6" class="f-panel"/><text x="36.0" y="242.0" class="t" text-anchor="start">セグメント2</text><text x="194.0" y="243.0" class="tb c-bt" text-anchor="end">③</text><rect x="24.0" y="264.0" width="180.0" height="38.0" rx="6" class="f-panel"/><text x="36.0" y="288.0" class="t" text-anchor="start">セグメント1（古）</text><text x="194.0" y="289.0" class="tb c-bt" text-anchor="end">④</text><rect x="222.0" y="172.0" width="98.0" height="52.0" rx="6" class="f-panel"/><text x="271.0" y="194.0" class="t" text-anchor="middle">ログ</text><text x="271.0" y="214.0" class="ts c-mute" text-anchor="middle">クラッシュ対策</text><line x1="204.0" y1="283.0" x2="240.0" y2="283.0" class="ln-lsm"/><polygon points="206.0,340.0 214.0,336.0 214.0,344.0" class="hd-lsm"/><polyline points="204.0,237.0 240.0,237.0 240.0,340.0 214.0,340.0" class="ln-lsm"/><text x="250.0" y="290.0" class="ts c-lsm" text-anchor="start">裏でマージ</text><text x="250.0" y="308.0" class="ts c-mute" text-anchor="start">古い値は</text><text x="250.0" y="326.0" class="ts c-mute" text-anchor="start">捨てる</text><rect x="24.0" y="320.0" width="180.0" height="40.0" rx="6" class="f-lsm"/><text x="36.0" y="345.0" class="t" text-anchor="start">マージ済みセグメント</text><text x="16.0" y="380.0" class="ts c-bt" text-anchor="start">①→④　読むときに探す順</text></svg></div><figcaption>ログ構造化ストレージの全体像です。セグメントは、一度書いたら二度と書き換えません。</figcaption></figure>
+
+<div class="box extra">
+<span class="lab">補足（本にはないたとえ）</span>
+<p>机の上のトレーと書類棚に似ています。届いた書類はまずトレー（メムテーブル）に入れ、たまったら並べ直して棚（セグメント）にしまいます。棚のファイルは書き換えず、ときどき古いファイル同士をまとめ直します。</p>
+</div>
+
+<p>マージの動きは、マージソートと同じです。それぞれのファイルを頭から読み、いちばん小さいキーを出力へ写す。これを繰り返します。同じキーが複数のファイルにあれば、新しいほうだけ残します。</p>
+
+<figure class="fig" id="fig-merge"><div class="canvas"><svg viewBox="0 0 340 296" role="img" aria-label="3つのセグメントをキー順に読みながら1つにまとめる。同じキーは新しい方の値だけが残り、削除マーカーのついたhandsomeは消える"><text x="60.0" y="20.0" class="ts c-mute" text-anchor="middle">古い</text><rect x="8.0" y="30.0" width="104.0" height="24.0" rx="4" class="f-none dim"/><text x="14.0" y="47.0" class="tmx dim" text-anchor="start">handbag=1</text><rect x="8.0" y="56.0" width="104.0" height="24.0" rx="4" class="f-none dim"/><text x="14.0" y="73.0" class="tmx dim" text-anchor="start">handful=4</text><rect x="8.0" y="82.0" width="104.0" height="24.0" rx="4" class="f-none dim"/><text x="14.0" y="99.0" class="tmx dim" text-anchor="start">handsome=7</text><text x="170.0" y="20.0" class="ts c-mute" text-anchor="middle">その次</text><rect x="118.0" y="30.0" width="104.0" height="24.0" rx="4" class="f-lsm"/><text x="124.0" y="47.0" class="tmx" text-anchor="start">handful=5</text><rect x="118.0" y="56.0" width="104.0" height="24.0" rx="4" class="f-none dim"/><text x="124.0" y="73.0" class="tmx dim" text-anchor="start">handiwork=2</text><text x="280.0" y="20.0" class="ts c-mute" text-anchor="middle">いちばん新しい</text><rect x="228.0" y="30.0" width="104.0" height="24.0" rx="4" class="f-lsm"/><text x="234.0" y="47.0" class="tmx" text-anchor="start">handbag=9</text><rect x="228.0" y="56.0" width="104.0" height="24.0" rx="4" class="f-lsm"/><text x="234.0" y="73.0" class="tmx" text-anchor="start">handiwork=3</text><rect x="228.0" y="82.0" width="104.0" height="24.0" rx="4" class="f-bad"/><text x="234.0" y="99.0" class="tmx" text-anchor="start">handsome=削除</text><polygon points="130.0,158.0 121.1,157.1 125.4,150.4" class="hd"/><line x1="60.0" y1="114.0" x2="123.2" y2="153.7" class="ln"/><polygon points="170.0,158.0 166.0,150.0 174.0,150.0" class="hd"/><line x1="170.0" y1="114.0" x2="170.0" y2="150.0" class="ln"/><polygon points="210.0,158.0 214.6,150.4 218.9,157.1" class="hd"/><line x1="280.0" y1="114.0" x2="216.8" y2="153.7" class="ln"/><rect x="70.0" y="164.0" width="200.0" height="24.0" rx="4" class="f-lsm"/><text x="170.0" y="181.0" class="tmx" text-anchor="middle">handbag=9</text><rect x="70.0" y="190.0" width="200.0" height="24.0" rx="4" class="f-lsm"/><text x="170.0" y="207.0" class="tmx" text-anchor="middle">handful=5</text><rect x="70.0" y="216.0" width="200.0" height="24.0" rx="4" class="f-lsm"/><text x="170.0" y="233.0" class="tmx" text-anchor="middle">handiwork=3</text><text x="8.0" y="266.0" class="ts" text-anchor="start">同じキーは新しい方だけ残す</text><text x="8.0" y="286.0" class="ts c-bad" text-anchor="start">handsome は削除マーカーごと消える</text></svg></div><figcaption>本の図4-3にあたる図です（値は説明用）。入力がキー順なので、メモリをほとんど使わずにマージできます。</figcaption></figure>
+
+<h4>細かいけれど大事な点</h4>
+<ul>
+<li><b>クラッシュ対策。</b>メムテーブルはメモリにあるので、落ちたら消えます。そこで、書き込みのたびにディスク上のログにも追記しておきます。このログはキー順ではありませんが、復元に使うだけなので問題ありません。メムテーブルをSSTableに書き出したら、その分のログは捨てます。</li>
+<li><b>削除。</b>ファイルは書き換えないので、「このキーは消えた」という印を追記します。これを<b>削除マーカー</b>（tombstone）と呼びます。マージのときに、それより古い値が捨てられます。</li>
+<li><b>書き換えないことの利点。</b>マージ中も、古いセグメントで読み取りに答え続けられます。書き出しの途中で落ちても、作りかけのファイルを捨ててやり直すだけです。セグメントをオブジェクトストレージに置くこともできます。</li>
+</ul>
+
+<div class="box lsm">
+<span class="lab">名前の整理</span>
+<p>この仕組みを<b>LSMツリー</b>（Log-Structured Merge-tree）と呼びます。RocksDB、Cassandra、ScyllaDB、HBaseがこの方式です。「SSTable」「メムテーブル」という言葉は、GoogleのBigtableの論文から来ています。</p>
+</div>
+
+<h4>ブルームフィルタ：「絶対にない」を一瞬で答える</h4>
+<p>LSMツリーには弱点があります。<b>存在しないキー</b>や、<b>ずっと前に書いたキー</b>を読むと遅いのです。セグメントをいくつも調べることになるからです。</p>
+<p>そこで、セグメントごとに<b>ブルームフィルタ</b>という小さなビットの列を持たせます。作り方はこうです。キーをハッシュ関数にかけて、いくつかの番号を出す。その番号のビットを1にする。これを全部のキーでやります。</p>
+
+<figure class="fig" id="fig-bloom1"><div class="canvas"><svg viewBox="0 0 340 292" role="img" aria-label="16ビットのブルームフィルタ。handheldのハッシュ(6, 11, 2)の位置を調べると、0がある → 絶対に入っていない"><text x="90.0" y="22.0" class="tm" text-anchor="middle">handbag</text><text x="90.0" y="42.0" class="ts c-lsm" text-anchor="middle">(2, 9, 4)</text><line x1="90.0" y1="50.0" x2="65.5" y2="118.0" class="ln-lsm thin"/><line x1="90.0" y1="50.0" x2="198.5" y2="118.0" class="ln-lsm thin"/><line x1="90.0" y1="50.0" x2="103.5" y2="118.0" class="ln-lsm thin"/><text x="250.0" y="22.0" class="tm" text-anchor="middle">handsome</text><text x="250.0" y="42.0" class="ts c-lsm" text-anchor="middle">(13, 15, 9)</text><line x1="250.0" y1="50.0" x2="274.5" y2="118.0" class="ln-lsm thin"/><line x1="250.0" y1="50.0" x2="312.5" y2="118.0" class="ln-lsm thin"/><line x1="250.0" y1="50.0" x2="198.5" y2="118.0" class="ln-lsm thin"/><rect x="18.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="27.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="27.5" y="166.0" class="tn c-mute" text-anchor="middle">0</text><rect x="37.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="46.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="46.5" y="166.0" class="tn c-mute" text-anchor="middle">1</text><rect x="56.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="65.5" y="141.0" class="tm" text-anchor="middle">1</text><text x="65.5" y="166.0" class="tn c-mute" text-anchor="middle">2</text><rect x="75.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="84.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="84.5" y="166.0" class="tn c-mute" text-anchor="middle">3</text><rect x="94.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="103.5" y="141.0" class="tm" text-anchor="middle">1</text><text x="103.5" y="166.0" class="tn c-mute" text-anchor="middle">4</text><rect x="113.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="122.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="122.5" y="166.0" class="tn c-mute" text-anchor="middle">5</text><rect x="132.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="141.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="141.5" y="166.0" class="tn c-mute" text-anchor="middle">6</text><rect x="151.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="160.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="160.5" y="166.0" class="tn c-mute" text-anchor="middle">7</text><rect x="170.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="179.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="179.5" y="166.0" class="tn c-mute" text-anchor="middle">8</text><rect x="189.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="198.5" y="141.0" class="tm" text-anchor="middle">1</text><text x="198.5" y="166.0" class="tn c-mute" text-anchor="middle">9</text><rect x="208.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="217.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="217.5" y="166.0" class="tn c-mute" text-anchor="middle">10</text><rect x="227.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="236.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="236.5" y="166.0" class="tn c-mute" text-anchor="middle">11</text><rect x="246.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="255.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="255.5" y="166.0" class="tn c-mute" text-anchor="middle">12</text><rect x="265.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="274.5" y="141.0" class="tm" text-anchor="middle">1</text><text x="274.5" y="166.0" class="tn c-mute" text-anchor="middle">13</text><rect x="284.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="293.5" y="141.0" class="tm c-mute" text-anchor="middle">0</text><text x="293.5" y="166.0" class="tn c-mute" text-anchor="middle">14</text><rect x="303.0" y="120.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="312.5" y="141.0" class="tm" text-anchor="middle">1</text><text x="312.5" y="166.0" class="tn c-mute" text-anchor="middle">15</text><rect x="130.0" y="118.0" width="21.5" height="34.0" rx="4" class="ring"/><line x1="141.5" y1="172.0" x2="170.0" y2="212.0" class="ln-tx thin"/><rect x="225.0" y="118.0" width="21.5" height="34.0" rx="4" class="ring"/><line x1="236.5" y1="172.0" x2="170.0" y2="212.0" class="ln-tx thin"/><rect x="54.0" y="118.0" width="21.5" height="34.0" rx="4" class="ring"/><line x1="65.5" y1="172.0" x2="170.0" y2="212.0" class="ln-tx thin"/><text x="170.0" y="232.0" class="tm" text-anchor="middle">handheld</text><text x="170.0" y="252.0" class="ts" text-anchor="middle">(6, 11, 2)</text><text x="170.0" y="280.0" class="ts c-bt" text-anchor="middle">0がある → 絶対に入っていない</text></svg></div><figcaption>本の図4-4にあたる図です。handbag のハッシュが (2, 9, 4) なので、その3か所が1になります（2つめのキーの番号は説明用です）。handheld を調べると、3か所のうち2か所が0でした。</figcaption></figure>
+
+<p>調べたいキーも同じハッシュにかけて、その番号のビットを見ます。</p>
+<ul>
+<li><b class="bt">1つでも0がある</b>なら、そのキーは絶対に入っていません。このセグメントは読まずに飛ばせます。</li>
+<li><b class="bad">全部1</b>なら、入っている可能性があります。ただし、ほかのキーがたまたまそこを1にしただけかもしれません。これを<b>偽陽性</b>と呼びます。</li>
+</ul>
+
+<figure class="fig" id="fig-bloom2"><div class="canvas"><svg viewBox="0 0 340 192" role="img" aria-label="16ビットのブルームフィルタ。handyのハッシュ(4, 13, 15)の位置を調べると、全部1 → 入っているかも（実は無い）"><rect x="18.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="27.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="27.5" y="66.0" class="tn c-mute" text-anchor="middle">0</text><rect x="37.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="46.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="46.5" y="66.0" class="tn c-mute" text-anchor="middle">1</text><rect x="56.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="65.5" y="41.0" class="tm" text-anchor="middle">1</text><text x="65.5" y="66.0" class="tn c-mute" text-anchor="middle">2</text><rect x="75.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="84.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="84.5" y="66.0" class="tn c-mute" text-anchor="middle">3</text><rect x="94.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="103.5" y="41.0" class="tm" text-anchor="middle">1</text><text x="103.5" y="66.0" class="tn c-mute" text-anchor="middle">4</text><rect x="113.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="122.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="122.5" y="66.0" class="tn c-mute" text-anchor="middle">5</text><rect x="132.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="141.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="141.5" y="66.0" class="tn c-mute" text-anchor="middle">6</text><rect x="151.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="160.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="160.5" y="66.0" class="tn c-mute" text-anchor="middle">7</text><rect x="170.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="179.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="179.5" y="66.0" class="tn c-mute" text-anchor="middle">8</text><rect x="189.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="198.5" y="41.0" class="tm" text-anchor="middle">1</text><text x="198.5" y="66.0" class="tn c-mute" text-anchor="middle">9</text><rect x="208.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="217.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="217.5" y="66.0" class="tn c-mute" text-anchor="middle">10</text><rect x="227.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="236.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="236.5" y="66.0" class="tn c-mute" text-anchor="middle">11</text><rect x="246.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="255.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="255.5" y="66.0" class="tn c-mute" text-anchor="middle">12</text><rect x="265.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="274.5" y="41.0" class="tm" text-anchor="middle">1</text><text x="274.5" y="66.0" class="tn c-mute" text-anchor="middle">13</text><rect x="284.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-none"/><text x="293.5" y="41.0" class="tm c-mute" text-anchor="middle">0</text><text x="293.5" y="66.0" class="tn c-mute" text-anchor="middle">14</text><rect x="303.0" y="20.0" width="17.5" height="30.0" rx="3" class="f-lsm"/><text x="312.5" y="41.0" class="tm" text-anchor="middle">1</text><text x="312.5" y="66.0" class="tn c-mute" text-anchor="middle">15</text><rect x="92.0" y="18.0" width="21.5" height="34.0" rx="4" class="ring"/><line x1="103.5" y1="72.0" x2="170.0" y2="112.0" class="ln-tx thin"/><rect x="263.0" y="18.0" width="21.5" height="34.0" rx="4" class="ring"/><line x1="274.5" y1="72.0" x2="170.0" y2="112.0" class="ln-tx thin"/><rect x="301.0" y="18.0" width="21.5" height="34.0" rx="4" class="ring"/><line x1="312.5" y1="72.0" x2="170.0" y2="112.0" class="ln-tx thin"/><text x="170.0" y="132.0" class="tm" text-anchor="middle">handy</text><text x="170.0" y="152.0" class="ts" text-anchor="middle">(4, 13, 15)</text><text x="170.0" y="180.0" class="ts c-bad" text-anchor="middle">全部1 → 入っているかも（実は無い）</text></svg></div><figcaption>偽陽性の例です（本にはない補足）。handy は入っていませんが、ほかのキーが立てたビットと全部重なりました。</figcaption></figure>
+
+<p>偽陽性でも害はありません。セグメントを読んでみて「やっぱり無かった」とわかり、少し無駄をするだけです。目安として、キー1個あたり10ビット使うと偽陽性は1%。5ビット足すごとに10分の1になります。</p>
+
+<h4>コンパクション戦略：いつ、どれをマージするか</h4>
+<p>マージのやり方には、代表的な方式が2つあります。</p>
+
+<p><b class="lsm">サイズ階層型</b>（size-tiered）は、小さくて新しいSSTableを、大きくて古いSSTableへ順にまとめていきます。</p>
+
+<figure class="fig" id="fig-tiered"><div class="canvas"><svg viewBox="0 0 340 166" role="img" aria-label="256MBのSSTable4つが、1つの898MBのSSTableにまとめられる"><rect x="8.0" y="10.0" width="75.0" height="38.0" rx="6" class="f-panel"/><text x="45.5" y="34.0" class="ts" text-anchor="middle">256 MB</text><polygon points="110.0,98.0 101.2,96.4 106.0,90.0" class="hd-lsm"/><line x1="45.5" y1="50.0" x2="103.6" y2="93.2" class="ln-lsm"/><rect x="91.0" y="10.0" width="75.0" height="38.0" rx="6" class="f-panel"/><text x="128.5" y="34.0" class="ts" text-anchor="middle">256 MB</text><polygon points="150.0,98.0 143.1,92.3 150.4,89.1" class="hd-lsm"/><line x1="128.5" y1="50.0" x2="146.7" y2="90.7" class="ln-lsm"/><rect x="174.0" y="10.0" width="75.0" height="38.0" rx="6" class="f-panel"/><text x="211.5" y="34.0" class="ts" text-anchor="middle">256 MB</text><polygon points="190.0,98.0 189.6,89.1 196.9,92.3" class="hd-lsm"/><line x1="211.5" y1="50.0" x2="193.3" y2="90.7" class="ln-lsm"/><rect x="257.0" y="10.0" width="75.0" height="38.0" rx="6" class="f-panel"/><text x="294.5" y="34.0" class="ts" text-anchor="middle">256 MB</text><polygon points="230.0,98.0 234.0,90.0 238.8,96.4" class="hd-lsm"/><line x1="294.5" y1="50.0" x2="236.4" y2="93.2" class="ln-lsm"/><rect x="40.0" y="100.0" width="260.0" height="56.0" rx="6" class="f-lsm"/><text x="170.0" y="124.0" class="tb" text-anchor="middle">898 MB</text><text x="170.0" y="144.0" class="ts" text-anchor="middle">上書き・削除のぶん軽くなる</text></svg></div><figcaption>4つをまとめても1,024MBにならないのは、上書きや削除のぶんが消えるからです。</figcaption></figure>
+
+<p>データが書き直される回数が少ないので、<b>書き込みが多い</b>使い方に向きます。ただし古いファイルが巨大になり、マージの間は一時的にディスクをたくさん使います。</p>
+
+<p><b class="lsm">レベル型</b>（leveled）は、SSTableの大きさをそろえて、L0、L1、L2…という段に分けます。L0は書きたてのデータです。L1から下は、キーの範囲で担当が分かれています。段がいっぱいになると、一部を下の段へマージします。</p>
+
+<figure class="fig" id="fig-leveled"><div class="canvas"><svg viewBox="0 0 340 224" role="img" aria-label="L0は書きたてのSSTable。L1、L2と下に行くほど大きく、キーの範囲で分かれた同じサイズのSSTableが並ぶ。あふれると下の段へマージされる"><text x="8.0" y="45.0" class="tm" text-anchor="start">L0</text><text x="8.0" y="111.0" class="tm" text-anchor="start">L1</text><text x="8.0" y="177.0" class="tm" text-anchor="start">L2</text><rect x="50.0" y="20.0" width="60.0" height="40.0" rx="6" class="f-lsm"/><text x="80.0" y="45.0" class="tmx" text-anchor="middle">a〜z</text><rect x="116.0" y="20.0" width="60.0" height="40.0" rx="6" class="f-lsm"/><text x="146.0" y="45.0" class="tmx" text-anchor="middle">a〜z</text><rect x="182.0" y="20.0" width="60.0" height="40.0" rx="6" class="f-lsm"/><text x="212.0" y="45.0" class="tmx" text-anchor="middle">a〜z</text><text x="252.0" y="45.0" class="ts c-mute" text-anchor="start">←書きたて</text><rect x="50.0" y="86.0" width="120.0" height="40.0" rx="6" class="f-panel"/><text x="110.0" y="111.0" class="tmx" text-anchor="middle">a〜m</text><rect x="176.0" y="86.0" width="120.0" height="40.0" rx="6" class="f-panel"/><text x="236.0" y="111.0" class="tmx" text-anchor="middle">n〜z</text><rect x="50.0" y="152.0" width="66.0" height="40.0" rx="6" class="f-panel"/><text x="83.0" y="177.0" class="tmx" text-anchor="middle">a〜f</text><rect x="119.0" y="152.0" width="66.0" height="40.0" rx="6" class="f-panel"/><text x="152.0" y="177.0" class="tmx" text-anchor="middle">g〜m</text><rect x="188.0" y="152.0" width="66.0" height="40.0" rx="6" class="f-panel"/><text x="221.0" y="177.0" class="tmx" text-anchor="middle">n〜s</text><rect x="257.0" y="152.0" width="66.0" height="40.0" rx="6" class="f-panel"/><text x="290.0" y="177.0" class="tmx" text-anchor="middle">t〜z</text><polygon points="170.0,84.0 166.0,76.0 174.0,76.0" class="hd-lsm"/><line x1="170.0" y1="62.0" x2="170.0" y2="76.0" class="ln-lsm"/><polygon points="170.0,150.0 166.0,142.0 174.0,142.0" class="hd-lsm"/><line x1="170.0" y1="128.0" x2="170.0" y2="142.0" class="ln-lsm"/><text x="8.0" y="214.0" class="ts c-lsm" text-anchor="start">上限を超えたら、下の段へ少しずつマージ</text></svg></div><figcaption>下の段ほど大きくなります。キーの範囲で分かれているので、1つのキーを探すときに見るファイルが少なくて済みます。</figcaption></figure>
+
+<p>少しずつマージするのでディスクの使用量が少なく、調べるファイルも少ないので、<b>読み取りが多い</b>使い方に向きます。ほとんどのLSMツリーは、両方から選べるようになっています。</p>
+
+<details class="col-note">
+<summary>コラム：組み込みストレージエンジン</summary>
+<div class="ans">
+<p>データベースには、ネットワーク越しに使うサーバー型のほかに、アプリと同じプロセスの中でライブラリとして動く<b>組み込み型</b>があります。RocksDB、SQLite、LMDB、DuckDB、KùzuDBがその例です。</p>
+<p>スマホアプリの中のデータ保存でよく使われます。サーバー側でも、データが1台に収まり、同時に走るトランザクションが多くなければ選択肢になります。たとえば、テナントごとに別々の組み込みデータベースを持たせる設計です。</p>
+<p>この章の話は、どちらの型にも当てはまります。</p>
+</div>
+</details>
+
+<!-- ----------------------------------------------------- 4.1.2 -->
+<h3 id="s412"><span class="num">4.1.2</span>Bツリー</h3>
+<p>次は<b class="bt">Bツリー</b>です。本ではこちらの方式を<b>同一位置更新</b>（in-place）と呼びます。ディスク上のデータを、その場で上書きする方式です。Bツリーは1970年に登場し、いまでもほぼすべてのリレーショナルデータベースの標準です。MySQLやPostgreSQLで普段使っているインデックスは、これです。</p>
+<p>キー順に並べて持つ点はSSTableと同じです。でも、考え方は正反対です。</p>
+
+<div class="cmp">
+<div class="side lsm"><span class="tag">LSMツリー</span><p>データを、大きさの決まっていない<b>セグメント</b>（数MB以上）に分ける。一度書いたら書き換えない。</p></div>
+<div class="side bt"><span class="tag">Bツリー</span><p>データを、同じ大きさの<b>ページ</b>に分ける。ページをその場で上書きする。</p></div>
+</div>
+
+<p>ページの大きさは昔から4KiBが普通です。PostgreSQLは8KiB、MySQLは標準で16KiBです。</p>
+<p>ページには番号がついていて、ページの中に「別のページの番号」を書けます。ディスク上のポインタです。これでページの木を作ります。</p>
+
+<figure class="fig" id="fig-btree"><div class="canvas"><svg viewBox="0 0 340 322" role="img" aria-label="キー251を探す。ルートページで200と300の間の参照をたどり、次のページで250と270の間の参照をたどると、251を含むリーフページに着く"><text x="8.0" y="20.0" class="tb" text-anchor="start">キー 251 を探す</text><text x="8.0" y="44.0" class="ts c-mute" text-anchor="start">ルートページ</text><rect x="8.0" y="50.0" width="324.0" height="38.0" rx="6" class="f-panel"/><circle cx="23.3" cy="69.0" r="3" class="s-mute"/><text x="52.7" y="74.0" class="tm" text-anchor="middle">100</text><circle cx="82.0" cy="69.0" r="3" class="s-mute"/><text x="111.3" y="74.0" class="tm" text-anchor="middle">200</text><circle cx="140.7" cy="69.0" r="5" class="s-bt"/><text x="170.0" y="74.0" class="tm" text-anchor="middle">300</text><circle cx="199.3" cy="69.0" r="3" class="s-mute"/><text x="228.7" y="74.0" class="tm" text-anchor="middle">400</text><circle cx="258.0" cy="69.0" r="3" class="s-mute"/><text x="287.3" y="74.0" class="tm" text-anchor="middle">500</text><circle cx="316.7" cy="69.0" r="3" class="s-mute"/><polygon points="170.0,134.0 162.2,129.6 168.9,125.1" class="hd-bt"/><line x1="140.7" y1="90.0" x2="165.6" y2="127.3" class="ln-bt"/><text x="196.0" y="116.0" class="ts c-bt" text-anchor="start">200 ≦ 251 ＜ 300</text><text x="8.0" y="132.0" class="ts c-mute" text-anchor="start">200〜300 のページ</text><rect x="8.0" y="138.0" width="324.0" height="38.0" rx="6" class="f-panel"/><circle cx="23.3" cy="157.0" r="3" class="s-mute"/><text x="52.7" y="162.0" class="tm" text-anchor="middle">210</text><circle cx="82.0" cy="157.0" r="3" class="s-mute"/><text x="111.3" y="162.0" class="tm" text-anchor="middle">230</text><circle cx="140.7" cy="157.0" r="3" class="s-mute"/><text x="170.0" y="162.0" class="tm" text-anchor="middle">250</text><circle cx="199.3" cy="157.0" r="5" class="s-bt"/><text x="228.7" y="162.0" class="tm" text-anchor="middle">270</text><circle cx="258.0" cy="157.0" r="3" class="s-mute"/><text x="287.3" y="162.0" class="tm" text-anchor="middle">290</text><circle cx="316.7" cy="157.0" r="3" class="s-mute"/><polygon points="170.0,224.0 170.9,215.1 177.7,219.4" class="hd-bt"/><line x1="199.3" y1="178.0" x2="174.3" y2="217.3" class="ln-bt"/><text x="204.0" y="206.0" class="ts c-bt" text-anchor="start">250 ≦ 251 ＜ 270</text><text x="8.0" y="222.0" class="ts c-mute" text-anchor="start">リーフページ</text><rect x="8.0" y="228.0" width="324.0" height="58.0" rx="6" class="f-panel"/><text x="50.0" y="254.0" class="tm" text-anchor="middle">250</text><text x="50.0" y="274.0" class="ts c-mute" text-anchor="middle">値</text><rect x="82.0" y="234.0" width="56.0" height="46.0" rx="4" class="f-bt"/><text x="110.0" y="254.0" class="tm" text-anchor="middle">251</text><text x="110.0" y="274.0" class="ts c-mute" text-anchor="middle">値</text><text x="170.0" y="254.0" class="tm" text-anchor="middle">252</text><text x="170.0" y="274.0" class="ts c-mute" text-anchor="middle">値</text><text x="230.0" y="254.0" class="tm" text-anchor="middle">254</text><text x="230.0" y="274.0" class="ts c-mute" text-anchor="middle">値</text><text x="290.0" y="254.0" class="tm" text-anchor="middle">256</text><text x="290.0" y="274.0" class="ts c-mute" text-anchor="middle">値</text><text x="8.0" y="310.0" class="ts" text-anchor="start">ページを3枚読むだけで到着</text></svg></div><figcaption>本の図4-5にあたる図です。入口のページを<b>ルート</b>、実際のキーと値が入った末端のページを<b>リーフ</b>と呼びます。丸は子ページへの参照です。</figcaption></figure>
+
+<p>各ページには、キーと、子ページへの参照が交互に並んでいます。キーは「ここが境目」という仕切りです。251を探すなら、200と300の間の参照をたどる。次のページでも同じことをする。そうしてリーフに着きます。</p>
+<p>1ページから出ている参照の数を<b>分岐係数</b>と呼びます。図では6ですが、実際は数百です。だから木はとても浅くなります。</p>
+
+<div class="box bt">
+<span class="lab">数字で見る</span>
+<p>分岐係数500、4KiBページ、4階層のBツリーは、最大250TBを収められます。ほとんどのデータベースは3〜4階層で足りるので、探すときに読むページは数枚で済みます。</p>
+</div>
+
+<h4>書き込み：上書きと、ページの分割</h4>
+<p>値を変えるときは、リーフを探して、そのページを新しい内容で上書きします。キーを足すときは、入るべきページを探して、そこに足します。</p>
+<p>ページが満杯だったら、<b>ページを半分ずつ2つに分け</b>、親ページに新しい境目を足します。</p>
+
+<figure class="fig" id="fig-split"><div class="canvas"><svg viewBox="0 0 340 350" role="img" aria-label="333から345のページが満杯で334が入らない。ページを333から337と337から345の2つに分け、親ページに境目337を足す"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">前：333〜345 のページが満杯</text><rect x="8.0" y="26.0" width="324.0" height="38.0" rx="6" class="f-panel"/><circle cx="23.3" cy="45.0" r="3" class="s-mute"/><text x="52.7" y="50.0" class="tm" text-anchor="middle">310</text><circle cx="82.0" cy="45.0" r="3" class="s-mute"/><text x="111.3" y="50.0" class="tm" text-anchor="middle">320</text><circle cx="140.7" cy="45.0" r="3" class="s-mute"/><text x="170.0" y="50.0" class="tm" text-anchor="middle">333</text><circle cx="199.3" cy="45.0" r="5" class="s-bt"/><text x="228.7" y="50.0" class="tm" text-anchor="middle">345</text><circle cx="258.0" cy="45.0" r="3" class="s-mute"/><text x="287.3" y="50.0" class="tm" text-anchor="middle">355</text><circle cx="316.7" cy="45.0" r="3" class="s-mute"/><polygon points="186.0,104.0 184.9,95.1 192.4,97.8" class="hd-bt"/><line x1="199.3" y1="66.0" x2="188.6" y2="96.5" class="ln-bt"/><rect x="86.0" y="106.0" width="200.0" height="38.0" rx="6" class="f-panel"/><text x="110.0" y="130.0" class="tm" text-anchor="middle">333</text><text x="148.0" y="130.0" class="tm" text-anchor="middle">335</text><text x="186.0" y="130.0" class="tm" text-anchor="middle">337</text><text x="224.0" y="130.0" class="tm" text-anchor="middle">340</text><text x="262.0" y="130.0" class="tm" text-anchor="middle">342</text><rect x="8.0" y="110.0" width="48.0" height="30.0" rx="15" class="f-bad"/><text x="32.0" y="130.0" class="tm" text-anchor="middle">334</text><polygon points="84.0,125.0 76.0,129.0 76.0,121.0" class="hd-bad"/><line x1="58.0" y1="125.0" x2="76.0" y2="125.0" class="ln-bad"/><text x="8.0" y="168.0" class="ts c-bad" text-anchor="start">334 を入れたいが空きがない</text><line x1="8.0" y1="186.0" x2="332.0" y2="186.0" class="ln dash thin"/><text x="8.0" y="210.0" class="ts c-mute" text-anchor="start">後：半分に分けて、親に境目 337 を足す</text><rect x="8.0" y="218.0" width="324.0" height="38.0" rx="6" class="f-panel"/><circle cx="19.1" cy="237.0" r="3" class="s-mute"/><text x="44.3" y="242.0" class="tm" text-anchor="middle">310</text><circle cx="69.4" cy="237.0" r="3" class="s-mute"/><text x="94.6" y="242.0" class="tm" text-anchor="middle">320</text><circle cx="119.7" cy="237.0" r="3" class="s-mute"/><text x="144.9" y="242.0" class="tm" text-anchor="middle">333</text><circle cx="170.0" cy="237.0" r="3" class="s-mute"/><rect x="178.1" y="223.0" width="34.0" height="28.0" rx="4" class="f-bt"/><text x="195.1" y="242.0" class="tm" text-anchor="middle">337</text><circle cx="220.3" cy="237.0" r="3" class="s-mute"/><text x="245.4" y="242.0" class="tm" text-anchor="middle">345</text><circle cx="270.6" cy="237.0" r="3" class="s-mute"/><text x="295.7" y="242.0" class="tm" text-anchor="middle">355</text><circle cx="320.9" cy="237.0" r="3" class="s-mute"/><rect x="20.0" y="300.0" width="140.0" height="38.0" rx="6" class="f-panel"/><text x="46.0" y="324.0" class="tm" text-anchor="middle">333</text><rect x="70.0" y="305.0" width="40.0" height="28.0" rx="4" class="f-bt"/><text x="90.0" y="324.0" class="tm" text-anchor="middle">334</text><text x="134.0" y="324.0" class="tm" text-anchor="middle">335</text><rect x="180.0" y="300.0" width="140.0" height="38.0" rx="6" class="f-panel"/><text x="206.0" y="324.0" class="tm" text-anchor="middle">337</text><text x="250.0" y="324.0" class="tm" text-anchor="middle">340</text><text x="294.0" y="324.0" class="tm" text-anchor="middle">342</text><polygon points="90.0,298.0 95.4,290.8 98.9,298.0" class="hd-bt"/><line x1="170.0" y1="258.0" x2="97.2" y2="294.4" class="ln-bt"/><polygon points="250.0,298.0 242.0,294.0 248.4,289.2" class="hd-bt"/><line x1="220.3" y1="258.0" x2="245.2" y2="291.6" class="ln-bt"/></svg></div><figcaption>本の図4-6にあたる図です。親も満杯なら親も分割し、それがルートまで続くこともあります。ルートが割れたら、その上に新しいルートができます。</figcaption></figure>
+
+<p>この仕組みのおかげで、木はいつもバランスが取れています。キーがn個あっても、深さはO(log n)で済みます。</p>
+
+<h4>壊れないための工夫：WAL</h4>
+<p>上書きには危険があります。ページの分割では、複数のページを書き換えます。その途中でデータベースが落ちると、どの親からも指されないページができるなど、木が壊れます。1ページを書いている途中で落ちて、半分だけ書かれたページが残ることもあります。</p>
+<p>そこでBツリーは、<b>先行書き込みログ</b>（WAL、write-ahead log）を持ちます。追記専用のファイルです。</p>
+<ol>
+<li>変更内容を、まずWALに追記する。</li>
+<li><code>fsync</code> でディスクに確実に書き込む。ここまで済めば、データは失われない。</li>
+<li>ページの上書きは、そのあとで行う。すぐには書かず、しばらくメモリにためておいてよい。</li>
+</ol>
+<p>落ちたあとは、WALを読んで木を正しい状態に戻します。</p>
+
+<div class="box">
+<span class="lab">気づき</span>
+<p>その場で上書きするBツリーも、安全のために追記ログを使っています。LSMツリーがメムテーブルを守るのに使ったのも追記ログでした。追記ログは、どちらの流派にも出てくる基本の道具です。</p>
+</div>
+
+<h4>Bツリーの変わり種</h4>
+<ul>
+<li><b>コピーオンライト。</b>上書きもWALも使わず、変更したページを別の場所に新しく書き、親にはそちらを指す新しい版を作ります。LMDBがこの方式です。</li>
+<li><b>キーを縮める。</b>途中のページのキーは境目がわかれば十分なので、短くして詰め込みます。分岐係数が上がり、木が浅くなります。</li>
+<li><b>リーフを順番に並べる。</b>範囲スキャンを速くするためですが、木が育つと保つのが難しくなります。</li>
+<li><b>リーフ同士をつなぐ。</b>各リーフが左右の隣を指しておくと、親に戻らずに順番に読めます。</li>
+</ul>
+
+<!-- ----------------------------------------------------- 4.1.3 -->
+<h3 id="s413"><span class="num">4.1.3</span>BツリーとLSMツリーの比較</h3>
+
+<div class="box key">
+<span class="lab">目安</span>
+<p>書き込みが多いなら<b class="lsm">LSMツリー</b>。1件ずつの読み取りが速いのは<b class="bt">Bツリー</b>。ただしこれは目安です。本は、<b>自分のワークロードで測りなさい</b>と言っています。両方の特徴を混ぜたエンジンもあります。</p>
+</div>
+
+<h4>読み取り</h4>
+<div class="cmp">
+<div class="side bt"><span class="tag">Bツリー</span><p>階層ごとに1ページ読むだけ。階層は少ないので速く、かかる時間も予測しやすい。範囲クエリも、並んだ順にたどるだけなので単純で速い。</p></div>
+<div class="side lsm"><span class="tag">LSMツリー</span><p>コンパクションの進み具合が違うSSTableを、いくつも調べることがある。ブルームフィルタがそれを減らしてくれる。ただし範囲クエリにはブルームフィルタが効かない。全セグメントを並行して読んで結果を合わせるので、1件読むより高くつく。</p></div>
+</div>
+<p>LSMツリーには、もうひとつ注意点があります。書き込みが激しすぎて、ディスクへの書き出しやコンパクションが追いつかないことがあります。そのときRocksDBなどは、メムテーブルを書き出し終えるまで読み書きを<b>いったん止めます</b>。これを<b>バックプレッシャー</b>と呼びます。応答時間が急に跳ね上がる原因になります。</p>
+
+<h4>書き込み：ランダムか、シーケンシャルか</h4>
+
+<figure class="fig" id="fig-randseq"><div class="canvas"><svg viewBox="0 0 340 190" role="img" aria-label="Bツリーの書き込みはディスクのあちこちに小さく散らばり、LSMツリーの書き込みは大きな塊として1か所に続けて書かれる"><text x="8.0" y="20.0" class="ts c-bt" text-anchor="start">Bツリー：ランダムライト</text><rect x="8.0" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="18.8" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="29.6" y="30.0" width="10.0" height="30.0" rx="2" class="f-bt solid"/><rect x="40.4" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="51.2" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="62.0" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="72.8" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="83.6" y="30.0" width="10.0" height="30.0" rx="2" class="f-bt solid"/><rect x="94.4" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="105.2" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="116.0" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="126.8" y="30.0" width="10.0" height="30.0" rx="2" class="f-bt solid"/><rect x="137.6" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="148.4" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="159.2" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="170.0" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="180.8" y="30.0" width="10.0" height="30.0" rx="2" class="f-bt solid"/><rect x="191.6" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="202.4" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="213.2" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="224.0" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="234.8" y="30.0" width="10.0" height="30.0" rx="2" class="f-bt solid"/><rect x="245.6" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="256.4" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="267.2" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="278.0" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="288.8" y="30.0" width="10.0" height="30.0" rx="2" class="f-bt solid"/><rect x="299.6" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="310.4" y="30.0" width="10.0" height="30.0" rx="2" class="f-bt solid"/><rect x="321.2" y="30.0" width="10.0" height="30.0" rx="2" class="f-none"/><text x="8.0" y="82.0" class="ts c-mute" text-anchor="start">小さな書き込みがあちこちに散らばる</text><text x="8.0" y="120.0" class="ts c-lsm" text-anchor="start">LSM：シーケンシャルライト</text><rect x="8.0" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="18.8" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="29.6" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="40.4" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="51.2" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="62.0" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="72.8" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="83.6" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="94.4" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="105.2" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="116.0" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="126.8" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="137.6" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="148.4" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="159.2" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="170.0" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="180.8" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="191.6" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="202.4" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="213.2" y="130.0" width="10.0" height="30.0" rx="2" class="f-lsm solid"/><rect x="224.0" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="234.8" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="245.6" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="256.4" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="267.2" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="278.0" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="288.8" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="299.6" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="310.4" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><rect x="321.2" y="130.0" width="10.0" height="30.0" rx="2" class="f-none"/><text x="8.0" y="182.0" class="ts c-mute" text-anchor="start">大きな塊を続けて一気に書く</text></svg></div><figcaption>同じ量を書くなら、続けて書くほうがディスクは速くこなせます。</figcaption></figure>
+
+<p>Bツリーは、書くキーがばらばらなら、上書きするページもディスクのあちこちに散らばります。LSMツリーは、セグメントファイルを丸ごと一気に書きます。一般に、まとめて続けて書くほうがスループットは高くなります。だから同じハードウェアなら、LSMツリーのほうが多くの書き込みをさばけます。</p>
+<p>この差はHDDで特に大きく、SSDでは小さくなります。それでも無視はできません。</p>
+
+<details class="col-note">
+<summary>コラム：SSDでもシーケンシャルが有利な理由</summary>
+<div class="ans">
+<p>HDDでランダムライトが遅いのは、ヘッドを動かして、円盤が回ってくるのを待つからです。SSDにはその動く部品がありません。それでも差が出ます。</p>
+<p>フラッシュメモリは、読み書きは1ページ（普通は4KiB）ごとにできますが、<b>消去は1ブロック（普通は512KiB）ごと</b>にしかできません。ブロックの中にまだ要るページが残っていたら、それをよそへ引っ越してからでないと消せません。この引っ越し作業が<b>ガベージコレクション（GC）</b>です。</p>
+<figure class="fig" id="fig-ssd"><div class="canvas"><svg viewBox="0 0 340 214" role="img" aria-label="ランダムライトの後はブロック内に要るページと要らないページが混ざり、引っ越してからでないと消去できない。シーケンシャルライトの後はブロック全体が不要になり、そのまま消去できる"><text x="8.0" y="20.0" class="ts c-bt" text-anchor="start">散らばった書き込み</text><text x="196.0" y="20.0" class="ts c-lsm" text-anchor="start">まとまった書き込み</text><rect x="5.0" y="29.0" width="142.0" height="68.0" rx="6" class="f-none"/><rect x="8.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-on"/><rect x="42.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="76.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-on"/><rect x="110.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-on"/><rect x="8.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="42.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-on"/><rect x="76.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="110.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="193.0" y="29.0" width="142.0" height="68.0" rx="6" class="f-none"/><rect x="196.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="230.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="264.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="298.0" y="32.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="196.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="230.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="264.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-off"/><rect x="298.0" y="63.0" width="32.0" height="29.0" rx="3" class="pg-off"/><text x="8.0" y="120.0" class="ts" text-anchor="start">要るページが混ざる</text><text x="8.0" y="140.0" class="ts c-bad" text-anchor="start">→ 引っ越してから消去</text><text x="196.0" y="120.0" class="ts" text-anchor="start">全部いらない</text><text x="196.0" y="140.0" class="ts c-lsm" text-anchor="start">→ そのまま消去</text><rect x="8.0" y="162.0" width="16.0" height="14.0" rx="2" class="pg-on"/><text x="30.0" y="174.0" class="ts c-mute" text-anchor="start">まだ要るデータ</text><rect x="170.0" y="162.0" width="16.0" height="14.0" rx="2" class="pg-off"/><text x="192.0" y="174.0" class="ts c-mute" text-anchor="start">もう要らないデータ</text><text x="8.0" y="202.0" class="ts c-mute" text-anchor="start">消去はブロック（512 KiB）単位でしかできない</text></svg></div><figcaption>左は引っ越しが必要、右は不要です。</figcaption></figure>
+<p>まとめて書いたデータは、ブロックを丸ごと占めやすくなります。あとでそのファイルが消えれば、ブロックをそのまま消去できます。散らばって書くと、要るページと要らないページが混ざり、GCの仕事が増えます。GCが使った書き込みの帯域は、アプリからは使えません。SSDの寿命も縮みます。</p>
+</div>
+</details>
+
+<h4>書き込み増幅</h4>
+<p>アプリが1回書いただけでも、ディスクには何度も書き込みが起きます。</p>
+
+<figure class="fig" id="fig-wamp"><div class="canvas"><svg viewBox="0 0 340 206" role="img" aria-label="アプリからの書き込み1回が、LSMツリーではログ、書き出し、何度かのマージに、Bツリーではログとページ丸ごとの上書きになる"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">アプリの書き込み1回が、ディスクでは…</text><text x="8.0" y="46.0" class="tb c-lsm" text-anchor="start">LSMツリー</text><rect x="8.0" y="56.0" width="62.0" height="34.0" rx="6" class="f-lsm"/><text x="39.0" y="78.0" class="ts" text-anchor="middle">ログ</text><rect x="78.0" y="56.0" width="86.0" height="34.0" rx="6" class="f-lsm"/><text x="121.0" y="78.0" class="ts" text-anchor="middle">書き出し</text><rect x="172.0" y="56.0" width="76.0" height="34.0" rx="6" class="f-lsm"/><text x="210.0" y="78.0" class="ts" text-anchor="middle">マージ</text><rect x="256.0" y="56.0" width="76.0" height="34.0" rx="6" class="f-lsm"/><text x="294.0" y="78.0" class="ts" text-anchor="middle">マージ…</text><text x="8.0" y="124.0" class="tb c-bt" text-anchor="start">Bツリー</text><rect x="8.0" y="134.0" width="110.0" height="34.0" rx="6" class="f-bt"/><text x="63.0" y="156.0" class="ts" text-anchor="middle">ログ（WAL）</text><rect x="126.0" y="134.0" width="150.0" height="34.0" rx="6" class="f-bt"/><text x="201.0" y="156.0" class="ts" text-anchor="middle">ページ丸ごと上書き</text><text x="8.0" y="194.0" class="ts c-mute" text-anchor="start">数バイトの変更でも1ページ全部を書くことがある</text></svg></div><figcaption>どちらの方式でも、同じデータを何度か書くことになります。</figcaption></figure>
+
+<div class="box">
+<span class="lab">用語：書き込み増幅</span>
+<p>実際にディスクへ書いたバイト数を、「インデックスなしで追記ログに書くだけなら必要だったバイト数」で割ったものです。これが大きいほど、同じディスクでさばける書き込みは減り、SSDも早く消耗します。</p>
+</div>
+
+<p>普通のワークロードでは、LSMツリーのほうが書き込み増幅は小さくなりがちです。ページ丸ごとを書かなくてよく、SSTableを圧縮できるからです。</p>
+
+<div class="box bad">
+<span class="lab">性能を測るときの落とし穴</span>
+<p>空っぽのLSMツリーに書いている間は、コンパクションがまだ走っていません。ディスクを全部、新しい書き込みに使えるので速く見えます。データが増えて、コンパクションと帯域を分け合うようになるまで、十分長く測る必要があります。</p>
+</div>
+
+<h4>ディスクの使い方</h4>
+<div class="cmp">
+<div class="side bt"><span class="tag">Bツリー</span><p>キーをたくさん消すと、使われないページがファイルの途中に残る。これが<b>フラグメンテーション</b>。あとの追加で再利用はできるが、OSには返しにくい。ページを詰め直す裏方の処理が要る。PostgreSQLのvacuumがその例。</p></div>
+<div class="side lsm"><span class="tag">LSMツリー</span><p>コンパクションが定期的にファイルを書き直すので、すき間が残りにくい。ブロックの圧縮もよく効き、ファイルは小さくなりやすい。ただし、上書きされた古い値は、コンパクションまで場所を取る。</p></div>
+</div>
+<p>ほかにも違いが2つあります。</p>
+<ul>
+<li><b>確実に消したいとき。</b>LSMツリーでは、削除マーカーがすべての段に行き渡るまで、消したはずのデータがディスクに残ります。長くかかることもあります。データ保護の規制で「本当に消した」と言う必要があるときは、注意が要ります。</li>
+<li><b>スナップショットを取りたいとき。</b>LSMツリーは楽です。メムテーブルを書き出して、その時点のセグメントファイルの一覧を控えるだけ。ファイルは書き換わらないので、消さずに残しておけばコピーも要りません。ページを上書きするBツリーでは、これが難しくなります。</li>
+</ul>
+
+<!-- ----------------------------------------------------- 4.1.4 -->
+<h3 id="s414"><span class="num">4.1.4</span>セカンダリインデックス</h3>
+<p>ここまでの話は、キーから値を引く索引でした。リレーショナルデータベースでいえば<b>主キー</b>のインデックスです。</p>
+<p>実際には、主キー以外の列でも探したくなります。<code>CREATE INDEX</code> で作るのが<b>セカンダリインデックス</b>です。たとえば <code>user_id</code> 列に張って、同じユーザーの行をまとめて探します。</p>
+<p>作り方は主キーの索引とほぼ同じです。違いは、<b>同じ値の行がたくさんある</b>ことです。持ち方は2通りあります。</p>
+
+<figure class="fig" id="fig-secidx"><div class="canvas"><svg viewBox="0 0 340 192" role="img" aria-label="セカンダリインデックスで同じ値の行が複数あるときの2つの持ち方。値から行IDのリストを引く方法と、値と行IDを組にして1件ずつ持つ方法"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">方法1：値 → 行IDのリスト</text><rect x="8.0" y="26.0" width="324.0" height="30.0" rx="6" class="f-panel"/><text x="20.0" y="46.0" class="tm" text-anchor="start">7 → [3, 8, 15]</text><rect x="8.0" y="60.0" width="324.0" height="30.0" rx="6" class="f-panel"/><text x="20.0" y="80.0" class="tm" text-anchor="start">9 → [4]</text><text x="8.0" y="118.0" class="ts c-mute" text-anchor="start">方法2：行IDをくっつけて1件ずつ</text><rect x="8.0" y="126.0" width="78.0" height="30.0" rx="6" class="f-panel"/><text x="47.0" y="146.0" class="tm" text-anchor="middle">(7, 3)</text><rect x="90.0" y="126.0" width="78.0" height="30.0" rx="6" class="f-panel"/><text x="129.0" y="146.0" class="tm" text-anchor="middle">(7, 8)</text><rect x="172.0" y="126.0" width="78.0" height="30.0" rx="6" class="f-panel"/><text x="211.0" y="146.0" class="tm" text-anchor="middle">(7, 15)</text><rect x="254.0" y="126.0" width="78.0" height="30.0" rx="6" class="f-panel"/><text x="293.0" y="146.0" class="tm" text-anchor="middle">(9, 4)</text><text x="8.0" y="180.0" class="ts c-mute" text-anchor="start">7・9 は user_id、ほかは行のID</text></svg></div><figcaption>どちらの持ち方も、BツリーでもLSMツリーでも使えます。</figcaption></figure>
+
+<h3 id="s415"><span class="num">4.1.5</span>インデックスの中に何を入れるか</h3>
+<p>索引をたどった先に何が置いてあるかは、データベースによって違います。3通りあります。</p>
+
+<h4>1. クラスタ化インデックス</h4>
+<figure class="fig" id="fig-clustered"><div class="canvas"><svg viewBox="0 0 340 130" role="img" aria-label="クラスタ化インデックス。索引をたどった先のリーフに、キーと行のデータ全部が入っている"><polygon points="65,14 20,72 110,72" class="f-bt"/><text x="65.0" y="60.0" class="ts" text-anchor="middle">索引</text><rect x="20.0" y="76.0" width="300.0" height="30.0" rx="6" class="f-bt"/><text x="170.0" y="96.0" class="t" text-anchor="middle">キー ＋ 行のデータ全部</text><text x="126.0" y="40.0" class="ts" text-anchor="start">たどった先に</text><text x="126.0" y="58.0" class="ts" text-anchor="start">行そのものがある</text><text x="8.0" y="124.0" class="ts c-mute" text-anchor="start">寄り道なしで行に届く</text></svg></div><figcaption>行のデータそのものを、索引の中に入れます。</figcaption></figure>
+<p>MySQLのInnoDBでは、主キーは必ずこれです。SQL Serverでは、テーブルごとに1つ指定できます。</p>
+
+<h4>2. ヒープファイル</h4>
+<figure class="fig" id="fig-heap"><div class="canvas"><svg viewBox="0 0 340 150" role="img" aria-label="ヒープファイル方式。索引のリーフにはキーと行の場所だけがあり、行の本体は順不同のヒープファイルに置かれる"><polygon points="65,14 20,72 110,72" class="f-bt"/><text x="65.0" y="60.0" class="ts" text-anchor="middle">索引</text><rect x="20.0" y="76.0" width="120.0" height="30.0" rx="6" class="f-bt"/><text x="80.0" y="96.0" class="ts" text-anchor="middle">キー→場所</text><rect x="196.0" y="8.0" width="136.0" height="104.0" rx="6" class="f-panel"/><text x="264.0" y="28.0" class="ts c-mute" text-anchor="middle">ヒープファイル</text><rect x="206.0" y="38.0" width="116.0" height="20.0" rx="3" class="f-none"/><rect x="206.0" y="62.0" width="116.0" height="20.0" rx="3" class="f-bt"/><rect x="206.0" y="86.0" width="116.0" height="20.0" rx="3" class="f-none"/><text x="264.0" y="76.0" class="ts" text-anchor="middle">行</text><polygon points="204.0,74.0 197.3,79.9 195.2,72.2" class="hd-bt"/><line x1="140.0" y1="91.0" x2="196.3" y2="76.1" class="ln-bt"/><text x="8.0" y="140.0" class="ts c-mute" text-anchor="start">行は順番を決めずに置き、索引が場所を指す</text></svg></div><figcaption>行は別の置き場に入れ、索引にはその場所だけを書きます。</figcaption></figure>
+<p>行を、順番を決めずに<b>ヒープファイル</b>という置き場に入れる方式です。PostgreSQLがこれです。</p>
+<p>InnoDBのセカンダリインデックスは少し違い、場所の代わりに<b>主キー</b>を持ちます。セカンダリインデックスで主キーを見つけ、それを使って行を引き直します。</p>
+
+<h4>3. カバリングインデックス</h4>
+<figure class="fig" id="fig-covering"><div class="canvas"><svg viewBox="0 0 340 134" role="img" aria-label="カバリングインデックス。索引のリーフにキーとよく使う列だけを入れておき、それで答えられるクエリは行の本体を読まない"><polygon points="65,14 20,72 110,72" class="f-bt"/><text x="65.0" y="60.0" class="ts" text-anchor="middle">索引</text><rect x="20.0" y="76.0" width="180.0" height="30.0" rx="6" class="f-bt"/><text x="110.0" y="96.0" class="ts" text-anchor="middle">キー ＋ よく使う列</text><line x1="200.0" y1="91.0" x2="236.0" y2="91.0" class="ln dash"/><rect x="236.0" y="76.0" width="96.0" height="30.0" rx="6" class="f-none dim"/><text x="284.0" y="96.0" class="ts dim" text-anchor="middle">行の本体</text><text x="8.0" y="126.0" class="ts c-mute" text-anchor="start">索引だけで答えが出れば、本体は読まない</text></svg></div><figcaption>上の2つの中間です。</figcaption></figure>
+<p>索引に、キーのほかに<b>一部の列だけ</b>を入れておきます。その列だけで答えられるクエリは、行の本体を読まずに済みます。これを「インデックスがクエリをカバーする」と言います。代わりに、データが二重になるのでディスクを使い、書き込みも遅くなります。本の訳語は「カラム格納インデックス」です。</p>
+
+<div class="box bad">
+<span class="lab">ヒープファイルの弱点</span>
+<p>値を更新して、前より大きくなったとします。元の場所に入りきらなければ、行を引っ越すことになります。そのときは、すべての索引を新しい場所に書き換えるか、元の場所に「引っ越し先はこちら」という転送用のポインタを残します。</p>
+</div>
+
+<h3 id="s416"><span class="num">4.1.6</span>すべてをメモリに保持する</h3>
+<p>ここまでの構造は、どれも「ディスクは扱いにくい」という制約への答えでした。それでもディスクを使うのは、電源が切れても消えないことと、メモリより安いことが理由です。</p>
+<p>メモリが安くなり、データが全部メモリに載るなら、話が変わります。これが<b>インメモリデータベース</b>です。</p>
+<p>Memcachedのように、キャッシュ専用で「消えてもいい」と割り切るものもあります。消えたら困る場合は、次のどれかで守ります。</p>
+<ul>
+<li>変更のログをディスクに書く。</li>
+<li>定期的にスナップショットをディスクに書く。</li>
+<li>ほかのマシンに複製する。</li>
+</ul>
+<p>RedisやCouchbaseは、ディスクへ非同期に書くことで、弱めの永続性を持ちます。</p>
+
+<figure class="fig" id="fig-inmem"><div class="canvas"><svg viewBox="0 0 340 206" role="img" aria-label="ディスク前提のデータベースはメモリ上の構造とディスク上の形式を行き来するたびに変換が要る。インメモリデータベースは読み書きをメモリ上の構造で済ませ、ディスクには記録を追記するだけ"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">ディスク前提のDB</text><rect x="8.0" y="28.0" width="124.0" height="44.0" rx="6" class="f-panel"/><text x="70.0" y="55.0" class="ts" text-anchor="middle">メモリ上の構造</text><rect x="208.0" y="28.0" width="124.0" height="44.0" rx="6" class="f-panel"/><text x="270.0" y="55.0" class="ts" text-anchor="middle">ディスク上の形式</text><polygon points="206.0,42.0 198.0,46.0 198.0,38.0" class="hd-bad"/><line x1="134.0" y1="42.0" x2="198.0" y2="42.0" class="ln-bad"/><polygon points="134.0,58.0 142.0,54.0 142.0,62.0" class="hd-bad"/><line x1="206.0" y1="58.0" x2="142.0" y2="58.0" class="ln-bad"/><text x="170.0" y="92.0" class="ts c-bad" text-anchor="middle">行き来のたびに変換</text><text x="8.0" y="128.0" class="ts c-mute" text-anchor="start">インメモリDB</text><rect x="8.0" y="138.0" width="124.0" height="44.0" rx="6" class="f-bt"/><text x="70.0" y="165.0" class="ts" text-anchor="middle">メモリ上の構造</text><rect x="242.0" y="138.0" width="90.0" height="44.0" rx="6" class="f-panel"/><text x="287.0" y="165.0" class="ts" text-anchor="middle">追記ログ</text><polygon points="240.0,160.0 232.0,164.0 232.0,156.0" class="hd"/><line x1="134.0" y1="160.0" x2="232.0" y2="160.0" class="ln"/><text x="187.0" y="152.0" class="ts c-mute" text-anchor="middle">記録だけ</text><text x="8.0" y="200.0" class="ts c-bt" text-anchor="start">読み取りは全部メモリから。変換なし</text></svg></div><figcaption>ディスクに書いていても、読み取りを全部メモリから返すなら、インメモリデータベースと呼びます。</figcaption></figure>
+
+<div class="box key">
+<span class="lab">意外な点</span>
+<p>インメモリデータベースが速いのは、「ディスクを読まないから」ではありません。ディスク型でも、メモリが十分あればOSがキャッシュするので、ディスクは読まずに済みます。速い理由は、メモリ上のデータ構造を<b>ディスクに書ける形へ変換する手間がない</b>ことです。</p>
+</div>
+
+<p>もうひとつの利点は、ディスクでは作りにくいデータ構造を提供できることです。Redisが優先度つきキューや集合を扱えるのは、全部メモリにあって実装が単純になるからです。</p>
+
+<!-- ===================================================== 4.2 -->
+<h2 id="s42"><span class="num">4.2</span>分析のためのデータストレージ</h2>
+<p>ここから話が変わります。OLTPは「少しの行を、速く、大量にさばく」世界でした。分析は「ものすごい数の行を読んで、集計する」世界です。</p>
+<p>データウェアハウスもSQLで使うので、外から見るとOLTPのデータベースに似ています。でも中身は別物です。得意なクエリの形がまったく違うからです。1つの製品で両方をこなすデータベース（HTAP）もありますが、それらも内部では、別々の2つのエンジンに分かれつつあります。</p>
+
+<h3 id="s421"><span class="num">4.2.1</span>クラウドデータウェアハウス</h3>
+<p>BigQuery、Amazon Redshift、Snowflakeのような、クラウド専用のデータウェアハウスが広く使われています。特徴は、<b>計算する層とデータを置く層が分かれている</b>ことです。データはオブジェクトストレージに置くので、容量と計算力を別々に増減できます。1.2節で出てきた話です。</p>
+<p>オープンソースの世界では、かつてHiveのような1つのシステムにまとまっていた機能が、別々の部品に分かれました。</p>
+
+<figure class="fig" id="fig-dwh"><div class="canvas"><svg viewBox="0 0 340 252" role="img" aria-label="データウェアハウスの部品。上からクエリエンジン、テーブルフォーマット、ストレージフォーマット、オブジェクトストレージが積み重なり、横にデータカタログがある"><rect x="8.0" y="8.0" width="220.0" height="52.0" rx="6" class="f-col"/><text x="20.0" y="31.0" class="t" text-anchor="start">クエリエンジン</text><text x="20.0" y="50.0" class="ts c-mute" text-anchor="start">SQLを解釈して実行</text><rect x="8.0" y="68.0" width="220.0" height="52.0" rx="6" class="f-col"/><text x="20.0" y="91.0" class="t" text-anchor="start">テーブルフォーマット</text><text x="20.0" y="110.0" class="ts c-mute" text-anchor="start">どのファイルが表か</text><rect x="8.0" y="128.0" width="220.0" height="52.0" rx="6" class="f-col"/><text x="20.0" y="151.0" class="t" text-anchor="start">ストレージフォーマット</text><text x="20.0" y="170.0" class="ts c-mute" text-anchor="start">行をどうバイトにするか</text><rect x="8.0" y="188.0" width="220.0" height="52.0" rx="6" class="f-panel"/><text x="20.0" y="211.0" class="t" text-anchor="start">オブジェクトストレージ</text><text x="20.0" y="230.0" class="ts c-mute" text-anchor="start">ファイルの置き場</text><rect x="242.0" y="8.0" width="90.0" height="112.0" rx="6" class="f-col"/><text x="287.0" y="44.0" class="t" text-anchor="middle">データ</text><text x="287.0" y="64.0" class="t" text-anchor="middle">カタログ</text><text x="287.0" y="88.0" class="ts c-mute" text-anchor="middle">どの表が</text><text x="287.0" y="104.0" class="ts c-mute" text-anchor="middle">あるか</text><line x1="228.0" y1="34.0" x2="242.0" y2="34.0" class="ln-col"/></svg></div><figcaption>データウェアハウスをばらした4つの部品と、その下のファイル置き場です。</figcaption></figure>
+
+<ul>
+<li><b class="col">クエリエンジン。</b>SQLを解釈し、実行計画を立てて実行します。Trino、Apache DataFusion、Presto。</li>
+<li><b class="col">ストレージフォーマット。</b>表の行を、ファイルの中のバイトとしてどう並べるかを決めます。Parquet、ORC、Lance、Nimble。</li>
+<li><b class="col">テーブルフォーマット。</b>ファイルは一度書いたら変えません。そこで「どのファイルの集まりが1つの表か」を管理して、行の追加や削除をできるようにします。Apache Iceberg、Delta Lake。過去の時点の表を読むタイムトラベルもできます。</li>
+<li><b class="col">データカタログ。</b>どの表がデータベースにあるかを管理します。SnowflakeのPolaris、DatabricksのUnity Catalog。</li>
+</ul>
+
+<h3 id="s422"><span class="num">4.2.2</span>カラム指向ストレージ</h3>
+<p>データウェアハウスの中心は、巨大な<b>ファクトテーブル</b>です（3章のスタースキーマ）。数兆行、ペタバイトになることもあります。列は100を超えることもよくあります。でも、1つのクエリが使う列は、たいてい4つか5つです。</p>
+<p>OLTPのデータベースは<b>行指向</b>です。1行ぶんの値を、隣り合わせに置きます。この置き方だと、3列しか使わないクエリでも、条件に合う行を100列ぶん丸ごとディスクから読んで、要らない部分を捨てることになります。</p>
+<p><b class="col">カラム指向（列指向）</b>の発想は単純です。行ごとではなく、<b>列ごと</b>にまとめて置きます。</p>
+
+<figure class="fig" id="fig-rowcol"><div class="canvas"><svg viewBox="0 0 340 318" role="img" aria-label="同じ表を行ごとに置くと、3列しか使わないクエリでも行全体を読むことになる。列ごとに置けば、使う3列のかたまりだけ読めばよい"><rect x="8.0" y="8.0" width="82.0" height="24.0" rx="3" class="f-col"/><text x="49.0" y="25.0" class="tn" text-anchor="middle">date_key</text><rect x="92.0" y="8.0" width="78.0" height="24.0" rx="3" class="f-col"/><text x="131.0" y="25.0" class="tn" text-anchor="middle">product_sk</text><rect x="172.0" y="8.0" width="68.0" height="24.0" rx="3" class="f-panel"/><text x="206.0" y="25.0" class="tn" text-anchor="middle">store_sk</text><rect x="242.0" y="8.0" width="62.0" height="24.0" rx="3" class="f-col"/><text x="273.0" y="25.0" class="tn" text-anchor="middle">quantity</text><rect x="306.0" y="8.0" width="24.0" height="24.0" rx="3" class="f-panel"/><text x="318.0" y="25.0" class="tn" text-anchor="middle">…</text><text x="49.0" y="51.0" class="tmx" text-anchor="middle">240102</text><text x="131.0" y="51.0" class="tmx" text-anchor="middle">69</text><text x="206.0" y="51.0" class="tmx c-mute" text-anchor="middle">4</text><text x="273.0" y="51.0" class="tmx" text-anchor="middle">1</text><text x="318.0" y="51.0" class="tmx c-mute" text-anchor="middle">…</text><text x="49.0" y="73.0" class="tmx" text-anchor="middle">240102</text><text x="131.0" y="73.0" class="tmx" text-anchor="middle">69</text><text x="206.0" y="73.0" class="tmx c-mute" text-anchor="middle">5</text><text x="273.0" y="73.0" class="tmx" text-anchor="middle">3</text><text x="318.0" y="73.0" class="tmx c-mute" text-anchor="middle">…</text><text x="49.0" y="95.0" class="tmx" text-anchor="middle">240102</text><text x="131.0" y="95.0" class="tmx" text-anchor="middle">74</text><text x="206.0" y="95.0" class="tmx c-mute" text-anchor="middle">3</text><text x="273.0" y="95.0" class="tmx" text-anchor="middle">5</text><text x="318.0" y="95.0" class="tmx c-mute" text-anchor="middle">…</text><text x="49.0" y="117.0" class="tmx" text-anchor="middle">240103</text><text x="131.0" y="117.0" class="tmx" text-anchor="middle">31</text><text x="206.0" y="117.0" class="tmx c-mute" text-anchor="middle">2</text><text x="273.0" y="117.0" class="tmx" text-anchor="middle">1</text><text x="318.0" y="117.0" class="tmx c-mute" text-anchor="middle">…</text><line x1="8.0" y1="124.0" x2="332.0" y2="124.0" class="ln thin"/><text x="8.0" y="148.0" class="ts c-mute" text-anchor="start">行指向：行ごとにまとめて置く</text><rect x="8.0" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="14.9" y="175.0" class="tn" text-anchor="middle">d</text><rect x="23.4" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="30.3" y="175.0" class="tn" text-anchor="middle">p</text><rect x="38.8" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="45.8" y="175.0" class="tn" text-anchor="middle">s</text><rect x="54.2" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="61.2" y="175.0" class="tn" text-anchor="middle">q</text><rect x="69.6" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="76.5" y="175.0" class="tn" text-anchor="middle">…</text><rect x="90.3" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="97.3" y="175.0" class="tn" text-anchor="middle">d</text><rect x="105.7" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="112.7" y="175.0" class="tn" text-anchor="middle">p</text><rect x="121.1" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="128.1" y="175.0" class="tn" text-anchor="middle">s</text><rect x="136.5" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="143.5" y="175.0" class="tn" text-anchor="middle">q</text><rect x="151.9" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="158.9" y="175.0" class="tn" text-anchor="middle">…</text><rect x="172.7" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="179.6" y="175.0" class="tn" text-anchor="middle">d</text><rect x="188.1" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="195.0" y="175.0" class="tn" text-anchor="middle">p</text><rect x="203.5" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="210.4" y="175.0" class="tn" text-anchor="middle">s</text><rect x="218.9" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="225.8" y="175.0" class="tn" text-anchor="middle">q</text><rect x="234.3" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="241.2" y="175.0" class="tn" text-anchor="middle">…</text><rect x="255.0" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="261.9" y="175.0" class="tn" text-anchor="middle">d</text><rect x="270.4" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="277.3" y="175.0" class="tn" text-anchor="middle">p</text><rect x="285.8" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="292.7" y="175.0" class="tn" text-anchor="middle">s</text><rect x="301.2" y="156.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="308.1" y="175.0" class="tn" text-anchor="middle">q</text><rect x="316.6" y="156.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="323.5" y="175.0" class="tn" text-anchor="middle">…</text><line x1="8.0" y1="192.0" x2="332.0" y2="192.0" class="ln-bad"/><text x="8.0" y="212.0" class="ts c-bad" text-anchor="start">要らない列も、行ごと全部読むことになる</text><text x="8.0" y="246.0" class="ts c-mute" text-anchor="start">列指向：列ごとにまとめて置く</text><rect x="8.0" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="14.9" y="273.0" class="tn" text-anchor="middle">d</text><rect x="23.4" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="30.3" y="273.0" class="tn" text-anchor="middle">d</text><rect x="38.8" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="45.8" y="273.0" class="tn" text-anchor="middle">d</text><rect x="54.2" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="61.2" y="273.0" class="tn" text-anchor="middle">d</text><line x1="8.0" y1="290.0" x2="68.1" y2="290.0" class="ln-col"/><rect x="73.6" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="80.5" y="273.0" class="tn" text-anchor="middle">p</text><rect x="89.0" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="96.0" y="273.0" class="tn" text-anchor="middle">p</text><rect x="104.4" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="111.3" y="273.0" class="tn" text-anchor="middle">p</text><rect x="119.8" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="126.8" y="273.0" class="tn" text-anchor="middle">p</text><line x1="73.6" y1="290.0" x2="133.7" y2="290.0" class="ln-col"/><rect x="139.2" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="146.1" y="273.0" class="tn" text-anchor="middle">s</text><rect x="154.6" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="161.5" y="273.0" class="tn" text-anchor="middle">s</text><rect x="170.0" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="176.9" y="273.0" class="tn" text-anchor="middle">s</text><rect x="185.4" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="192.3" y="273.0" class="tn" text-anchor="middle">s</text><rect x="204.8" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="211.7" y="273.0" class="tn" text-anchor="middle">q</text><rect x="220.2" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="227.1" y="273.0" class="tn" text-anchor="middle">q</text><rect x="235.6" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="242.5" y="273.0" class="tn" text-anchor="middle">q</text><rect x="251.0" y="254.0" width="13.9" height="28.0" rx="2" class="f-col"/><text x="257.9" y="273.0" class="tn" text-anchor="middle">q</text><line x1="204.8" y1="290.0" x2="264.9" y2="290.0" class="ln-col"/><rect x="270.4" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="277.3" y="273.0" class="tn" text-anchor="middle">…</text><rect x="285.8" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="292.7" y="273.0" class="tn" text-anchor="middle">…</text><rect x="301.2" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="308.1" y="273.0" class="tn" text-anchor="middle">…</text><rect x="316.6" y="254.0" width="13.9" height="28.0" rx="2" class="f-panel"/><text x="323.5" y="273.0" class="tn" text-anchor="middle">…</text><text x="8.0" y="310.0" class="ts c-col" text-anchor="start">使う列のかたまりだけ読めばいい</text></svg></div><figcaption>本の図4-7にあたる図です（値は説明用）。d、p、s、q は各列の頭文字です。クエリが使うのは紫の3列だけです。</figcaption></figure>
+
+<p>行をもとに戻したいときは、各列の同じ番目の値を集めます。23行目が欲しければ、どの列からも23番目を取ります。<b>全部の列が同じ順番で並んでいる</b>ことが前提です。</p>
+<p>実際には、数千〜数百万行ごとのブロックに区切って、その中で列ごとに置きます。ブロックを時間の範囲で分けておけば、「先月ぶん」のようなクエリは、関係するブロックの、使う列だけを読めば済みます。</p>
+<p>いまや、ほぼすべての分析用データベースが列指向です。Snowflake、DuckDB、Parquetなどがそうです。</p>
+
+<div class="box bad">
+<span class="lab">混同注意</span>
+<p><b>ワイドカラム</b>（カラムファミリー）は別物です。Bigtable、HBaseなどのモデルで、名前は似ていますが<b>行指向</b>です。1行の値をまとめて置くからです。</p>
+</div>
+
+<h4>列の圧縮</h4>
+<p>列ごとに並べると、同じような値が続きます。これは圧縮にとても向いています。代表的な方法が<b>ビットマップエンコーディング</b>です。</p>
+<p>列に出てくる値の種類は、行数よりずっと少ないのが普通です。売上が何十億件あっても、商品は10万種類かもしれません。そこで、値の種類ごとに「この行はその値か」を0と1で持ちます。</p>
+
+<figure class="fig" id="fig-bitmap"><div class="canvas"><svg viewBox="0 0 340 392" role="img" aria-label="product_sk列の18行ぶんの値を、値ごとのビットマップに分ける。さらに0と1が続く個数だけを書くランレングスエンコーディングで縮める"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">product_sk 列の中身（18行ぶん）</text><rect x="44.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="51.2" y="43.0" class="tn" text-anchor="middle">69</text><rect x="60.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="67.2" y="43.0" class="tn" text-anchor="middle">69</text><rect x="76.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="83.2" y="43.0" class="tn" text-anchor="middle">69</text><rect x="92.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="99.2" y="43.0" class="tn" text-anchor="middle">69</text><rect x="108.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="115.2" y="43.0" class="tn" text-anchor="middle">74</text><rect x="124.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="131.2" y="43.0" class="tn" text-anchor="middle">31</text><rect x="140.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="147.2" y="43.0" class="tn" text-anchor="middle">31</text><rect x="156.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="163.2" y="43.0" class="tn" text-anchor="middle">31</text><rect x="172.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="179.2" y="43.0" class="tn" text-anchor="middle">31</text><rect x="188.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="195.2" y="43.0" class="tn" text-anchor="middle">29</text><rect x="204.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="211.2" y="43.0" class="tn" text-anchor="middle">30</text><rect x="220.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="227.2" y="43.0" class="tn" text-anchor="middle">30</text><rect x="236.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="243.2" y="43.0" class="tn" text-anchor="middle">31</text><rect x="252.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="259.2" y="43.0" class="tn" text-anchor="middle">31</text><rect x="268.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="275.2" y="43.0" class="tn" text-anchor="middle">31</text><rect x="284.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="291.2" y="43.0" class="tn" text-anchor="middle">68</text><rect x="300.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="307.2" y="43.0" class="tn" text-anchor="middle">69</text><rect x="316.0" y="26.0" width="14.5" height="24.0" rx="2" class="f-panel"/><text x="323.2" y="43.0" class="tn" text-anchor="middle">69</text><text x="8.0" y="76.0" class="ts c-mute" text-anchor="start">値ごとに「その行か？」を0か1で持つ</text><text x="38.0" y="99.0" class="tmx" text-anchor="end">=29</text><text x="51.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="67.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="83.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="99.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="115.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="131.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="147.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="163.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="179.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><rect x="188.0" y="84.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="195.2" y="99.0" class="tn" text-anchor="middle">1</text><text x="211.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="227.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="243.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="259.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="275.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="291.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="307.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="323.2" y="99.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="38.0" y="123.0" class="tmx" text-anchor="end">=30</text><text x="51.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="67.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="83.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="99.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="115.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="131.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="147.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="163.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="179.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="195.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><rect x="204.0" y="108.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="211.2" y="123.0" class="tn" text-anchor="middle">1</text><rect x="220.0" y="108.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="227.2" y="123.0" class="tn" text-anchor="middle">1</text><text x="243.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="259.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="275.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="291.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="307.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="323.2" y="123.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="38.0" y="147.0" class="tmx" text-anchor="end">=31</text><text x="51.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="67.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="83.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="99.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="115.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><rect x="124.0" y="132.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="131.2" y="147.0" class="tn" text-anchor="middle">1</text><rect x="140.0" y="132.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="147.2" y="147.0" class="tn" text-anchor="middle">1</text><rect x="156.0" y="132.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="163.2" y="147.0" class="tn" text-anchor="middle">1</text><rect x="172.0" y="132.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="179.2" y="147.0" class="tn" text-anchor="middle">1</text><text x="195.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="211.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="227.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><rect x="236.0" y="132.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="243.2" y="147.0" class="tn" text-anchor="middle">1</text><rect x="252.0" y="132.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="259.2" y="147.0" class="tn" text-anchor="middle">1</text><rect x="268.0" y="132.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="275.2" y="147.0" class="tn" text-anchor="middle">1</text><text x="291.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="307.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="323.2" y="147.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="38.0" y="171.0" class="tmx" text-anchor="end">=68</text><text x="51.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="67.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="83.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="99.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="115.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="131.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="147.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="163.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="179.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="195.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="211.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="227.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="243.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="259.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="275.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><rect x="284.0" y="156.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="291.2" y="171.0" class="tn" text-anchor="middle">1</text><text x="307.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="323.2" y="171.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="38.0" y="195.0" class="tmx" text-anchor="end">=69</text><rect x="44.0" y="180.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="51.2" y="195.0" class="tn" text-anchor="middle">1</text><rect x="60.0" y="180.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="67.2" y="195.0" class="tn" text-anchor="middle">1</text><rect x="76.0" y="180.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="83.2" y="195.0" class="tn" text-anchor="middle">1</text><rect x="92.0" y="180.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="99.2" y="195.0" class="tn" text-anchor="middle">1</text><text x="115.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="131.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="147.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="163.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="179.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="195.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="211.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="227.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="243.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="259.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="275.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="291.2" y="195.0" class="tn c-mute dim" text-anchor="middle">0</text><rect x="300.0" y="180.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="307.2" y="195.0" class="tn" text-anchor="middle">1</text><rect x="316.0" y="180.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="323.2" y="195.0" class="tn" text-anchor="middle">1</text><text x="38.0" y="219.0" class="tmx" text-anchor="end">=74</text><text x="51.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="67.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="83.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="99.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><rect x="108.0" y="204.0" width="14.5" height="20.0" rx="2" class="f-col"/><text x="115.2" y="219.0" class="tn" text-anchor="middle">1</text><text x="131.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="147.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="163.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="179.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="195.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="211.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="227.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="243.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="259.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="275.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="291.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="307.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="323.2" y="219.0" class="tn c-mute dim" text-anchor="middle">0</text><text x="8.0" y="252.0" class="ts c-mute" text-anchor="start">続く個数だけ書けば、もっと縮む</text><text x="8.0" y="276.0" class="tmx" text-anchor="start">=29 → 0×9, 1×1, 残り0</text><text x="8.0" y="296.0" class="tmx" text-anchor="start">=30 → 0×10, 1×2, 残り0</text><text x="8.0" y="316.0" class="tmx" text-anchor="start">=31 → 0×5, 1×4, 0×3, 1×3, 残り0</text><text x="8.0" y="336.0" class="tmx" text-anchor="start">=68 → 0×15, 1×1, 残り0</text><text x="8.0" y="356.0" class="tmx" text-anchor="start">=69 → 1×4, 0×12, 1×2</text><text x="8.0" y="376.0" class="tmx" text-anchor="start">=74 → 0×4, 1×1, 残り0</text></svg></div><figcaption>本の図4-8にあたる図です（値は説明用）。0が長く続くので、「0が何個、1が何個」と個数だけ書く<b>ランレングスエンコーディング</b>で、さらに小さくなります。</figcaption></figure>
+
+<p>このビットマップは、そのまま検索にも使えます。</p>
+<ul>
+<li><code>product_sk IN (31, 68, 69)</code> なら、3本のビットマップを<b>OR</b>する。</li>
+<li><code>product_sk = 30 AND store_sk = 3</code> なら、2本のビットマップを<b>AND</b>する。別の列同士でも、k番目のビットは同じ行を指すので成り立つ。</li>
+</ul>
+
+<h4>並べる順番</h4>
+<p>行は届いた順に置いてもかまいません。でも、順番を決めて並べると、それが索引の役目も果たします。</p>
+<p>注意点は、<b>列ごとに別々に並べ替えてはいけない</b>ことです。どの値が同じ行のものか、わからなくなります。並べ替えは必ず行ごと、全部の列をそろえて行います。</p>
+<p>どの列で並べるかは、よく使うクエリから決めます。日付の範囲で絞ることが多いなら、<code>date_key</code> を第1キーにします。同じ日の中は、第2キー（たとえば <code>product_sk</code>）で並べます。</p>
+
+<figure class="fig" id="fig-sortrle"><div class="canvas"><svg viewBox="0 0 340 156" role="img" aria-label="date_key列を並べ替える前は値が入り混じっているが、並べ替えた後は同じ値が長く続くので、個数を書くだけで済む"><text x="8.0" y="18.0" class="ts c-mute" text-anchor="start">並べ替え前</text><rect x="8.0" y="26.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="27.0" y="45.0" class="tn" text-anchor="middle">0103</text><rect x="48.5" y="26.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="67.5" y="45.0" class="tn" text-anchor="middle">0102</text><rect x="89.0" y="26.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="108.0" y="45.0" class="tn" text-anchor="middle">0103</text><rect x="129.5" y="26.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="148.5" y="45.0" class="tn" text-anchor="middle">0102</text><rect x="170.0" y="26.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="189.0" y="45.0" class="tn" text-anchor="middle">0102</text><rect x="210.5" y="26.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="229.5" y="45.0" class="tn" text-anchor="middle">0103</text><rect x="251.0" y="26.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="270.0" y="45.0" class="tn" text-anchor="middle">0102</text><rect x="291.5" y="26.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="310.5" y="45.0" class="tn" text-anchor="middle">0103</text><text x="8.0" y="82.0" class="ts c-mute" text-anchor="start">date_key で並べ替えた後</text><rect x="8.0" y="90.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="27.0" y="109.0" class="tn" text-anchor="middle">0102</text><rect x="48.5" y="90.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="67.5" y="109.0" class="tn" text-anchor="middle">0102</text><rect x="89.0" y="90.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="108.0" y="109.0" class="tn" text-anchor="middle">0102</text><rect x="129.5" y="90.0" width="38.5" height="28.0" rx="3" class="f-col"/><text x="148.5" y="109.0" class="tn" text-anchor="middle">0102</text><rect x="170.0" y="90.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="189.0" y="109.0" class="tn" text-anchor="middle">0103</text><rect x="210.5" y="90.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="229.5" y="109.0" class="tn" text-anchor="middle">0103</text><rect x="251.0" y="90.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="270.0" y="109.0" class="tn" text-anchor="middle">0103</text><rect x="291.5" y="90.0" width="38.5" height="28.0" rx="3" class="f-panel"/><text x="310.5" y="109.0" class="tn" text-anchor="middle">0103</text><text x="8.0" y="144.0" class="ts c-col" text-anchor="start">「0102が4個、0103が4個」と書くだけで済む</text></svg></div><figcaption>並べ替えると同じ値が長く続き、圧縮がよく効きます。</figcaption></figure>
+
+<p>圧縮がいちばん効くのは第1キーの列です。数十億行あっても、数キロバイトに縮むことがあります。第2、第3キーになるほど値は入り混じり、効きは弱くなります。</p>
+
+<h4>書き込み</h4>
+<p>列指向は、並んだ表の途中に1行を割り込ませるのが苦手です。そこから後ろの、圧縮済みの列を全部書き直すことになるからです。データウェアハウスへの書き込みは一括投入が多いので、まとめて書けば問題になりません。</p>
+<p>ここでも<b class="lsm">ログ構造化</b>の考え方が使われます。書き込みはまずメモリ上の行指向のストアにため、たまったらディスク上の列ファイルとマージして、新しいファイルとして一気に書き出します。古いファイルは書き換えません。4.1.1と同じ形です。</p>
+<p>クエリは、ディスクの列データとメモリの新しいデータの両方を見て、合わせて答えます。使う人にその違いは見えません。Snowflake、Vertica、Apache Pinot、Apache Druidなどがこの方式です。</p>
+
+<h3 id="s423"><span class="num">4.2.3</span>クエリ実行：コンパイルとベクター処理</h3>
+<p>数百万行を読むクエリでは、ディスクから読む量だけでなく、<b>CPUの時間</b>も問題になります。</p>
+<p>いちばん素朴な実行方法は、インタプリタのように、1行ずつ「このクエリは何をしろと言っているか」を確かめながら進むやり方です。これは遅すぎます。速くする方法は2つあります。</p>
+
+<div class="cmp">
+<div class="side col"><span class="tag">クエリのコンパイル</span><p>SQLを受け取るたびに、そのクエリ専用のコードを生成し、マシンコードにコンパイルして実行する。JVMのJITコンパイルに似ている。</p></div>
+<div class="side col"><span class="tag">ベクター処理</span><p>インタプリタのままだが、1行ずつではなく、<b>列の値をまとめて</b>処理する。「等しいか」「AND」のような決まった演算が組み込まれていて、列を渡すと結果がまとめて返る。</p></div>
+</div>
+
+<figure class="fig" id="fig-and"><div class="canvas"><svg viewBox="0 0 340 190" role="img" aria-label="商品がバナナかどうかのビットマップと、店舗が3番かどうかのビットマップをANDすると、両方に合う行だけ1が残る"><text x="8.0" y="46.0" class="ts" text-anchor="start">商品＝バナナ</text><rect x="116.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="124.2" y="46.0" class="tn c-mute" text-anchor="middle">0</text><rect x="134.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="142.2" y="46.0" class="tn" text-anchor="middle">1</text><rect x="152.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="160.2" y="46.0" class="tn" text-anchor="middle">1</text><rect x="170.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="178.2" y="46.0" class="tn c-mute" text-anchor="middle">0</text><rect x="188.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="196.2" y="46.0" class="tn" text-anchor="middle">1</text><rect x="206.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="214.2" y="46.0" class="tn c-mute" text-anchor="middle">0</text><rect x="224.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="232.2" y="46.0" class="tn c-mute" text-anchor="middle">0</text><rect x="242.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="250.2" y="46.0" class="tn" text-anchor="middle">1</text><rect x="260.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="268.2" y="46.0" class="tn" text-anchor="middle">1</text><rect x="278.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="286.2" y="46.0" class="tn c-mute" text-anchor="middle">0</text><rect x="296.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="304.2" y="46.0" class="tn" text-anchor="middle">1</text><rect x="314.0" y="28.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="322.2" y="46.0" class="tn c-mute" text-anchor="middle">0</text><text x="8.0" y="82.0" class="ts" text-anchor="start">店舗＝3番</text><rect x="116.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="124.2" y="82.0" class="tn" text-anchor="middle">1</text><rect x="134.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="142.2" y="82.0" class="tn" text-anchor="middle">1</text><rect x="152.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="160.2" y="82.0" class="tn c-mute" text-anchor="middle">0</text><rect x="170.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="178.2" y="82.0" class="tn c-mute" text-anchor="middle">0</text><rect x="188.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="196.2" y="82.0" class="tn" text-anchor="middle">1</text><rect x="206.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="214.2" y="82.0" class="tn c-mute" text-anchor="middle">0</text><rect x="224.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="232.2" y="82.0" class="tn" text-anchor="middle">1</text><rect x="242.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="250.2" y="82.0" class="tn" text-anchor="middle">1</text><rect x="260.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="268.2" y="82.0" class="tn c-mute" text-anchor="middle">0</text><rect x="278.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="286.2" y="82.0" class="tn c-mute" text-anchor="middle">0</text><rect x="296.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="304.2" y="82.0" class="tn" text-anchor="middle">1</text><rect x="314.0" y="64.0" width="16.5" height="26.0" rx="3" class="f-panel"/><text x="322.2" y="82.0" class="tn" text-anchor="middle">1</text><text x="8.0" y="138.0" class="ts c-col" text-anchor="start">両方に合う行</text><rect x="116.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="124.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><rect x="134.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-col"/><text x="142.2" y="138.0" class="tn" text-anchor="middle">1</text><rect x="152.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="160.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><rect x="170.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="178.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><rect x="188.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-col"/><text x="196.2" y="138.0" class="tn" text-anchor="middle">1</text><rect x="206.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="214.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><rect x="224.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="232.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><rect x="242.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-col"/><text x="250.2" y="138.0" class="tn" text-anchor="middle">1</text><rect x="260.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="268.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><rect x="278.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="286.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><rect x="296.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-col"/><text x="304.2" y="138.0" class="tn" text-anchor="middle">1</text><rect x="314.0" y="120.0" width="16.5" height="26.0" rx="3" class="f-none"/><text x="322.2" y="138.0" class="tn c-mute" text-anchor="middle">0</text><line x1="116.0" y1="104.0" x2="332.0" y2="104.0" class="ln"/><text x="8.0" y="108.0" class="tm c-col" text-anchor="start">AND</text><text x="8.0" y="178.0" class="ts c-mute" text-anchor="start">1行ずつではなく、列をまとめて一気に計算</text></svg></div><figcaption>本の図4-9にあたる図です（値は説明用）。「商品がバナナ」と「店舗が3番」をそれぞれビットマップにして、ANDを取ります。</figcaption></figure>
+
+<p>どちらも実際に使われています。速い理由は、いまのCPUの得意な形に合わせているからです。</p>
+<ul>
+<li>メモリを順番に読む。あちこち飛ばないので、キャッシュミスが減る。</li>
+<li>小さなループに処理を集める。分岐予測が外れにくい。</li>
+<li>複数のスレッドやSIMD命令で、並列に処理する。</li>
+<li>圧縮したままのデータを直接扱う。展開やコピーの手間がない。</li>
+</ul>
+
+<h3 id="s424"><span class="num">4.2.4</span>マテリアライズドビューとデータキューブ</h3>
+<p><b>マテリアライズドビュー</b>は、クエリの結果を実際に計算して、ディスクに保存しておいたものです。普通のビュー（仮想ビュー）はクエリの別名にすぎず、読むたびに元のクエリが走ります。</p>
+<p>元のデータが変わったら、保存した結果も更新しなければなりません。書き込みは重くなりますが、同じクエリを何度も実行するなら読み取りが速くなります。2章のタイムラインと同じ、「書くときに働いて、読むときに楽をする」形です。</p>
+<p>その一種が<b>データキューブ</b>（OLAPキューブ）です。<code>SUM</code> や <code>COUNT</code> の結果を、ディメンションの組み合わせごとに先に計算して、格子の形で持っておきます。</p>
+
+<figure class="fig" id="fig-cube"><div class="canvas"><svg viewBox="0 0 340 212" role="img" aria-label="日付と商品の表。各マスにその日その商品の売上合計が入り、右端に日付ごとの合計、下端に商品ごとの合計がある"><text x="100.0" y="28.0" class="ts c-mute" text-anchor="middle">りんご</text><text x="166.0" y="28.0" class="ts c-mute" text-anchor="middle">バナナ</text><text x="232.0" y="28.0" class="ts c-mute" text-anchor="middle">あめ</text><text x="298.0" y="28.0" class="ts c-col" text-anchor="middle">合計</text><text x="60.0" y="59.0" class="ts c-mute" text-anchor="end">1/1</text><rect x="68.0" y="38.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="99.5" y="59.0" class="tm" text-anchor="middle">12</text><rect x="134.0" y="38.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="165.5" y="59.0" class="tm" text-anchor="middle">8</text><rect x="200.0" y="38.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="231.5" y="59.0" class="tm" text-anchor="middle">5</text><rect x="266.0" y="38.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="297.5" y="59.0" class="tm" text-anchor="middle">25</text><text x="60.0" y="93.0" class="ts c-mute" text-anchor="end">1/2</text><rect x="68.0" y="72.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="99.5" y="93.0" class="tm" text-anchor="middle">7</text><rect x="134.0" y="72.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="165.5" y="93.0" class="tm" text-anchor="middle">14</text><rect x="200.0" y="72.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="231.5" y="93.0" class="tm" text-anchor="middle">9</text><rect x="266.0" y="72.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="297.5" y="93.0" class="tm" text-anchor="middle">30</text><text x="60.0" y="127.0" class="ts c-mute" text-anchor="end">1/3</text><rect x="68.0" y="106.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="99.5" y="127.0" class="tm" text-anchor="middle">10</text><rect x="134.0" y="106.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="165.5" y="127.0" class="tm" text-anchor="middle">6</text><rect x="200.0" y="106.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="231.5" y="127.0" class="tm" text-anchor="middle">11</text><rect x="266.0" y="106.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="297.5" y="127.0" class="tm" text-anchor="middle">27</text><text x="60.0" y="161.0" class="ts c-mute" text-anchor="end">1/4</text><rect x="68.0" y="140.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="99.5" y="161.0" class="tm" text-anchor="middle">9</text><rect x="134.0" y="140.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="165.5" y="161.0" class="tm" text-anchor="middle">12</text><rect x="200.0" y="140.0" width="63.0" height="32.0" rx="4" class="f-panel"/><text x="231.5" y="161.0" class="tm" text-anchor="middle">4</text><rect x="266.0" y="140.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="297.5" y="161.0" class="tm" text-anchor="middle">25</text><text x="60.0" y="195.0" class="ts c-col" text-anchor="end">合計</text><rect x="68.0" y="174.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="99.5" y="195.0" class="tm" text-anchor="middle">38</text><rect x="134.0" y="174.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="165.5" y="195.0" class="tm" text-anchor="middle">40</text><rect x="200.0" y="174.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="231.5" y="195.0" class="tm" text-anchor="middle">29</text><rect x="266.0" y="174.0" width="63.0" height="32.0" rx="4" class="f-col"/><text x="297.5" y="195.0" class="tm" text-anchor="middle">107</text></svg></div><figcaption>本の図4-10にあたる図です（数字は説明用）。日付×商品のマスに合計を入れ、縦と横にも合計しておきます。</figcaption></figure>
+
+<div class="cmp">
+<div class="side col"><span class="tag">良い点</span><p>決まった形のクエリがとても速い。「昨日の店舗ごとの売上」は、合計のマスを見るだけ。数百万行を読まなくて済む。</p></div>
+<div class="side bad"><span class="tag">悪い点</span><p>融通がきかない。「100ドル以上の商品が売上の何割か」は出せない。価格がディメンションに入っていないから。</p></div>
+</div>
+<p>だから、ほとんどのデータウェアハウスは生データをできるだけ残し、データキューブは特定のクエリを速くする手段としてだけ使います。</p>
+
+<!-- ===================================================== 4.3 -->
+<h2 id="s43"><span class="num">4.3</span>多次元インデックスと全文検索</h2>
+<p>BツリーとLSMツリーは、1つの属性の範囲で探すのが得意です。でも、それだけでは足りないことがあります。</p>
+
+<h4>連結インデックス</h4>
+<p>複数の列をつなげて1つのキーにしたものが<b>連結インデックス</b>です。紙の電話帳と同じで、（姓、名）の順に並んでいます。</p>
+
+<figure class="fig" id="fig-concat"><div class="canvas"><svg viewBox="0 0 340 232" role="img" aria-label="姓、名の順に並んだ索引。姓が鈴木の人は隣り合っていてすぐ見つかるが、名が愛の人は飛び飛びで、全部見るしかない"><text x="8.0" y="20.0" class="ts c-mute" text-anchor="start">姓＝鈴木 を探す</text><rect x="8.0" y="30.0" width="156.0" height="26.0" rx="4" class="f-none"/><text x="20.0" y="48.0" class="ts" text-anchor="start">佐藤　愛</text><rect x="8.0" y="58.0" width="156.0" height="26.0" rx="4" class="f-none"/><text x="20.0" y="76.0" class="ts" text-anchor="start">佐藤　健</text><rect x="8.0" y="86.0" width="156.0" height="26.0" rx="4" class="f-bt"/><text x="20.0" y="104.0" class="ts" text-anchor="start">鈴木　愛</text><rect x="8.0" y="114.0" width="156.0" height="26.0" rx="4" class="f-bt"/><text x="20.0" y="132.0" class="ts" text-anchor="start">鈴木　翔</text><rect x="8.0" y="142.0" width="156.0" height="26.0" rx="4" class="f-none"/><text x="20.0" y="160.0" class="ts" text-anchor="start">田中　愛</text><rect x="8.0" y="170.0" width="156.0" height="26.0" rx="4" class="f-none"/><text x="20.0" y="188.0" class="ts" text-anchor="start">田中　健</text><text x="8.0" y="220.0" class="ts c-bt" text-anchor="start">ひとかたまり</text><text x="176.0" y="20.0" class="ts c-mute" text-anchor="start">名＝愛 を探す</text><rect x="176.0" y="30.0" width="156.0" height="26.0" rx="4" class="f-bad"/><text x="188.0" y="48.0" class="ts" text-anchor="start">佐藤　愛</text><rect x="176.0" y="58.0" width="156.0" height="26.0" rx="4" class="f-none"/><text x="188.0" y="76.0" class="ts" text-anchor="start">佐藤　健</text><rect x="176.0" y="86.0" width="156.0" height="26.0" rx="4" class="f-bad"/><text x="188.0" y="104.0" class="ts" text-anchor="start">鈴木　愛</text><rect x="176.0" y="114.0" width="156.0" height="26.0" rx="4" class="f-none"/><text x="188.0" y="132.0" class="ts" text-anchor="start">鈴木　翔</text><rect x="176.0" y="142.0" width="156.0" height="26.0" rx="4" class="f-bad"/><text x="188.0" y="160.0" class="ts" text-anchor="start">田中　愛</text><rect x="176.0" y="170.0" width="156.0" height="26.0" rx="4" class="f-none"/><text x="188.0" y="188.0" class="ts" text-anchor="start">田中　健</text><text x="176.0" y="220.0" class="ts c-bad" text-anchor="start">飛び飛び</text></svg></div><figcaption>先頭の列でなら絞れますが、2番目の列だけでは絞れません。</figcaption></figure>
+
+<div class="box extra">
+<span class="lab">補足（本にはない）</span>
+<p><code>INDEX (a, b)</code> が <code>WHERE b = ?</code> だけのクエリに効かない、というおなじみの話は、この並び順が理由です。</p>
+</div>
+
+<h4>多次元インデックス</h4>
+<p>地図アプリで、いま見えている四角い範囲のレストランを探すとします。緯度と経度の<b>両方</b>の範囲で絞る必要があります。</p>
+<pre><code>SELECT * FROM restaurants
+WHERE latitude  &gt; 51.4946
+  AND latitude  &lt; 51.5079
+  AND longitude &gt; -0.1162
+  AND longitude &lt; -0.1004;</code></pre>
+
+<figure class="fig" id="fig-geo"><div class="canvas"><svg viewBox="0 0 340 286" role="img" aria-label="地図上の点の中から長方形の範囲内だけが欲しい。緯度と経度の連結インデックスでは緯度の帯全体を読むことになる"><rect x="8.0" y="10.0" width="324.0" height="220.0" rx="8" class="f-panel"/><rect x="8.0" y="90.0" width="324.0" height="60.0" rx="0" class="band"/><circle cx="155.5" cy="132.0" r="4" class="s-bt"/><circle cx="299.0" cy="113.1" r="4" class="s-bad"/><circle cx="172.4" cy="137.5" r="4" class="s-bt"/><circle cx="74.1" cy="122.4" r="4" class="s-bad"/><circle cx="209.5" cy="178.6" r="4" class="s-mute"/><circle cx="46.6" cy="80.7" r="4" class="s-mute"/><circle cx="45.6" cy="181.9" r="4" class="s-mute"/><circle cx="228.8" cy="28.4" r="4" class="s-mute"/><circle cx="316.6" cy="213.0" r="4" class="s-mute"/><circle cx="216.8" cy="143.1" r="4" class="s-bt"/><circle cx="65.9" cy="23.0" r="4" class="s-mute"/><circle cx="178.6" cy="31.9" r="4" class="s-mute"/><circle cx="75.8" cy="68.4" r="4" class="s-mute"/><circle cx="27.1" cy="112.8" r="4" class="s-bad"/><circle cx="151.9" cy="188.5" r="4" class="s-mute"/><circle cx="175.8" cy="148.1" r="4" class="s-bt"/><circle cx="169.9" cy="152.5" r="4" class="s-mute"/><circle cx="157.0" cy="75.6" r="4" class="s-mute"/><circle cx="321.3" cy="219.1" r="4" class="s-mute"/><circle cx="273.4" cy="161.6" r="4" class="s-mute"/><circle cx="113.8" cy="65.9" r="4" class="s-mute"/><circle cx="105.9" cy="34.0" r="4" class="s-mute"/><circle cx="251.0" cy="100.1" r="4" class="s-bad"/><circle cx="275.4" cy="97.3" r="4" class="s-bad"/><circle cx="309.2" cy="189.5" r="4" class="s-mute"/><circle cx="18.2" cy="61.9" r="4" class="s-mute"/><circle cx="294.7" cy="114.0" r="4" class="s-bad"/><circle cx="316.0" cy="99.5" r="4" class="s-bad"/><circle cx="40.2" cy="145.9" r="4" class="s-bad"/><circle cx="254.7" cy="74.0" r="4" class="s-mute"/><circle cx="44.5" cy="86.5" r="4" class="s-mute"/><circle cx="311.1" cy="171.6" r="4" class="s-mute"/><circle cx="53.9" cy="69.3" r="4" class="s-mute"/><circle cx="48.7" cy="32.0" r="4" class="s-mute"/><circle cx="150.0" cy="110.0" r="4" class="s-bt"/><circle cx="190.0" cy="132.0" r="4" class="s-bt"/><circle cx="205.0" cy="100.0" r="4" class="s-bt"/><circle cx="60.0" cy="120.0" r="4" class="s-bad"/><circle cx="280.0" cy="140.0" r="4" class="s-bad"/><circle cx="300.0" cy="100.0" r="4" class="s-bad"/><circle cx="40.0" cy="138.0" r="4" class="s-bad"/><rect x="130.0" y="90.0" width="90.0" height="60.0" rx="3" class="ring-bt"/><circle cx="14.0" cy="250.0" r="5" class="s-bt"/><text x="26.0" y="255.0" class="ts" text-anchor="start">欲しいのは四角の中だけ</text><circle cx="14.0" cy="274.0" r="5" class="s-bad"/><text x="26.0" y="279.0" class="ts" text-anchor="start">連結インデックスだと帯ぜんぶを読む</text></svg></div><figcaption>連結インデックスで絞れるのは片方だけです。緯度で絞ると、経度は端から端まで全部読むことになります。</figcaption></figure>
+
+<p>両方を同時に絞れるのが<b>多次元インデックス</b>です。</p>
+<ul>
+<li><b>空間充填曲線。</b>2次元の位置を1つの数に変換して、普通のBツリーで扱います。</li>
+<li><b>Rツリー、Bkdツリー。</b>近くの点が同じ部分木にまとまるように空間を区切る、専用の索引です。PostGISはRツリーを使います。</li>
+</ul>
+<p>地図以外にも使えます。色（赤、緑、青）の範囲で商品を探す。（日付、気温）で「この年に25〜30℃だった観測」を探す、などです。</p>
+
+<h3 id="s431"><span class="num">4.3.1</span>全文検索</h3>
+<p>文章の中のどこかにあるキーワードで探すのが<b>全文検索</b>です。考え方としては、これも多次元の検索です。単語1つが1つの次元で、その単語を含む文書は1、含まない文書は0。「赤い リンゴ」で探すのは、「赤い」が1で、同時に「リンゴ」も1の文書を探すことです。</p>
+<p>これに使うデータ構造が<b>転置インデックス</b>です。キーが単語、値が「その単語を含む文書のIDのリスト」です。このリストを<b>ポスティングリスト</b>と呼びます。</p>
+
+<figure class="fig" id="fig-inverted"><div class="canvas"><svg viewBox="0 0 340 292" role="img" aria-label="3つの文書から、単語ごとにそれを含む文書IDのリストを作る。赤いとリンゴの両方のリストにある文書1が検索結果になる"><text x="8.0" y="16.0" class="ts c-mute" text-anchor="start">文書</text><rect x="8.0" y="24.0" width="324.0" height="28.0" rx="6" class="f-panel"/><text x="20.0" y="43.0" class="ts" text-anchor="start">1：赤い リンゴ</text><rect x="8.0" y="56.0" width="324.0" height="28.0" rx="6" class="f-panel"/><text x="20.0" y="75.0" class="ts" text-anchor="start">2：青い リンゴ</text><rect x="8.0" y="88.0" width="324.0" height="28.0" rx="6" class="f-panel"/><text x="20.0" y="107.0" class="ts" text-anchor="start">3：赤い 車</text><polygon points="150.0,150.0 146.0,142.0 154.0,142.0" class="hd-col"/><line x1="150.0" y1="122.0" x2="150.0" y2="142.0" class="ln-col"/><text x="164.0" y="142.0" class="ts c-col" text-anchor="start">単語→文書に裏返す</text><rect x="8.0" y="156.0" width="200.0" height="28.0" rx="6" class="f-col"/><text x="20.0" y="175.0" class="ts" text-anchor="start">赤い → [1, 3]</text><rect x="8.0" y="188.0" width="200.0" height="28.0" rx="6" class="f-panel"/><text x="20.0" y="207.0" class="ts" text-anchor="start">青い → [2]</text><rect x="8.0" y="220.0" width="200.0" height="28.0" rx="6" class="f-col"/><text x="20.0" y="239.0" class="ts" text-anchor="start">リンゴ → [1, 2]</text><rect x="8.0" y="252.0" width="200.0" height="28.0" rx="6" class="f-panel"/><text x="20.0" y="271.0" class="ts" text-anchor="start">車 → [3]</text><rect x="222.0" y="172.0" width="110.0" height="76.0" rx="6" class="f-col"/><text x="277.0" y="196.0" class="ts" text-anchor="middle">赤い AND</text><text x="277.0" y="214.0" class="ts" text-anchor="middle">リンゴ</text><text x="277.0" y="238.0" class="tb" text-anchor="middle">→ 文書1</text></svg></div><figcaption>文書から単語を引く形を、単語から文書を引く形にひっくり返します。</figcaption></figure>
+
+<p>文書IDが連番なら、リストをビットマップで持てます。すると「両方の単語を含む文書」は、4.2.3と同じビットマップのANDで出せます。</p>
+<p>ElasticsearchやSolrが使っている<b>Lucene</b>は、この方式です。単語からリストへの対応をSSTableのような並んだファイルに持ち、裏でマージします。ここにも<b class="lsm">ログ構造化</b>が出てきます。PostgreSQLのGINインデックスも、ポスティングリストを使います。</p>
+
+<h4>単語に区切らない方法：n-gram</h4>
+<p>文章を単語に区切る代わりに、<b>n文字の切れ端を全部</b>取り出す方法もあります。<code>hello</code> の3文字の切れ端（トリグラム）は <code>hel</code>、<code>ell</code>、<code>llo</code> です。これを転置インデックスにすれば、3文字以上のどんな部分文字列でも探せます。正規表現の検索にも使えます。欠点は、インデックスが大きくなることです。</p>
+<p>本は、単語の間に空白がないアジアの言語では、単語に区切るだけでも専用のモデルが要ると書いています。日本語がその例です。</p>
+
+<h4>タイプミスへの対応</h4>
+<p>Luceneは、<b>編集距離</b>が一定以内の単語も探せます。編集距離1とは、1文字の追加、削除、置き換えのことです。単語の集まりをトライに似た構造で持ち、それをレーベンシュタインオートマトンというものに変換して探します。</p>
+
+<h3 id="s432"><span class="num">4.3.2</span>ベクトル埋め込み</h3>
+<p>全文検索は、同じ単語が出てこないと見つけられません。ヘルプに「サブスクリプションのキャンセル」というページがあっても、「アカウントの閉じ方」や「契約の解除」で探した人には届きません。言葉は違っても、意味は近いのに、です。</p>
+<p>意味で探すのが<b>セマンティック検索</b>です。検索結果をLLMに渡して答えさせるRAG（検索拡張生成）でも使われます。</p>
+<p>仕組みはこうです。<b>埋め込みモデル</b>に文書を渡すと、数字の並び（ベクトル）が返ってきます。これが<b class="col">ベクトル埋め込み</b>です。意味が似た文書ほど、近いベクトルになるように作られています。</p>
+
+<figure class="fig" id="fig-embed"><div class="canvas"><svg viewBox="0 0 340 290" role="img" aria-label="農業と野菜のベクトルは近く（距離0.32）、スタースキーマは遠い（距離1.27）"><rect x="40.0" y="10.0" width="280.0" height="220.0" rx="8" class="f-panel"/><line x1="146.4" y1="47.4" x2="140.8" y2="89.2" class="ln-bt"/><line x1="146.4" y1="47.4" x2="278.0" y2="208.0" class="ln-bad dash"/><circle cx="146.4" cy="47.4" r="6" class="s-bt"/><circle cx="140.8" cy="89.2" r="6" class="s-bt"/><circle cx="278.0" cy="208.0" r="6" class="s-bad"/><text x="158.4" y="49.4" class="ts" text-anchor="start">農業</text><text x="128.8" y="105.2" class="ts" text-anchor="end">野菜</text><text x="268.0" y="224.0" class="ts" text-anchor="end">スタースキーマ</text><text x="134.4" y="72.3" class="ts c-bt" text-anchor="end">距離 0.32</text><text x="226.2" y="127.7" class="ts c-bad" text-anchor="start">距離 1.27</text><text x="8.0" y="256.0" class="ts c-mute" text-anchor="start">距離は3つの数字ぜんぶで計算した値</text><text x="8.0" y="276.0" class="ts c-mute" text-anchor="start">図は1つめと2つめの数字だけで描いた</text></svg></div><figcaption>本に出てくる3つのベクトルです。農業 [0.38, 0.83, 0.41] と野菜 [0.36, 0.64, 0.67] は近く、スタースキーマ [0.85, 0.10, -0.52] は遠くにあります。距離の数字は私が計算しました。</figcaption></figure>
+
+<p>実際のベクトルは、1,000個を超える数字でできていることが多いです。1つひとつの数字の意味は、考えなくてかまいません。近いか遠いかだけが大事です。近さは、2点間の直線距離（<b>ユークリッド距離</b>）や、2つのベクトルがなす角度（<b>コサイン類似度</b>）で測ります。</p>
+<p>検索するときは、クエリの文も同じモデルでベクトルにして、それに近いベクトルを持つ文書を探します。</p>
+
+<div class="box bad">
+<span class="lab">混同注意</span>
+<p>4.2.3の「ベクター処理」とは別の話です。あちらは「まとめて処理するデータのかたまり」。こちらは「多次元空間の中の位置を表す数字の並び」です。</p>
+</div>
+
+<h4>近いベクトルをどう探すか</h4>
+<p>次元が多すぎて、Rツリーではうまくいきません。専用の<b>ベクトルインデックス</b>を使います。本は3種類を挙げています。</p>
+
+<p><b class="col">1. 階層なしインデックス（flat）。</b>全部のベクトルと距離を測ります。正確ですが、遅い方法です。</p>
+
+<p><b class="col">2. IVFインデックス。</b>ベクトルをあらかじめいくつかの組（パーティション）に分けておき、クエリに近い組だけを調べます。速くなりますが、結果は<b>近似</b>です。本当に近いベクトルが、隣の組に入っていることがあるからです。調べる組の数（プローブ）を増やすと、正確になる代わりに遅くなります。</p>
+
+<figure class="fig" id="fig-ivf"><div class="canvas"><svg viewBox="0 0 340 290" role="img" aria-label="ベクトルを3つの組に分ける。クエリに一番近い中心を持つ組だけを調べると、隣の組にある本当に一番近い点を見逃すことがある"><circle cx="90" cy="82" r="62" class="f-col"/><circle cx="60.0" cy="60.0" r="3.5" class="s-mute"/><circle cx="75.0" cy="104.0" r="3.5" class="s-mute"/><circle cx="100.0" cy="52.0" r="3.5" class="s-mute"/><circle cx="110.0" cy="108.0" r="3.5" class="s-mute"/><circle cx="68.0" cy="82.0" r="3.5" class="s-mute"/><circle cx="94.0" cy="124.0" r="3.5" class="s-mute"/><circle cx="48.0" cy="98.0" r="3.5" class="s-mute"/><circle cx="116.0" cy="66.0" r="3.5" class="s-mute"/><line x1="84.0" y1="82.0" x2="96.0" y2="82.0" class="ln-tx"/><line x1="90.0" y1="76.0" x2="90.0" y2="88.0" class="ln-tx"/><circle cx="240" cy="90" r="62" class="f-none"/><circle cx="252.0" cy="58.0" r="3.5" class="s-mute"/><circle cx="272.0" cy="86.0" r="3.5" class="s-mute"/><circle cx="286.0" cy="108.0" r="3.5" class="s-mute"/><circle cx="256.0" cy="118.0" r="3.5" class="s-mute"/><circle cx="232.0" cy="132.0" r="3.5" class="s-mute"/><circle cx="278.0" cy="58.0" r="3.5" class="s-mute"/><circle cx="294.0" cy="82.0" r="3.5" class="s-mute"/><circle cx="236.0" cy="72.0" r="3.5" class="s-mute"/><line x1="234.0" y1="90.0" x2="246.0" y2="90.0" class="ln-tx"/><line x1="240.0" y1="84.0" x2="240.0" y2="96.0" class="ln-tx"/><circle cx="165" cy="196" r="62" class="f-none"/><circle cx="140.0" cy="180.0" r="3.5" class="s-mute"/><circle cx="182.0" cy="170.0" r="3.5" class="s-mute"/><circle cx="196.0" cy="202.0" r="3.5" class="s-mute"/><circle cx="150.0" cy="216.0" r="3.5" class="s-mute"/><circle cx="176.0" cy="232.0" r="3.5" class="s-mute"/><circle cx="128.0" cy="206.0" r="3.5" class="s-mute"/><circle cx="202.0" cy="226.0" r="3.5" class="s-mute"/><circle cx="186.0" cy="190.0" r="3.5" class="s-mute"/><line x1="159.0" y1="196.0" x2="171.0" y2="196.0" class="ln-tx"/><line x1="165.0" y1="190.0" x2="165.0" y2="202.0" class="ln-tx"/><circle cx="128.0" cy="84.0" r="4.5" class="s-col"/><circle cx="184.0" cy="92.0" r="4.5" class="s-bad"/><text x="190.0" y="114.0" class="ts c-bad" text-anchor="start">見逃し</text><polygon points="160,82 167,96 153,96" class="s-tx"/><text x="160.0" y="116.0" class="ts" text-anchor="middle">クエリ</text><line x1="60.0" y1="276.0" x2="72.0" y2="276.0" class="ln-tx"/><line x1="66.0" y1="270.0" x2="66.0" y2="282.0" class="ln-tx"/><text x="80.0" y="281.0" class="ts c-mute" text-anchor="start">＝組の中心</text><polygon points="190,268 197,282 183,282" class="s-tx"/><text x="204.0" y="281.0" class="ts c-mute" text-anchor="start">＝クエリ</text></svg></div><figcaption>クエリにいちばん近い中心を持つ組（紫の円）だけを調べると、紫の点が答えになります。でも本当は、隣の組の赤い点のほうが近くにあります。</figcaption></figure>
+
+<p><b class="col">3. HNSWインデックス。</b>点の数が違う層を、いくつも重ねます。上の層は点が少なく、下の層ほど多くなります。各層の中では、近い点同士が線でつながっています。まず上の層で大まかに近づき、同じ点から下の層へ降りて、もっと近い点へ移る。これを一番下まで繰り返します。これも近似です。</p>
+
+<figure class="fig" id="fig-hnsw"><div class="canvas"><svg viewBox="0 0 340 342" role="img" aria-label="3つの層。点の少ない上の層で大まかに近づき、同じ点から下の層へ降りて、点の多い層で少しずつクエリに近い点へ移動する"><rect x="8.0" y="20.0" width="324.0" height="82.0" rx="10" class="f-panel"/><text x="18.0" y="38.0" class="ts c-mute" text-anchor="start">上の層（点が少ない）</text><rect x="8.0" y="125.0" width="324.0" height="82.0" rx="10" class="f-panel"/><text x="18.0" y="143.0" class="ts c-mute" text-anchor="start">中の層</text><rect x="8.0" y="230.0" width="324.0" height="82.0" rx="10" class="f-panel"/><text x="18.0" y="248.0" class="ts c-mute" text-anchor="start">下の層（全部の点）</text><line x1="50.0" y1="182.0" x2="110.0" y2="160.0" class="ln thin"/><line x1="110.0" y1="160.0" x2="180.0" y2="168.0" class="ln thin"/><line x1="232.0" y1="186.0" x2="300.0" y2="162.0" class="ln thin"/><line x1="180.0" y1="168.0" x2="300.0" y2="162.0" class="ln thin"/><line x1="30.0" y1="270.0" x2="70.0" y2="294.0" class="ln thin"/><line x1="30.0" y1="270.0" x2="110.0" y2="268.0" class="ln thin"/><line x1="70.0" y1="294.0" x2="110.0" y2="268.0" class="ln thin"/><line x1="110.0" y1="268.0" x2="150.0" y2="292.0" class="ln thin"/><line x1="110.0" y1="268.0" x2="180.0" y2="270.0" class="ln thin"/><line x1="150.0" y1="292.0" x2="180.0" y2="270.0" class="ln thin"/><line x1="180.0" y1="270.0" x2="205.0" y2="298.0" class="ln thin"/><line x1="180.0" y1="270.0" x2="232.0" y2="276.0" class="ln thin"/><line x1="205.0" y1="298.0" x2="232.0" y2="276.0" class="ln thin"/><line x1="232.0" y1="276.0" x2="306.0" y2="298.0" class="ln thin"/><line x1="256.0" y1="262.0" x2="312.0" y2="264.0" class="ln thin"/><line x1="306.0" y1="298.0" x2="312.0" y2="264.0" class="ln thin"/><line x1="256.0" y1="262.0" x2="306.0" y2="298.0" class="ln thin"/><line x1="150.0" y1="292.0" x2="205.0" y2="298.0" class="ln thin"/><polygon points="172.0,63.0 164.5,67.8 163.6,59.9" class="hd-col"/><line x1="50.0" y1="76.0" x2="164.0" y2="63.8" class="ln-col"/><polygon points="180.0,160.0 176.0,152.0 184.0,152.0" class="hd-col"/><line x1="180.0" y1="62.0" x2="180.0" y2="152.0" class="ln-col dash"/><polygon points="225.0,183.0 216.1,184.3 218.7,176.7" class="hd-col"/><line x1="180.0" y1="168.0" x2="217.4" y2="180.5" class="ln-col"/><polygon points="232.0,268.0 228.0,260.0 236.0,260.0" class="hd-col"/><line x1="232.0" y1="186.0" x2="232.0" y2="260.0" class="ln-col dash"/><polygon points="249.0,266.0 244.1,273.5 240.1,266.6" class="hd-col"/><line x1="232.0" y1="276.0" x2="242.1" y2="270.1" class="ln-col"/><circle cx="50.0" cy="76.0" r="5" class="s-mute"/><circle cx="180.0" cy="62.0" r="5" class="s-mute"/><circle cx="50.0" cy="182.0" r="5" class="s-mute"/><circle cx="110.0" cy="160.0" r="5" class="s-mute"/><circle cx="180.0" cy="168.0" r="5" class="s-mute"/><circle cx="232.0" cy="186.0" r="5" class="s-mute"/><circle cx="300.0" cy="162.0" r="5" class="s-mute"/><circle cx="30.0" cy="270.0" r="5" class="s-mute"/><circle cx="70.0" cy="294.0" r="5" class="s-mute"/><circle cx="110.0" cy="268.0" r="5" class="s-mute"/><circle cx="150.0" cy="292.0" r="5" class="s-mute"/><circle cx="180.0" cy="270.0" r="5" class="s-mute"/><circle cx="205.0" cy="298.0" r="5" class="s-mute"/><circle cx="232.0" cy="276.0" r="5" class="s-mute"/><circle cx="256.0" cy="262.0" r="5" class="s-mute"/><circle cx="306.0" cy="298.0" r="5" class="s-mute"/><circle cx="312.0" cy="264.0" r="5" class="s-mute"/><circle cx="50.0" cy="76.0" r="6" class="s-col"/><circle cx="180.0" cy="62.0" r="6" class="s-col"/><circle cx="180.0" cy="168.0" r="6" class="s-col"/><circle cx="232.0" cy="186.0" r="6" class="s-col"/><circle cx="232.0" cy="276.0" r="6" class="s-col"/><circle cx="256.0" cy="262.0" r="6" class="s-col"/><text x="50.0" y="96.0" class="ts" text-anchor="middle">入口</text><polygon points="272,268 279,282 265,282" class="s-tx"/><text x="272.0" y="302.0" class="ts" text-anchor="middle">クエリ</text><text x="8.0" y="334.0" class="ts c-mute" text-anchor="start">点線＝同じ点のまま下の層へ降りる</text></svg></div><figcaption>本の図4-11にあたる図です。高速道路で近くまで行き、一般道に降りて目的地を探すのに似ています（このたとえは補足です）。</figcaption></figure>
+
+<p>FacebookのFaissや、PostgreSQLのpgvectorは、IVFとHNSWの両方に対応しています。</p>
+
+<!-- ===================================================== 4.4 -->
+<h2 id="s44"><span class="num">4.4</span>まとめ</h2>
+<ol class="sum">
+<li>データベースの仕事は、しまうことと取り出すこと。インデックスは読みを速くし、書きを遅くする。</li>
+<li>OLTP向けには2つの流派がある。<b class="lsm">ログ構造化（LSMツリー）</b>はファイルを書き換えず、足してマージする。書き込みに強い。<b class="bt">同一位置更新（Bツリー）</b>は固定サイズのページをその場で書き換える。読み取りに強い。</li>
+<li>分析向けは<b class="col">列指向</b>。使う列だけ読み、圧縮し、コンパイルやベクター処理でCPUを無駄なく使う。</li>
+<li>複数の条件を同時に絞るには、多次元インデックス、転置インデックス、ベクトルインデックスを使う。</li>
+<li>「追記してマージする」ログ構造化は、LSMツリーだけでなく、列指向の書き込みにもLuceneにも出てくる。</li>
+</ol>
+
+<h4>やりたいことから引く早見表</h4>
+<p>本の内容を私が整理したものです。目安として見てください。</p>
+<dl class="pick">
+<div><dt>キーで1件ずつ読むことが多い</dt><dd>Bツリー</dd></div>
+<div><dt>とにかく大量に書き込む</dt><dd>LSMツリー</dd></div>
+<div><dt>全部メモリに載る。速さ最優先</dt><dd>インメモリデータベース</dd></div>
+<div><dt>大量の行を集計する</dt><dd>列指向ストレージ</dd></div>
+<div><dt>同じ集計を何度も見る</dt><dd>マテリアライズドビュー、データキューブ</dd></div>
+<div><dt>地図の範囲など、複数の列の範囲で絞る</dt><dd>多次元インデックス（Rツリーなど）</dd></div>
+<div><dt>キーワードで文章を探す</dt><dd>転置インデックス</dd></div>
+<div><dt>意味の近さで探す</dt><dd>ベクトルインデックス（IVF、HNSW）</dd></div>
+</dl>
+
+<h3>理解度チェック</h3>
+<p>答えを頭の中で言ってから、開いて確かめてください。</p>
+
+<details><summary>1. インデックスを増やすと何が良くなり、何が悪くなる？</summary>
+<div class="ans"><p>読み取りが速くなります。代わりに、書くたびにインデックスも更新するので書き込みが遅くなり、ディスクも余分に使います。</p></div></details>
+
+<details><summary>2. SSTableは、なぜ全部のキーを索引に入れなくていい？</summary>
+<div class="ans"><p>キー順に並んでいるからです。各ブロックの最初のキーだけ覚えておけば、探すキーがどのブロックにあるかがわかります。あとはそのブロックを順に読むだけです。</p></div></details>
+
+<details><summary>3. LSMツリーで、存在しないキーの読み取りが遅くなりやすいのはなぜ？ 何で和らげる？</summary>
+<div class="ans"><p>メムテーブルから古いセグメントまで、順に全部調べることになるからです。ブルームフィルタで「このセグメントには絶対にない」とわかれば、読まずに飛ばせます。</p></div></details>
+
+<details><summary>4. ブルームフィルタの「ない」と「ある」、信じていいのはどっち？</summary>
+<div class="ans"><p>「ない」は確実です。「ある」は、ほかのキーのビットとたまたま重なっただけの偽陽性かもしれません。その場合は実際に読んで確かめます。</p></div></details>
+
+<details><summary>5. Bツリーでページ分割の途中に落ちると何が困る？ どう防ぐ？</summary>
+<div class="ans"><p>一部のページだけ書かれて、木が壊れます。変更を先にWAL（先行書き込みログ）へ追記しておき、落ちたあとはそれを読んで正しい状態に戻します。</p></div></details>
+
+<details><summary>6. SSDには動く部品がないのに、なぜシーケンシャルライトが有利？</summary>
+<div class="ans"><p>消去がブロック単位でしかできないからです。散らばった書き込みでは、ブロックの中に要るページと要らないページが混ざり、引っ越し（GC）が増えます。まとめて書けば、ブロックを丸ごと消去できます。</p></div></details>
+
+<details><summary>7. インメモリデータベースが速い本当の理由は？</summary>
+<div class="ans"><p>ディスクを読まないからではありません。メモリ上のデータ構造を、ディスクに書ける形へ変換する手間がないからです。</p></div></details>
+
+<details><summary>8. 列指向で、列ごとに別々に並べ替えてはいけないのはなぜ？</summary>
+<div class="ans"><p>各列のk番目が同じ行、という対応で行を復元しているからです。別々に並べ替えると、どの値が同じ行のものかわからなくなります。</p></div></details>
+
+<details><summary>9. データキューブの弱点は？</summary>
+<div class="ans"><p>先に決めたディメンション以外の切り口では答えられないことです。だから生データも残しておきます。</p></div></details>
+
+<details><summary>10. 緯度と経度の連結インデックスでは、四角い範囲の検索がなぜ遅い？</summary>
+<div class="ans"><p>先頭の列（緯度）でしか絞れないからです。緯度の帯に入る点を、経度に関係なく全部読むことになります。両方を同時に絞るには、Rツリーのような多次元インデックスが要ります。</p></div></details>
+
+<details><summary>11. IVFやHNSWの結果が「近似」なのはなぜ？</summary>
+<div class="ans"><p>全部のベクトルとは比べないからです。速さと引き換えに、本当にいちばん近いベクトルを見逃すことがあります。</p></div></details>
+
+<p class="foot">このページは、本の4章を私の言葉でまとめ直したものです。図は、本の文章と図のタイトルをもとに描き直しました。「補足」と書いた囲みとたとえ話、図の中の説明用の値、ベクトル間の距離の計算は、本にはありません。</p>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

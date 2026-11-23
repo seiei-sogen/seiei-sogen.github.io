@@ -18,6 +18,9 @@ export default defineConfig({
         enabled: true,
         crawlLinks: true,
         failOnError: true,
+        // DDIA 図解ノートの各章（/designing-data-intensive-applications-2nd/<slug>/）は public/ に置いた
+        // 静的な HTML でルートではないので、目次からのリンクをたどってプリレンダーしない。目次そのものはする
+        filter: ({ path }) => !/\/designing-data-intensive-applications-2nd\/[^/?#]+/.test(path),
       },
     }),
     viteSolid({ ssr: true }),

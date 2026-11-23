@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 第9章 分散システムの厄介な問題</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Zen+Maru+Gothic:wght@700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: one reading column; every mechanism gets a bordered figure panel.
+     color roles: amber=わからない・待ち / red=事故 / green=正常 / blue=メッセージ / purple=一時停止・ゾンビ. Dark only, by request. */
+  --bg:#11141d;
+  --surface:#191e2b;
+  --surface-2:#232a3b;
+  --line:#39425a;
+  --text:#ecebe5;
+  --muted:#a5adc4;
+  --accent:#ffc04d;
+  --ok:#5fd7a8;
+  --bad:#ff7d7d;
+  --info:#82b8ff;
+  --zom:#c7a0ff;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  --font-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Zen Kaku Gothic New",sans-serif;
+  --font-mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-weight:500;font-size:27px;line-height:2;overflow-wrap:anywhere}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px 120px}
+p{margin:0 0 28px}
+strong{font-weight:900;color:#fff}
+em{font-style:normal;color:var(--accent);font-weight:700}
+a{color:var(--info)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+code{font-family:var(--font-mono);font-size:.82em;background:var(--surface-2);padding:.1em .35em;border-radius:6px}
+.en{color:var(--muted);font-size:.78em}
+
+.hero{padding:56px 0 20px}
+.eyebrow{font-family:var(--font-mono);font-size:18px;letter-spacing:.08em;color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--font-display);font-weight:900;font-size:clamp(38px,10vw,76px);line-height:1.25;margin:0 0 28px}
+.gist{border:2px solid var(--accent);border-radius:16px;padding:20px 22px;background:#2a2415;margin:0 0 28px}
+.gist b{display:block;font-size:18px;color:var(--accent);letter-spacing:.1em;line-height:1.4;margin-bottom:6px}
+
+.toc{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;margin:0 0 20px}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.toc a{display:flex;gap:14px;text-decoration:none;color:var(--text)}
+.toc a span{font-family:var(--font-mono);color:var(--accent);font-size:.8em;min-width:2.4em}
+
+section{padding-top:36px}
+h2{font-family:var(--font-display);font-weight:900;font-size:clamp(33px,7.6vw,48px);line-height:1.35;margin:60px 0 28px;padding-top:28px;border-top:3px solid var(--accent);text-wrap:balance}
+h2 .num{display:block;font-family:var(--font-mono);font-size:20px;color:var(--accent);letter-spacing:.06em;margin-bottom:4px}
+h3{font-weight:900;font-size:32px;line-height:1.5;margin:64px 0 22px;padding-left:16px;border-left:6px solid var(--info);text-wrap:balance}
+h3 .num{font-family:var(--font-mono);font-size:19px;color:var(--info);display:block;line-height:1.4}
+h4{font-weight:900;font-size:28px;line-height:1.6;margin:48px 0 16px;color:var(--accent)}
+ul,ol{margin:0 0 28px;padding-left:1.25em}
+li{margin-bottom:10px}
+li::marker{color:var(--accent);font-weight:900}
+
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 14px 14px;margin:8px 0 32px}
+.fig svg{display:block;width:100%;max-width:520px;height:auto;margin:0 auto}
+.fig figcaption{font-size:19px;line-height:1.7;color:var(--muted);margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.fig figcaption b{color:var(--text)}
+.tagb{display:inline-block;font-size:15px;font-weight:700;line-height:1.5;padding:1px 9px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-right:6px;white-space:nowrap}
+svg text{fill:var(--text);font-family:var(--font-body);font-weight:500}
+svg text.bd{font-weight:900}
+svg text.c-ok{fill:var(--ok)} svg text.c-bad{fill:var(--bad)} svg text.c-warn{fill:var(--accent)} svg text.c-info{fill:var(--info)} svg text.c-zom{fill:var(--zom)} svg text.c-mute{fill:var(--muted)}
+.b-n{fill:var(--surface-2);stroke:#5a6585;stroke-width:1.5}
+.b-ok{fill:#17352e;stroke:var(--ok);stroke-width:1.8}
+.b-bad{fill:#40232a;stroke:var(--bad);stroke-width:1.8}
+.b-warn{fill:#3c311a;stroke:var(--accent);stroke-width:1.8}
+.b-info{fill:#1d2f4e;stroke:var(--info);stroke-width:1.8}
+.b-zom{fill:#31264b;stroke:var(--zom);stroke-width:1.8}
+.bgm{fill:var(--surface)}
+.d-warn{fill:var(--accent)} .d-ok{fill:var(--ok)} .d-info{fill:var(--info)}
+.ln{fill:none;stroke-width:2.2;stroke-linecap:round}
+.l-n{stroke:var(--text)} .l-ok{stroke:var(--ok)} .l-bad{stroke:var(--bad)} .l-warn{stroke:var(--accent)} .l-info{stroke:var(--info)} .l-zom{stroke:var(--zom)} .l-mute{stroke:#7c86a3}
+.xm{stroke:var(--bad);stroke-width:3.4;stroke-linecap:round;fill:none}
+.a-bad{fill:rgba(255,125,125,.35)}
+
+.box{border-radius:16px;padding:20px 22px;margin:8px 0 32px;border:1px solid var(--line);background:var(--surface)}
+.box>:last-child{margin-bottom:0}
+.box .lb{display:block;font-size:17px;font-weight:900;letter-spacing:.12em;line-height:1.5;margin-bottom:6px}
+.box.key{border-color:var(--accent);background:#2a2415} .box.key .lb{color:var(--accent)}
+.box.sup{border-style:dashed} .box.sup .lb{color:var(--muted)}
+.box.col{border-color:var(--info);background:#172134} .box.col .lb{color:var(--info)}
+.box h4{margin-top:0}
+
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.card{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:21px;line-height:1.75}
+.card b{display:block;font-size:22px;color:#fff;font-weight:900}
+.card.ok{border-color:var(--ok)} .card.ok b{color:var(--ok)}
+.card.bad{border-color:var(--bad)} .card.bad b{color:var(--bad)}
+.card.warn{border-color:var(--accent)} .card.warn b{color:var(--accent)}
+.card.info{border-color:var(--info)} .card.info b{color:var(--info)}
+.card.zom{border-color:var(--zom)} .card.zom b{color:var(--zom)}
+.card.star{box-shadow:0 0 0 3px var(--ok) inset}
+.card .mini{display:block;font-size:17px;color:var(--muted);line-height:1.6;margin-top:4px}
+.kv{display:block;margin-top:8px}
+.kv i{display:block;font-style:normal;font-size:16px;font-weight:900;color:var(--muted);line-height:1.5}
+.gt{font-size:20px;font-weight:900;line-height:1.5;margin:4px 0 10px}
+.gt+.grid{margin-bottom:18px}
+.stat b{font-family:var(--font-mono);font-size:34px;line-height:1.3;color:var(--accent)}
+
+.nodes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.nd{font-family:var(--font-mono);font-size:17px;font-weight:700;line-height:1;padding:14px 0;width:74px;text-align:center;border-radius:10px;border:2px solid var(--ok);color:var(--ok);background:#17352e}
+.nd.x{border-color:var(--bad);color:var(--bad);background:#40232a}
+.nd.q{border-color:var(--accent);color:var(--accent);background:#3c311a}
+.nd.big{width:auto;flex:1 1 130px;font-family:var(--font-body);font-size:20px;padding:18px 8px}
+
+.bar{display:flex;border-radius:10px;overflow:hidden;font-size:18px;font-weight:900;line-height:1.3;text-align:center;margin-bottom:10px}
+.bar span{padding:14px 4px}
+.bar .d{flex:1;background:#1d2f4e;color:var(--info)}
+.bar .r{flex:1.3;background:#17352e;color:var(--ok)}
+.bar .w{flex:1.4;background:#3c311a;color:var(--accent)}
+.bar .z{flex:1;background:#40232a;color:var(--bad)}
+
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.slots span{font-size:16px;font-weight:700;line-height:1.2;text-align:center;padding:12px 2px;border-radius:8px;border:1.5px dashed var(--line);color:var(--muted)}
+.slots .a{border:1.5px solid var(--info);background:#1d2f4e;color:var(--info)}
+.slots .b{border:1.5px solid var(--ok);background:#17352e;color:var(--ok)}
+.slots .c{border:1.5px solid var(--zom);background:#31264b;color:var(--zom)}
+.slots .q{border:1.5px solid var(--accent);background:#3c311a;color:var(--accent)}
+.figp{font-size:20px;line-height:1.75;margin:0 0 18px}
+.figp:last-of-type{margin-bottom:0}
+
+.steps{list-style:none;padding:0;margin:0;counter-reset:st;display:grid;gap:10px}
+.steps li{counter-increment:st;display:grid;grid-template-columns:38px 1fr;gap:10px;font-size:21px;line-height:1.7;margin:0;background:var(--surface-2);border-radius:12px;padding:12px 14px;border-left:5px solid var(--line)}
+.steps li::before{content:counter(st);font-family:var(--font-mono);font-weight:700;font-size:20px;color:var(--bg);background:var(--muted);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;line-height:1;margin-top:2px}
+.steps li.bad{border-left-color:var(--bad)} .steps li.bad::before{background:var(--bad)}
+.steps li.ok{border-left-color:var(--ok)} .steps li.ok::before{background:var(--ok)}
+.steps li.zom{border-left-color:var(--zom)} .steps li.zom::before{background:var(--zom)}
+.steps li.warn{border-left-color:var(--accent)} .steps li.warn::before{background:var(--accent)}
+
+.tw{overflow-x:auto;margin:8px 0 32px;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:21px;line-height:1.7}
+th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{background:var(--surface-2);font-weight:900;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:900;white-space:nowrap}
+
+pre{background:#0b0d14;border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto;margin:8px 0 32px;font-family:var(--font-mono);font-size:18px;line-height:1.75}
+pre code{background:none;padding:0;font-size:inherit}
+pre .cm{color:var(--muted)} pre .hl{color:var(--bad);font-weight:700}
+
+.demo button{font:inherit;font-size:23px;font-weight:900;color:var(--bg);background:var(--accent);border:0;border-radius:12px;padding:10px 20px;cursor:pointer;width:100%;margin-bottom:12px}
+.demo button:active{transform:translateY(1px)}
+.demo-box{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:10px}
+.demo-box span{display:block;font-size:16px;font-weight:900;letter-spacing:.08em;color:var(--muted);line-height:1.5}
+.demo-box p{font-size:22px;line-height:1.7;margin:2px 0 0}
+.demo-box.view p{color:var(--accent);font-weight:700}
+.demo-box.god{border-color:var(--info)} .demo-box.god span{color:var(--info)}
+.flash{animation:fl .5s}
+@keyframes fl{from{opacity:.2}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}}
+
+details.q{border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:14px}
+details.q summary{cursor:pointer;padding:16px 20px;font-weight:700;list-style-position:outside;margin-left:1.2em}
+details.q summary::marker{color:var(--accent)}
+details.q .ans{padding:0 20px 18px;border-top:1px dashed var(--line);margin-top:4px;padding-top:14px}
+details.q .ans>:last-child{margin-bottom:0}
+.foot{margin-top:72px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:20px;line-height:1.9}
+
+@media (max-width:560px){
+  .fig{margin-left:-10px;margin-right:-10px;padding:16px 6px 12px}
+  .fig figcaption{padding-left:8px;padding-right:8px}
+  .fig>.grid,.fig>.gt,.fig>.figp,.fig>.nodes,.fig>.bar,.fig>.slots,.fig>.steps,.fig>.demo{margin-left:6px;margin-right:6px}
+  .box{padding:16px 16px}
+  h3{font-size:29px}
+}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<marker id="ah-n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--text)"/></marker>
+<marker id="ah-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--ok)"/></marker>
+<marker id="ah-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--bad)"/></marker>
+<marker id="ah-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--accent)"/></marker>
+<marker id="ah-info" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--info)"/></marker>
+<marker id="ah-zom" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(--zom)"/></marker>
+<marker id="ah-mute" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:#7c86a3"/></marker>
+</defs></svg>
+
+<div class="wrap">
+<header class="hero">
+  <p class="eyebrow">DDIA 第2版 ／ 第9章</p>
+  <h1>分散システムの<br>厄介な問題</h1>
+  <p>ネットワークは届けてくれないかもしれない。時計は合っていないかもしれない。プログラムは途中で止まるかもしれない。</p>
+  <p>この章は、分散システムで<strong>当てにできないもの</strong>を全部並べる章です。解決策は次の第10章。まずは敵を知ります。</p>
+  <div class="gist"><b>この章を一言で</b>返事が来ないとき、その理由は絶対にわからない。だから1台の思い込みで動かず、<strong>多数決</strong>と<strong>番号札</strong>で身を守る。</div>
+</header>
+
+<nav class="toc" aria-label="目次">
+  <ol>
+    <li><a href="#s90"><span>9.0</span>悲観主義でいこう</a></li>
+    <li><a href="#s91"><span>9.1</span>障害と部分障害</a></li>
+    <li><a href="#s92"><span>9.2</span>信頼性のないネットワーク</a></li>
+    <li><a href="#s93"><span>9.3</span>信頼できないクロック</a></li>
+    <li><a href="#s94"><span>9.4</span>知識、真実、そして虚偽</a></li>
+    <li><a href="#s95"><span>9.5</span>まとめと確認問題</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ===================== 9.0 ===================== -->
+<section id="s90">
+<h2><span class="num">9.0</span>悲観主義でいこう</h2>
+<p>ふだんコードを書くとき、私たちは「うまくいく道」ばかり考えます。実際ほとんどの場合うまくいくので、それで困りません。</p>
+<p>でも規模が大きくなると話が変わります。<strong>めったに起きないことが、毎日起きる</strong>ようになります。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card stat"><b>100万回に1回</b>の事故でも</div>
+    <div class="card stat"><b>1日1億回</b>リクエストが来れば</div>
+    <div class="card stat bad"><b>1日100回</b>起きる</div>
+  </div>
+  <figcaption><span class="tagb">補足</span>数字は説明用の例です。本の主張は「100万分の1の出来事も、十分に大きなシステムでは毎日起きる」。</figcaption>
+</figure>
+
+<p>ベテランの運用者はこう考えます。「起こり<em>うる</em>ことは、<em>必ず</em>起こる」。この章ではその悲観主義を最大まで上げて、次の3つを順番に疑います。</p>
+<ul>
+  <li><strong>ネットワーク</strong>：メッセージは消える。遅れる。</li>
+  <li><strong>時計</strong>：ズレる。巻き戻る。</li>
+  <li><strong>プロセス</strong>：いつでも、長時間、止まる。</li>
+</ul>
+</section>
+
+<!-- ===================== 9.1 ===================== -->
+<section id="s91">
+<h2><span class="num">9.1</span>障害と部分障害</h2>
+
+<h3>1台なら「全部動く」か「全部止まる」</h3>
+<p>1台のコンピュータは、同じ操作をすれば同じ結果を返します。これを<strong>決定的</strong> <span class="en">(deterministic)</span> と言います。</p>
+<p>ハードウェアが壊れたときは、中途半端に動き続けず、<strong>まるごと落ちる</strong>ように作られています。カーネルパニックやブルースクリーンがそれです。間違った答えを返されるより、止まってくれるほうがずっと扱いやすいからです。</p>
+
+<h3>分散だと「一部だけ壊れる」</h3>
+<p>ネットワークでつないだ複数台になると、<strong>一部だけが、予測できない形で壊れます</strong>。これが<strong>部分障害</strong> <span class="en">(partial failure)</span> です。</p>
+
+<figure class="fig">
+  <p class="gt">1台のコンピュータ：2通りしかない</p>
+  <div class="nodes"><span class="nd big">✓ 全部動く</span><span class="nd big x">✕ 全部止まる</span></div>
+  <p class="gt" style="margin-top:22px">分散システム：一部だけおかしい</p>
+  <div class="nodes">
+    <span class="nd">✓</span><span class="nd">✓</span><span class="nd x">✕</span><span class="nd">✓</span><span class="nd q">？</span><span class="nd">✓</span><span class="nd q">遅い</span><span class="nd">✓</span>
+  </div>
+  <figcaption>「？」は、生きているのか死んでいるのか外からわからないノード。部分障害でいちばん困るのはこれです。</figcaption>
+</figure>
+
+<p>しかも部分障害は<strong>非決定的</strong>です。同じことをしても、あるときは成功し、あるときは失敗します。<em>成功したかどうかすらわからない</em>こともあります。</p>
+
+<div class="box sup"><span class="lb">本に出てくる体験談</span>
+<p>運用担当でもない1人のエンジニアが実際に経験した障害として、こんなものが並んでいます。データセンター内の長時間のネットワーク分断、配電ユニットの故障、スイッチの故障、ラックまるごとの電源断、データセンター全体の電源喪失。そして、ピックアップトラックがデータセンターの空調設備に突っ込んだ事故。</p>
+</div>
+
+<h3>悪い話だけではない</h3>
+<p>部分障害に<strong>耐えられる</strong>ように作れば、大きなご褒美があります。全体を止めずに1台ずつ再起動してアップデートする<strong>ローリングアップグレード</strong>ができます。</p>
+<p>つまり、<strong>信頼できない部品から、信頼できる全体を作れる</strong>のです。1台のマシンには絶対にできない芸当です。</p>
+
+<div class="box key"><span class="lb">要点</span>
+<p>耐えるには、まず敵を知る。分散システムでは、疑り深さ・悲観主義・パラノイアが報われます。</p>
+</div>
+</section>
+
+<!-- ===================== 9.2 ===================== -->
+<section id="s92">
+<h2><span class="num">9.2</span>信頼性のないネットワーク</h2>
+<p>この本が扱う分散システムは、ほとんどが<strong>シェアードナッシング</strong>です。各マシンは自分のメモリとディスクしか触れません。ほかのマシンと話す手段は<strong>ネットワークだけ</strong>です。</p>
+<p>そしてそのネットワーク（インターネットも、データセンター内のイーサネットも）は<strong>非同期パケットネットワーク</strong>です。メッセージが<em>いつ届くか</em>も、<em>そもそも届くか</em>も、何も約束してくれません。</p>
+
+<h3>返事が来ない理由は6通り。でも見分けられない</h3>
+<p>リクエストを送って返事を待つとき、こんなことが起こりえます。</p>
+<ol>
+  <li>リクエストが途中で消えた（誰かがケーブルを抜いた）。</li>
+  <li>リクエストがどこかの行列で待たされていて、あとで届く。</li>
+  <li>相手のノードが落ちている。</li>
+  <li>相手が一時的に固まっている（長いGCなど）。あとで動き出す。</li>
+  <li>相手は処理した。でも<strong>返事が</strong>途中で消えた。</li>
+  <li>相手は処理した。でも返事が遅れていて、あとで届く。</li>
+</ol>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 600" role="img" aria-label="返事が来ない3つの場合。リクエストの消失、サーバー停止、返事の消失は区別できない"><text x="12" y="28" text-anchor="start" font-size="16" class="bd">(a) リクエストが途中で消えた</text><line x1="75" y1="86" x2="75" y2="158" class="ln l-mute" stroke-dasharray="5 6"/><line x1="325" y1="86" x2="325" y2="158" class="ln l-mute" stroke-dasharray="5 6"/><rect x="20" y="42" width="110" height="44" rx="10" class="b-n"/><text x="75.0" y="69.7" text-anchor="middle" font-size="15" class="bd">クライアント</text><rect x="270" y="42" width="110" height="44" rx="10" class="b-n"/><text x="325.0" y="69.7" text-anchor="middle" font-size="15" class="bd">サーバー</text><line x1="75" y1="108" x2="196" y2="108" class="ln l-info" marker-end="url(#ah-info)"/><path d="M200,100L216,116M216,100L200,116" class="xm"/><text x="140" y="101" text-anchor="middle" font-size="13" class="c-info">リクエスト</text><text x="20" y="180" text-anchor="start" font-size="14" class="c-warn bd">→ いくら待っても返事が来ない</text><text x="12" y="214" text-anchor="start" font-size="16" class="bd">(b) サーバーが落ちている</text><line x1="75" y1="272" x2="75" y2="344" class="ln l-mute" stroke-dasharray="5 6"/><line x1="325" y1="272" x2="325" y2="344" class="ln l-mute" stroke-dasharray="5 6"/><rect x="20" y="228" width="110" height="44" rx="10" class="b-n"/><text x="75.0" y="255.7" text-anchor="middle" font-size="15" class="bd">クライアント</text><rect x="270" y="228" width="110" height="44" rx="10" class="b-bad"/><text x="325.0" y="246.2" text-anchor="middle" font-size="15" class="bd">サーバー</text><text x="325.0" y="265.4" text-anchor="middle" font-size="13" class="c-bad">停止中</text><line x1="75" y1="294" x2="325" y2="294" class="ln l-info" marker-end="url(#ah-info)"/><text x="140" y="287" text-anchor="middle" font-size="13" class="c-info">リクエスト</text><text x="20" y="366" text-anchor="start" font-size="14" class="c-warn bd">→ いくら待っても返事が来ない</text><text x="12" y="400" text-anchor="start" font-size="16" class="bd">(c) 返事が途中で消えた</text><line x1="75" y1="458" x2="75" y2="530" class="ln l-mute" stroke-dasharray="5 6"/><line x1="325" y1="458" x2="325" y2="530" class="ln l-mute" stroke-dasharray="5 6"/><rect x="20" y="414" width="110" height="44" rx="10" class="b-n"/><text x="75.0" y="441.7" text-anchor="middle" font-size="15" class="bd">クライアント</text><rect x="270" y="414" width="110" height="44" rx="10" class="b-n"/><text x="325.0" y="441.7" text-anchor="middle" font-size="15" class="bd">サーバー</text><line x1="75" y1="480" x2="325" y2="480" class="ln l-info" marker-end="url(#ah-info)"/><text x="140" y="473" text-anchor="middle" font-size="13" class="c-info">リクエスト</text><text x="333" y="502" text-anchor="start" font-size="13" class="c-ok">処理した</text><line x1="325" y1="516" x2="204" y2="516" class="ln l-ok" marker-end="url(#ah-ok)"/><path d="M184,508L200,524M200,508L184,524" class="xm"/><text x="262" y="509" text-anchor="middle" font-size="13" class="c-ok">返事</text><text x="20" y="552" text-anchor="start" font-size="14" class="c-warn bd">→ いくら待っても返事が来ない</text><text x="200" y="586" text-anchor="middle" font-size="15" class="bd">クライアントからは3つとも同じに見える</text></svg>
+  <figcaption><span class="tagb">図9-1を描き直し</span>代表的な3つ。送った側に見えるのは「まだ返事が来ない」という事実だけです。</figcaption>
+</figure>
+
+<figure class="fig">
+  <div class="demo">
+    <button type="button" id="btn-send">リクエストを送ってみる</button>
+    <div class="demo-box view"><span>クライアントから見える景色</span><p id="demo-view">……返事が来ない。（タイムアウト）</p></div>
+    <div class="demo-box god"><span>本当に起きていたこと</span><p id="demo-truth">リクエストが途中で消えた。相手は何も知らない。</p></div>
+  </div>
+  <figcaption><span class="tagb">補足</span>ボタンを押すたびに原因が変わります。上の「見える景色」は、何回押しても同じです。</figcaption>
+</figure>
+
+<p>これに対する普通のやり方は<strong>タイムアウト</strong>です。一定時間待って、返事が来なければ「もう来ない」と決めます。</p>
+<p>ただし、タイムアウトしても<strong>相手に届いたかどうかは不明のまま</strong>です。こちらがあきらめたあとで届いて、実行されることもあります。</p>
+
+<h3><span class="num">9.2.1</span>TCPがあっても安心できない</h3>
+<p>「TCPは信頼性があるんでしょ？」と思うかもしれません。たしかにTCPは色々やってくれます。</p>
+
+<figure class="fig">
+  <p class="gt">TCPがやってくれること</p>
+  <div class="grid">
+    <div class="card ok"><b>再送</b>消えたパケットを送り直す</div>
+    <div class="card ok"><b>並べ直し</b>順番が入れ替わっても直す</div>
+    <div class="card ok"><b>破損の検出</b>簡単なチェックサムで調べる</div>
+    <div class="card ok"><b>送りすぎ防止</b>輻輳制御・フロー制御・バックプレッシャー</div>
+  </div>
+</figure>
+
+<p>でも、次のことはTCPにもどうにもなりません。</p>
+<ul>
+  <li>消えたのが「送ったパケット」なのか「確認応答」なのか、<strong>区別できない</strong>。</li>
+  <li>ケーブルが抜けていたら、何回再送しても届かない。最後はあきらめてエラーを返すだけ。</li>
+  <li>重複を取り除く仕組みは<strong>1本のコネクションの中だけ</strong>。アプリがつなぎ直して送り直せば、同じデータが2回届く。</li>
+  <li>確認応答（ACK）が返ってきても、それは<strong>相手のOSが受け取った</strong>という意味でしかない。</li>
+</ul>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 334" role="img" aria-label="TCPの確認応答は相手のOSが受け取ったことしか意味しない"><text x="95" y="24" text-anchor="middle" font-size="15" class="bd">送信側</text><text x="305" y="24" text-anchor="middle" font-size="15" class="bd">受信側</text><rect x="20" y="40" width="150" height="50" rx="10" class="b-n"/><text x="95.0" y="70.7" text-anchor="middle" font-size="15" class="bd">アプリ</text><rect x="20" y="150" width="150" height="50" rx="10" class="b-n"/><text x="95.0" y="180.3" text-anchor="middle" font-size="14" class="bd">OSの送信バッファ</text><rect x="230" y="40" width="150" height="50" rx="10" class="b-n"/><text x="305.0" y="70.7" text-anchor="middle" font-size="15" class="bd">アプリ</text><rect x="230" y="150" width="150" height="50" rx="10" class="b-n"/><text x="305.0" y="180.3" text-anchor="middle" font-size="14" class="bd">OSの受信バッファ</text><line x1="60" y1="90" x2="60" y2="150" class="ln l-n" marker-end="url(#ah-n)"/><text x="70" y="125" text-anchor="start" font-size="13">① 書き込む</text><line x1="170" y1="164" x2="230" y2="164" class="ln l-info" marker-end="url(#ah-info)"/><line x1="230" y1="186" x2="170" y2="186" class="ln l-ok" marker-end="url(#ah-ok)"/><line x1="356" y1="150" x2="356" y2="90" class="ln l-bad" stroke-dasharray="6 5" marker-end="url(#ah-bad)"/><text x="346" y="116" text-anchor="end" font-size="13">④ アプリへ渡す</text><text x="346" y="136" text-anchor="end" font-size="12" class="c-bad">その前に落ちるかも</text><text x="200" y="228" text-anchor="middle" font-size="14" class="c-info">② パケットを送る →</text><text x="200" y="252" text-anchor="middle" font-size="14" class="c-ok">← ③ ACK「届いたよ」</text><text x="200" y="294" text-anchor="middle" font-size="15" class="c-warn bd">ACK ＝ 相手のOSが受け取った</text><text x="200" y="320" text-anchor="middle" font-size="15" class="c-warn bd">≠ 相手のアプリが処理した</text></svg>
+  <figcaption>④の直前に相手のアプリがクラッシュすれば、ACKは返っているのに処理はされていません。</figcaption>
+</figure>
+
+<div class="box key"><span class="lb">要点</span>
+<p>「ちゃんと処理された」と確かめたいなら、<strong>相手のアプリ自身からの返事</strong>が必要です。TCPの「届いた」は、その代わりになりません。</p>
+</div>
+<p>それでもTCPは便利です。1パケットに収まらない大きなメッセージを、分割して送って組み立て直してくれます。HTTPも多くのRPCも、その上に乗っています。ここでの話は、QUICなど新しいプロトコルにもほぼ当てはまります。</p>
+
+<h3><span class="num">9.2.2</span>ネットワーク障害は本当によく起きる</h3>
+<p>何十年もネットワークを作ってきたのに、人類はまだ「壊れないネットワーク」を作れていません。1社が管理するデータセンターの中ですら、です。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card stat"><b>月に約12件</b>ある中規模データセンターでのネットワーク障害。半分はマシン1台、半分はラックまるごとが切断。</div>
+    <div class="card stat"><b>数分</b>クラウドのリージョン間で観測された、運の悪いときの往復時間。</div>
+    <div class="card stat"><b>1分以上</b>データセンター内でも、スイッチ更新のトラブル中に起きたパケット遅延。</div>
+    <div class="card warn"><b>犯人：牛、ビーバー、サメ</b>光ファイバーを踏む、かじる。そしていちばん多い犯人は人間の設定ミス。</div>
+  </div>
+  <figcaption>機器を二重化しても、思ったほど障害は減りません。人間の設定ミスは二重化では防げないからです。</figcaption>
+</figure>
+
+<p>切れ方も素直ではありません。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 262" role="img" aria-label="AとB、BとCは通じるのにAとCだけ通じない部分的な切断"><line x1="184" y1="73" x2="96" y2="197" class="ln l-ok"/><line x1="108" y1="220" x2="292" y2="220" class="ln l-ok"/><line x1="216" y1="73" x2="304" y2="197" class="ln l-bad" stroke-dasharray="5 6"/><path d="M252,127L268,143M268,127L252,143" class="xm"/><circle cx="200" cy="50" r="28" class="b-n"/><text x="200" y="57" text-anchor="middle" font-size="19" class="bd">A</text><circle cx="80" cy="220" r="28" class="b-n"/><text x="80" y="227" text-anchor="middle" font-size="19" class="bd">B</text><circle cx="320" cy="220" r="28" class="b-n"/><text x="320" y="227" text-anchor="middle" font-size="19" class="bd">C</text><text x="128" y="130" text-anchor="end" font-size="14" class="c-ok bd">通じる</text><text x="200" y="248" text-anchor="middle" font-size="14" class="c-ok bd">通じる</text><text x="276" y="130" text-anchor="start" font-size="14" class="c-bad bd">通じない</text></svg>
+  <figcaption>AとB、BとCは話せるのに、AとCだけ話せない。こういう<b>部分的な切断</b>も実際に起きます。</figcaption>
+</figure>
+
+<p>さらに、<strong>片方向だけ通じる</strong>こともあります。受信パケットは全部捨てるのに、送信は正常というネットワーク機器の故障が実際に報告されています。行きが通じるからといって、帰りも通じるとは限りません。</p>
+
+<div class="box sup"><span class="lb">用語の注意</span>
+<p>ネットワークの一部が切り離されることを<strong>ネットワーク分断</strong> <span class="en">(network partition)</span> と呼びます。第7章のシャーディング（パーティショニング）とは<strong>無関係</strong>です。名前が似ているだけです。</p>
+</div>
+
+<h4>「扱う」と「耐える」は別</h4>
+<p>ネットワーク障害のときにエラー画面を出すだけ、という設計でも構いません。大事なのは次の2つです。</p>
+<ul>
+  <li>障害のとき、自分のソフトがどう動くか<strong>知っている</strong>こと。</li>
+  <li>障害が直ったあと、ちゃんと<strong>回復できる</strong>と確かめてあること。</li>
+</ul>
+<p>何も決めず、テストもしていないと、どんなひどいことでも起こりえます。ネットワークが直ってもクラスタがデッドロックしたまま動かない。最悪の場合、データを全部消してしまう。どちらも実例があります。</p>
+
+<h3><span class="num">9.2.3</span>相手が死んだかどうかを知るのは難しい</h3>
+<p>多くのシステムは、壊れたノードを自動で見つける必要があります。ロードバランサーは死んだノードに送るのをやめたい。データベースはリーダーが死んだらフォロワーを昇格させたい。</p>
+<p>運が良ければ、「死んでるよ」とはっきり教えてもらえることもあります。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card info"><b>OSが断ってくれる</b>マシンは生きているがプロセスが落ちている。OSがRSTやFINを返してくれる。</div>
+    <div class="card info"><b>スクリプトが知らせる</b>プロセスが落ちたことを、同じマシンのスクリプトがほかのノードに通知する。HBaseの方式。</div>
+    <div class="card info"><b>スイッチに聞く</b>管理画面に入れるなら、リンクが切れているかをハードウェアのレベルで調べられる。</div>
+    <div class="card info"><b>ルーターが教える</b>そのIPに届かないとわかっていれば、ICMPの「宛先到達不能」を返してくれる。</div>
+  </div>
+  <figcaption>どれも「教えてもらえたらラッキー」程度です。当てにはできません。</figcaption>
+</figure>
+
+<p>結局、確実に使える方法は1つだけです。<strong>何回かリトライして、タイムアウトまで待って、それでも返事がなければ「死んだ」と宣言する</strong>。</p>
+
+<h3><span class="num">9.2.4</span>タイムアウトは何秒にすべきか</h3>
+<p>残念ながら、簡単な答えはありません。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 278" role="img" aria-label="応答時間の分布とタイムアウト。短いと誤判定が増え、長いと検出が遅れる"><clipPath id="cp-to"><rect x="150" y="0" width="250" height="278"/></clipPath><path d="M30,240 C60,240 70,60 100,60 C130,60 150,200 220,225 C290,238 340,240 380,240 L380,240 L30,240 Z" class="a-bad" clip-path="url(#cp-to)"/><path d="M30,240 C60,240 70,60 100,60 C130,60 150,200 220,225 C290,238 340,240 380,240" class="ln l-n"/><line x1="30" y1="240" x2="385" y2="240" class="ln l-mute"/><line x1="150" y1="30" x2="150" y2="240" class="ln l-warn" stroke-dasharray="5 6"/><line x1="330" y1="70" x2="330" y2="240" class="ln l-info" stroke-dasharray="5 6"/><text x="156" y="24" text-anchor="start" font-size="14" class="c-warn bd">短いタイムアウト</text><text x="324" y="64" text-anchor="end" font-size="14" class="c-info bd">長いタイムアウト</text><text x="92" y="48" text-anchor="middle" font-size="13" class="c-mute">ふつうはこの辺</text><text x="250" y="150" text-anchor="middle" font-size="13" class="c-bad">ここは生きているのに</text><text x="250" y="168" text-anchor="middle" font-size="13" class="c-bad bd">「死んだ」と誤判定</text><line x1="225" y1="176" x2="194" y2="212" class="ln l-bad"/><text x="385" y="262" text-anchor="end" font-size="13" class="c-mute">応答にかかった時間 →</text></svg>
+  <figcaption><span class="tagb">補足の図</span>応答時間には長い裾野があります。どこで線を引いても、何かを失います。</figcaption>
+</figure>
+
+<div class="grid" style="margin-bottom:32px">
+  <div class="card warn"><b>短くすると</b>早く気づける。でも、ちょっと遅いだけの生きたノードを「死んだ」と誤判定する。</div>
+  <div class="card info"><b>長くすると</b>誤判定は減る。でも本当に死んだとき、気づくまでユーザーを長く待たせる。</div>
+</div>
+
+<p>生きているノードを死んだと決めつけると、何がまずいのでしょうか。</p>
+<ul>
+  <li><strong>二重実行</strong>：そのノードがメール送信の途中だったのに、別のノードが引き継ぐ。メールが2通届く。</li>
+  <li><strong>連鎖障害</strong>：ただ重くて遅かっただけなのに、仕事をほかのノードに移す。ほかのノードも重くなって遅くなり、次々に「死亡」と判定されていく。最悪、全部止まる。</li>
+</ul>
+
+<h4>もし遅延に上限があったら</h4>
+<p>こんな夢のネットワークを想像してください。パケットは必ず時間 <code>d</code> 以内に届くか、消えるかのどちらか。ノードは必ず時間 <code>r</code> 以内に処理を終える。</p>
+
+<figure class="fig">
+  <div class="bar"><span class="d">行き<br>最大 d</span><span class="r">処理<br>最大 r</span><span class="d">帰り<br>最大 d</span><span class="z">これを超えたら<br>確実に故障</span></div>
+  <p class="figp">この世界なら、タイムアウトは <code>2d + r</code> にすれば完璧です。</p>
+  <figcaption>現実にはこの保証がありません。非同期ネットワークの遅延には<b>上限がない</b> (unbounded delay) からです。サーバーの処理時間にも上限はありません。</figcaption>
+</figure>
+
+<h4>遅延の正体は「行列」</h4>
+<p>車の移動時間がいちばん大きくブレる原因は渋滞です。パケットも同じで、遅延がブレる原因はほとんどが<strong>行列（キューイング）</strong>です。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 240" role="img" aria-label="複数のマシンが同じ宛先に送るとスイッチで行列ができる"><rect x="150" y="16" width="130" height="208" rx="10" class="b-n"/><text x="215" y="42" text-anchor="middle" font-size="15" class="bd">スイッチ</text><rect x="8" y="30" width="92" height="40" rx="10" class="b-n"/><text x="54.0" y="55.3" text-anchor="middle" font-size="14" class="bd">マシン1</text><rect x="8" y="100" width="92" height="40" rx="10" class="b-n"/><text x="54.0" y="125.3" text-anchor="middle" font-size="14" class="bd">マシン2</text><rect x="8" y="170" width="92" height="40" rx="10" class="b-n"/><text x="54.0" y="195.3" text-anchor="middle" font-size="14" class="bd">マシン4</text><line x1="100" y1="50" x2="150" y2="96" class="ln l-info" marker-end="url(#ah-info)"/><line x1="100" y1="120" x2="150" y2="120" class="ln l-info" marker-end="url(#ah-info)"/><line x1="100" y1="190" x2="150" y2="144" class="ln l-info" marker-end="url(#ah-info)"/><rect x="162" y="110" width="18" height="18" rx="3" class="b-warn"/><rect x="184" y="110" width="18" height="18" rx="3" class="b-warn"/><rect x="206" y="110" width="18" height="18" rx="3" class="b-warn"/><rect x="228" y="110" width="18" height="18" rx="3" class="b-warn"/><rect x="250" y="110" width="18" height="18" rx="3" class="b-warn"/><text x="215" y="96" text-anchor="middle" font-size="12" class="c-mute">宛先はみんなマシン3</text><text x="215" y="154" text-anchor="middle" font-size="13" class="c-warn bd">順番待ちの行列</text><text x="215" y="176" text-anchor="middle" font-size="13" class="c-bad">満杯なら捨てられる</text><line x1="280" y1="120" x2="306" y2="120" class="ln l-info" marker-end="url(#ah-info)"/><rect x="306" y="100" width="88" height="40" rx="10" class="b-ok"/><text x="350.0" y="125.3" text-anchor="middle" font-size="14" class="bd">マシン3</text></svg>
+  <figcaption><span class="tagb">図9-2を描き直し</span>出口は1本なので、1つずつしか送り出せません。ネットワーク自体は壊れていなくても、混めば遅れ、あふれれば捨てられます。</figcaption>
+</figure>
+
+<p>行列ができる場所はスイッチだけではありません。送ってから相手のアプリに届くまでに、4か所あります。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 496" role="img" aria-label="パケットが待たされる4か所。送信側TCP、スイッチ、仮想マシン、受信側OS"><rect x="90" y="8" width="220" height="40" rx="10" class="b-n"/><text x="200.0" y="33.7" text-anchor="middle" font-size="15" class="bd">送信側のアプリ</text><line x1="200" y1="48" x2="200" y2="76" class="ln l-info" marker-end="url(#ah-info)"/><rect x="40" y="78" width="320" height="62" rx="10" class="b-warn"/><text x="200.0" y="105.6" text-anchor="middle" font-size="16" class="c-warn bd">① TCPの送信待ち</text><text x="200.0" y="124.9" text-anchor="middle" font-size="13" class="c-mute">混雑を避けるため送信を絞る</text><line x1="200" y1="140" x2="200" y2="168" class="ln l-info" marker-end="url(#ah-info)"/><rect x="40" y="170" width="320" height="62" rx="10" class="b-warn"/><text x="200.0" y="197.6" text-anchor="middle" font-size="16" class="c-warn bd">② スイッチの行列</text><text x="200.0" y="216.9" text-anchor="middle" font-size="13" class="c-mute">同じ宛先にパケットが集中</text><line x1="200" y1="232" x2="200" y2="260" class="ln l-info" marker-end="url(#ah-info)"/><rect x="40" y="262" width="320" height="62" rx="10" class="b-warn"/><text x="200.0" y="289.6" text-anchor="middle" font-size="16" class="c-warn bd">③ 仮想マシンの一時停止</text><text x="200.0" y="308.9" text-anchor="middle" font-size="13" class="c-mute">止まっている間は外で溜まる</text><line x1="200" y1="324" x2="200" y2="352" class="ln l-info" marker-end="url(#ah-info)"/><rect x="40" y="354" width="320" height="62" rx="10" class="b-warn"/><text x="200.0" y="381.6" text-anchor="middle" font-size="16" class="c-warn bd">④ OSの受信待ち</text><text x="200.0" y="400.9" text-anchor="middle" font-size="13" class="c-mute">CPUが忙しくて取りに来ない</text><line x1="200" y1="416" x2="200" y2="444" class="ln l-info" marker-end="url(#ah-info)"/><rect x="90" y="446" width="220" height="40" rx="10" class="b-n"/><text x="200.0" y="471.7" text-anchor="middle" font-size="15" class="bd">受信側のアプリ</text></svg>
+  <figcaption>加えて、TCPが消えたパケットを再送している間も、アプリから見れば「ただ遅い」だけに見えます。</figcaption>
+</figure>
+
+<div class="box col"><span class="lb">コラム：TCPとUDP</span>
+<p>ビデオ会議や音声通話は、TCPではなくUDPを使うことがあります。UDPは再送もフロー制御もしません。そのぶん、遅延のブレが減ります。</p>
+<p>UDPが向くのは、<strong>遅れて届いたデータに価値がない</strong>ときです。通話中に0.5秒前の音声を再送されても、もう再生するタイミングは過ぎています。無音で埋めて先へ進むしかありません。</p>
+<p>このときリトライは人間がやります。「すみません、今ちょっと途切れました。もう一度お願いします」。</p>
+</div>
+
+<h4>騒がしい隣人</h4>
+<p>パブリッククラウドでは、ネットワークもスイッチもCPUも、ほかの客と共有です。近くの誰かが大量に使うと、こちらの遅延が大きくブレます。これを<strong>騒がしい隣人</strong> <span class="en">(noisy neighbor)</span> と呼びます。隣人が何をしているかは、見えないし止められません。</p>
+<p>だからタイムアウトは<strong>実験で決める</strong>しかありません。長い期間、たくさんのマシンで往復時間を測って、分布を見て決めます。</p>
+<p>もっと良いのは、<strong>自動で調整する</strong>ことです。応答時間とそのブレを測り続け、それに合わせてタイムアウトを変えます。<strong>Phi Accrual 障害検出器</strong>がその一例で、AkkaやCassandraが使っています。TCPの再送タイムアウトも同じ考え方です。</p>
+
+<h3><span class="num">9.2.5</span>電話は安定なのに、なぜネットは不安定？</h3>
+<p>昔ながらの固定電話は、音が遅れたり途切れたりすることがほとんどありません。なぜコンピュータのネットワークは同じようにできないのでしょうか。</p>
+<p>電話は通話を始めるとき、相手までの経路全体に<strong>回線</strong> <span class="en">(circuit)</span> を確保します。たとえばISDNは1秒に4,000フレームの固定ペースで動き、通話ごとに各フレームの中の16ビットが割り当てられます。つまり<strong>250マイクロ秒ごとに16ビット送れる</strong>ことが、通話の間ずっと保証されます。</p>
+<p>次の中継点にも席が予約済みなので、行列に並ぶ必要がありません。だから遅延に上限があります。これを<strong>同期ネットワーク</strong>、遅延に上限があることを<strong>有界遅延</strong> <span class="en">(bounded delay)</span> と言います。</p>
+
+<figure class="fig">
+  <p class="gt">回線交換（電話）：席を予約する</p>
+  <div class="slots"><span class="a">通話A</span><span>空き</span><span class="b">通話B</span><span>空き</span><span>空き</span><span class="c">通話C</span><span>空き</span><span>空き</span></div>
+  <p class="figp">待ち時間ゼロ。ただし、しゃべっていない間も席は取られたまま。空席だらけでもったいない。</p>
+  <p class="gt">パケット交換（インターネット）：自由席</p>
+  <div class="slots"><span class="a">A</span><span class="b">B</span><span class="b">B</span><span class="c">C</span><span class="a">A</span><span class="c">C</span><span class="c">C</span><span class="b">B</span></div>
+  <div class="slots"><span class="q">待ち</span><span class="q">待ち</span><span class="q">待ち</span><span style="visibility:hidden">.</span></div>
+  <p class="figp">席は常に満席で無駄がない。ただし混むと行列に並ぶ。</p>
+  <figcaption>1本の線を「静的に分ける」か「動的に分ける」かの違いです。</figcaption>
+</figure>
+
+<p>インターネットがパケット交換なのは、<strong>バースト的な通信</strong>に向いているからです。通話は毎秒ほぼ同じ量を流します。でもWebページの取得やファイル転送には「必要な帯域」がありません。ただ「できるだけ早く終わってほしい」だけです。</p>
+<p>回線でファイルを送ろうとすると、帯域を当てずっぽうで予約することになります。少なすぎれば遅い。多すぎれば予約が通らない。TCPなら、空いているぶんに合わせて速度を自動で変えてくれます。</p>
+
+<div class="box col"><span class="lb">コラム：レイテンシとリソース利用率</span>
+<div class="grid">
+  <div class="card ok"><b>静的に分ける</b>専用の席。遅延を保証できる。でも空席が出るので<strong>高い</strong>。</div>
+  <div class="card warn"><b>動的に分ける</b>みんなで共有。無駄がなく<strong>安い</strong>。でも遅延がブレる。</div>
+</div>
+<p style="margin-top:20px">CPUも同じです。1つのコアを複数のスレッドで共有するから、待たされるスレッドが出ます。クラウドが1台の物理マシンに複数の客のVMを載せるのも、利用率を上げて安くするためです。</p>
+</div>
+
+<div class="box key"><span class="lb">要点</span>
+<p>ネットワークの遅延がブレるのは<strong>自然法則ではありません</strong>。コストと引き換えに、私たちが選んだ結果です。</p>
+</div>
+
+<p>両方の良いとこ取りを狙った技術もあります（ATM、InfiniBand、QoS、L4Sなど）。でも、パブリッククラウドやインターネット越しの通信では、今のところ有効になっていません。</p>
+<p>結論は変わりません。<strong>混雑も、行列も、上限のない遅延も、起きるものとして作る</strong>。タイムアウトに「正しい値」はなく、実験で決めます。</p>
+</section>
+
+<!-- ===================== 9.3 ===================== -->
+<section id="s93">
+<h2><span class="num">9.3</span>信頼できないクロック</h2>
+<p>アプリは時計にいろいろな質問をします。その質問は2種類に分かれます。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card ok"><b>経過時間（どれくらい？）</b>このリクエストはタイムアウトした？／99パーセンタイルの応答時間は？／直近5分の秒間クエリ数は？／ユーザーの滞在時間は？</div>
+    <div class="card warn"><b>時点（いつ？）</b>記事の公開日時は？／リマインダーはいつ送る？／キャッシュはいつ切れる？／ログのこの行は何時何分？</div>
+  </div>
+  <figcaption>この2つは、使うべき時計が違います。</figcaption>
+</figure>
+
+<p>分散システムで時間が厄介な理由は2つあります。</p>
+<ul>
+  <li>メッセージが届くまでに時間がかかる。しかも<strong>どれくらいかかるか不明</strong>。だから、複数のマシンで起きたことの順番がわかりにくい。</li>
+  <li>マシンごとに<strong>自分の時計</strong>を持っている。中身は水晶振動子で、完全に正確ではない。少し速かったり遅かったりする。</li>
+</ul>
+<p>時計を合わせる仕組みが <strong>NTP</strong> <span class="en">(Network Time Protocol)</span> です。GPSなどの正確な時刻を持つサーバーに聞いて、自分の時計を直します。</p>
+
+<h3><span class="num">9.3.1</span>時計は2種類ある</h3>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card warn"><b>実時間クロック</b>
+      <span class="kv"><i>たとえ</i>壁掛け時計</span>
+      <span class="kv"><i>返す値</i>今の日時（1970年1月1日UTCからの経過）</span>
+      <span class="kv"><i>巻き戻る？</i><strong>巻き戻ることがある</strong></span>
+      <span class="kv"><i>向く用途</i>「いつ？」（時点）</span>
+      <span class="kv"><i>ほかのマシンと比べる</i>NTPで合わせてあれば、いちおう可能</span>
+      <span class="kv"><i>APIの例</i><code>CLOCK_REALTIME</code><br><code>System.currentTimeMillis</code></span>
+    </div>
+    <div class="card ok"><b>モノトニッククロック</b>
+      <span class="kv"><i>たとえ</i>ストップウォッチ</span>
+      <span class="kv"><i>返す値</i>それ自体は意味のない数（起動からのナノ秒など）</span>
+      <span class="kv"><i>巻き戻る？</i><strong>常に前へ進む</strong></span>
+      <span class="kv"><i>向く用途</i>「どれくらい？」（経過時間）</span>
+      <span class="kv"><i>ほかのマシンと比べる</i>比べても無意味</span>
+      <span class="kv"><i>APIの例</i><code>CLOCK_MONOTONIC</code><br><code>System.nanoTime</code></span>
+    </div>
+  </div>
+</figure>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 298" role="img" aria-label="モノトニッククロックは常に進む。実時間クロックはNTPの補正で巻き戻ることがある"><line x1="40" y1="20" x2="40" y2="270" class="ln l-mute"/><line x1="40" y1="270" x2="385" y2="270" class="ln l-mute"/><path d="M40,200 L370,40" class="ln l-ok"/><path d="M40,255 L230,150 L230,200 L370,120" class="ln l-warn"/><text x="360" y="30" text-anchor="end" font-size="14" class="c-ok bd">モノトニック</text><text x="120" y="246" text-anchor="start" font-size="14" class="c-warn bd">実時間クロック</text><text x="240" y="226" text-anchor="start" font-size="13" class="c-bad bd">← NTPが巻き戻す</text><text x="385" y="290" text-anchor="end" font-size="13" class="c-mute">本当の時間 →</text><text x="48" y="16" text-anchor="start" font-size="13" class="c-mute">時計の値 ↑</text></svg>
+  <figcaption>実時間クロックは、NTPサーバーと大きくズレていると強制的に合わせ直されます。そのとき時刻が<b>過去へ飛ぶ</b>ことがあります。うるう秒でも飛びます。</figcaption>
+</figure>
+
+<p>だから<strong>経過時間を実時間クロックで測ってはいけません</strong>。測っている途中で時刻が巻き戻れば、経過時間がマイナスになります。</p>
+<p>モノトニッククロックは、2回読んだ値の<strong>差</strong>だけに意味があります。NTPは進む速さを少しだけ変えることはありますが（最大0.05%。<strong>スルーイング</strong>と言います）、前後にジャンプさせることはありません。タイムアウトの計測は、こちらを使えばたいてい大丈夫です。</p>
+
+<div class="box sup"><span class="lb">補足：JavaScriptなら</span>
+<p><code>Date.now()</code> が実時間クロック、<code>performance.now()</code> がモノトニッククロックにあたります。処理時間を測るなら <code>performance.now()</code> の差を取ります。本には出てきませんが、対応はこうなります。</p>
+</div>
+
+<h3><span class="num">9.3.2</span>時計合わせは思ったより雑</h3>
+<p>水晶の時計は<strong>ドリフト</strong>します（速く進んだり遅く進んだりします）。温度でも変わります。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card stat"><b>200 ppm</b>Googleが自社サーバーで想定しているズレの上限（100万分の200）。</div>
+    <div class="card stat"><b>6ミリ秒</b>30秒ごとに合わせ直しても、これだけズレうる。</div>
+    <div class="card stat bad"><b>17秒</b>1日1回しか合わせないと、ここまでズレうる。</div>
+  </div>
+  <figcaption>全部が正常に動いていても、これが精度の限界です。</figcaption>
+</figure>
+
+<p>NTP自体にも落とし穴がたくさんあります。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card bad"><b>ズレすぎると飛ぶ</b>差が大きすぎると、同期を拒否されるか、強制リセットされる。時刻が突然進むか戻る。</div>
+    <div class="card bad"><b>ファイアウォールで遮断</b>NTPに届かなくなっても、しばらく誰も気づかない。その間ズレ続ける。</div>
+    <div class="card bad"><b>ネットワーク遅延</b>NTPもネットワーク越し。インターネット経由だと良くて35ミリ秒、混むと1秒ほどの誤差。</div>
+    <div class="card bad"><b>NTPサーバーが嘘つき</b>設定ミスで何時間もズレた時刻を返すサーバーがある。複数に聞いて外れ値を捨てる。</div>
+    <div class="card bad"><b>うるう秒</b>1分が59秒や61秒になる。これで大規模システムがいくつも落ちた。2035年以降は廃止予定。</div>
+    <div class="card bad"><b>仮想マシン</b>別のVMにCPUを取られている間は止まっている。再開すると時計が突然進んで見える。</div>
+    <div class="card bad"><b>他人の端末</b>スマホなどは時計を信用できない。ゲームのズルのために、わざと時刻を変える人もいる。</div>
+    <div class="card ok"><b>うるう秒の対策</b>NTPサーバーが1日かけて少しずつ調整して「嘘をつく」方法がある（ならし／smearing）。</div>
+  </div>
+</figure>
+
+<p>お金と手間をかければ、高い精度も出せます。EUの金融規制（MiFID II）は、高頻度取引の時計をUTCから<strong>100マイクロ秒以内</strong>に合わせるよう求めています。GPS受信機や原子時計、PTPというプロトコル、そして慎重な監視が必要です。ただしGPSの電波は簡単に妨害できるので、GPSだけに頼るのは危険です。</p>
+
+<h3><span class="num">9.3.3</span>合った時計を当てにすると起きる事故</h3>
+<p>時計の怖さは、<strong>静かに壊れる</strong>ことです。CPUが壊れればマシンは動かないので、すぐ気づきます。でも時計がズレても、ほとんどのものは普通に動いて見えます。</p>
+<p>その結果、派手なクラッシュではなく、<strong>誰も気づかないデータ消失</strong>が起きます。</p>
+<p>だから、時計が合っていることを前提にするソフトを使うなら、全マシンの時計のズレを<strong>監視</strong>します。ズレすぎたノードは故障扱いにして、クラスタから外します。</p>
+
+<h4>事故例：タイムスタンプで順番を決める</h4>
+<p>2人が別々のノードに書き込みました。どちらが後でしょうか。「タイムスタンプが大きいほうが後」と決めたくなります。これが罠です。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 410" role="img" aria-label="時計のずれにより、後から行われたインクリメントが古い書き込みと判定されて消える"><line x1="70" y1="46" x2="70" y2="170" class="ln l-mute" stroke-dasharray="5 6"/><line x1="330" y1="46" x2="330" y2="170" class="ln l-mute" stroke-dasharray="5 6"/><line x1="200" y1="46" x2="200" y2="275" class="ln l-mute" stroke-dasharray="5 6"/><rect x="22" y="10" width="96" height="36" rx="10" class="b-n"/><text x="70.0" y="33.3" text-anchor="middle" font-size="14" class="bd">ノード1</text><rect x="152" y="10" width="96" height="36" rx="10" class="b-n"/><text x="200.0" y="33.3" text-anchor="middle" font-size="14" class="bd">ノード2</text><rect x="282" y="10" width="96" height="36" rx="10" class="b-n"/><text x="330.0" y="33.3" text-anchor="middle" font-size="14" class="bd">ノード3</text><rect x="10" y="60" width="120" height="46" rx="10" class="b-info"/><text x="70.0" y="78.4" text-anchor="middle" font-size="13" class="bd">Aが x=1 を書く</text><text x="70.0" y="97.4" text-anchor="middle" font-size="13" class="c-warn">時刻 42.004</text><line x1="130" y1="83" x2="326" y2="83" class="ln l-mute" stroke-dasharray="6 5" marker-end="url(#ah-mute)"/><rect x="182" y="63" width="36" height="20" rx="4" class="bgm"/><text x="200" y="77" text-anchor="middle" font-size="13" class="c-mute">複製</text><rect x="270" y="104" width="120" height="46" rx="10" class="b-info"/><text x="330.0" y="122.4" text-anchor="middle" font-size="13" class="bd">Bが +1 → x=2</text><text x="330.0" y="141.4" text-anchor="middle" font-size="13" class="c-warn">時刻 42.003</text><line x1="70" y1="170" x2="194" y2="230" class="ln l-n" marker-end="url(#ah-n)"/><line x1="330" y1="170" x2="206" y2="260" class="ln l-n" marker-end="url(#ah-n)"/><text x="14" y="216" text-anchor="start" font-size="13">x=1（42.004）</text><text x="386" y="234" text-anchor="end" font-size="13">x=2（42.003）</text><rect x="40" y="280" width="320" height="86" rx="10" class="b-bad"/><text x="200.0" y="308.3" text-anchor="middle" font-size="14" class="bd">ノード2の判断（最終書き込み優先）</text><text x="200.0" y="327.4" text-anchor="middle" font-size="13" class="c-mute">42.004 ＞ 42.003 だから</text><text x="200.0" y="348.2" text-anchor="middle" font-size="15" class="c-bad">x=1 を残して x=2 を捨てる</text><text x="200" y="392" text-anchor="middle" font-size="14" class="c-bad bd">本当は x=2 が後。なのに +1 が消えた</text></svg>
+  <figcaption><span class="tagb">図9-3を描き直し</span>ノード1と3の時計のズレは3ミリ秒未満。現実に期待できるよりずっと良い精度です。それでも事故が起きます。</figcaption>
+</figure>
+
+<p>Bの「+1」は、Aの書き込みを<strong>見てから</strong>行ったものです。明らかにBが後です。でもノード3の時計が少し遅れていたので、Bのタイムスタンプのほうが小さくなりました。</p>
+<p>第6章で見た<strong>最終書き込み優先（LWW）</strong>は「タイムスタンプが最大の書き込みだけ残す」方式です。これだと、Bの「+1」は古いと判定されて捨てられます。CassandraやScyllaDBは、クライアントの時計のタイムスタンプをそのままLWWに使います。</p>
+
+<p>LWWとズレた時計の組み合わせには、深刻な問題が3つあります。</p>
+<ul>
+  <li><strong>書き込みが謎の消え方をする</strong>：時計が遅れたノードは、時計が進んだノードの書いた値を上書きできない。エラーも出ずに、静かに捨てられる。</li>
+  <li><strong>「続けて書いた」と「同時に書いた」を区別できない</strong>：区別するにはバージョンベクターなど、因果関係を追う別の仕組みが要る。</li>
+  <li><strong>同じタイムスタンプがぶつかる</strong>：ミリ秒の精度だと普通に起きる。乱数で決着をつけると、それも因果関係を壊しうる。</li>
+</ul>
+
+<p>「NTPをもっと正確にすればいいのでは？」と思うかもしれません。たぶん無理です。順番を正しく保つには、時計の誤差が<strong>ネットワーク遅延よりずっと小さく</strong>ないといけません。でもNTPの精度そのものが、ネットワーク遅延に縛られています。</p>
+
+<div class="box key"><span class="lb">要点</span>
+<p>順番を決めたいなら、時刻ではなく<strong>論理クロック</strong>を使います。水晶ではなく、ただ増えていくカウンターです。「何時か」は言えませんが、「どっちが先か」だけは言えます。詳しくは第10章です。</p>
+</div>
+
+<h4>時刻は「点」ではなく「幅」</h4>
+<p>時計をナノ秒の桁まで読めても、その桁まで<strong>正しい</strong>わけではありません。誤差が±100ミリ秒あるなら、マイクロ秒の桁はただの飾りです。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 374" role="img" aria-label="時刻の読み取りは点ではなく信頼区間。区間が重ならなければ順序が確定する"><text x="12" y="24" text-anchor="start" font-size="15" class="bd">思い込み：時刻は「点」</text><line x1="20" y1="54" x2="380" y2="54" class="ln l-mute"/><circle cx="200" cy="54" r="6" class="d-warn"/><text x="200" y="80" text-anchor="middle" font-size="13" class="c-warn">10.400秒ちょうど</text><text x="12" y="120" text-anchor="start" font-size="15" class="bd">現実：時刻は「幅」</text><line x1="20" y1="162" x2="380" y2="162" class="ln l-mute"/><rect x="140" y="152" width="120" height="20" rx="4" class="b-warn"/><text x="200" y="144" text-anchor="middle" font-size="13" class="c-warn">今はこの中のどこか</text><text x="140" y="192" text-anchor="middle" font-size="12" class="c-mute">earliest</text><text x="260" y="192" text-anchor="middle" font-size="12" class="c-mute">latest</text><text x="12" y="234" text-anchor="start" font-size="15" class="c-bad bd">重なる → どっちが先か不明</text><rect x="90" y="246" width="130" height="24" rx="4" class="b-info"/><text x="155" y="263" text-anchor="middle" font-size="14" class="bd">A</text><rect x="180" y="274" width="130" height="24" rx="4" class="b-zom"/><text x="245" y="291" text-anchor="middle" font-size="14" class="bd">B</text><text x="12" y="330" text-anchor="start" font-size="15" class="c-ok bd">重ならない → Bが後だと確定</text><rect x="40" y="342" width="130" height="24" rx="4" class="b-info"/><text x="105" y="359" text-anchor="middle" font-size="14" class="bd">A</text><rect x="230" y="342" width="130" height="24" rx="4" class="b-zom"/><text x="295" y="359" text-anchor="middle" font-size="14" class="bd">B</text><text x="200" y="361" text-anchor="middle" font-size="18" class="c-ok bd">＜</text></svg>
+  <figcaption>時計の読みは、信頼区間つきの「範囲」だと考えるのが正直です。</figcaption>
+</figure>
+
+<p>困ったことに、普通のAPIはこの幅を教えてくれません。<code>clock_gettime</code> の戻り値を見ても、誤差が5ミリ秒なのか5年なのか、わかりません。</p>
+<p>例外が、Google Spannerの <strong>TrueTime API</strong> と、Amazonの <strong>ClockBound</strong> です。現在時刻を聞くと <code>[earliest, latest]</code> の2つが返ります。「本当の今は、この間のどこかです」という正直な答えです。</p>
+
+<h4>Spanner：幅が重ならなくなるまで待つ</h4>
+<p>第8章のスナップショット分離（MVCC）には、<strong>単調に増えるトランザクションID</strong>が必要でした。1台ならカウンターで済みます。でも世界中のデータセンターにまたがると、全体で1つのカウンターを回すのはボトルネックになります。</p>
+<p>「時刻をIDにできないか？」。Spannerはこれを実現しました。使うのは上の図の4段目です。<strong>区間が重ならなければ、順番は確定する</strong>。</p>
+
+<figure class="fig">
+  <div class="bar"><span class="r">書き込み<br>完了</span><span class="w">区間の長さぶん<br>わざと待つ</span><span class="d">コミット<br>確定</span></div>
+  <p class="figp">待っている間に時間が進むので、このあと始まるトランザクションの区間は、必ずこのトランザクションの区間より後ろになります。重なりません。</p>
+  <figcaption>待ち時間を短くするには、区間を狭くするしかありません。Googleは各データセンターにGPS受信機や原子時計を置き、時計を約7ミリ秒以内に合わせています。</figcaption>
+</figure>
+
+<p>原子時計が必須なわけではありません。大事なのは<strong>幅がわかること</strong>です。正確な時計は、その幅を狭くするのに役立つだけです。YugabyteDBはAWS上でClockBoundを使えます。</p>
+
+<h3><span class="num">9.3.4</span>プログラムは突然止まる</h3>
+<p>リーダーが1台だけのデータベースを考えます。リーダーは、「自分はまだリーダーだ」とどうやって知るのでしょうか。</p>
+<p>よくある方法が<strong>リース</strong> <span class="en">(lease)</span> です。期限つきのロックのことです。リースを持てるのは一度に1台だけ。期限が切れる前に更新し続ければ、リーダーでいられます。ノードが死ねば更新が止まり、期限が切れて、別のノードが引き継ぎます。</p>
+<p>リクエストを処理するループは、こう書きたくなります。</p>
+
+<pre><code>while (true) {
+  const request = await getIncomingRequest();
+
+  <span class="cm">// リースの残りが10秒を切ったら更新する</span>
+  if (lease.expiryTimeMillis - Date.now() &lt; 10_000) {
+    lease = await lease.renew();
+  }
+
+  if (lease.isValid()) {
+    <span class="hl">// ← ここで15秒止まったら？</span>
+    process(request);
+  }
+}</code></pre>
+<p style="font-size:20px;color:var(--muted);margin-top:-18px">本のコードをTypeScript風に書き直したものです。</p>
+
+<p>このコードには穴が2つあります。</p>
+<ul>
+  <li><strong>合った時計を当てにしている</strong>：期限は別のマシンの時計で決めた値。それを自分の時計と比べている。数秒ズレていたら破綻する。</li>
+  <li><strong>確認と実行の間に時間が空かないと思い込んでいる</strong>：モノトニッククロックに変えても、この穴は残る。</li>
+</ul>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 404" role="img" aria-label="リースを確認した直後に15秒止まると、期限切れに気づかないまま書き込んでしまう"><text x="110" y="26" text-anchor="middle" font-size="15" class="bd">このスレッド</text><text x="300" y="26" text-anchor="middle" font-size="15" class="bd">外の世界</text><line x1="110" y1="38" x2="110" y2="340" class="ln l-mute" stroke-dasharray="5 6"/><line x1="300" y1="38" x2="300" y2="340" class="ln l-mute" stroke-dasharray="5 6"/><rect x="20" y="50" width="180" height="52" rx="10" class="b-ok"/><text x="110.0" y="72.2" text-anchor="middle" font-size="15" class="bd">リースを確認</text><text x="110.0" y="91.4" text-anchor="middle" font-size="13" class="c-ok">まだ10秒以上ある → OK</text><rect x="64" y="110" width="92" height="160" rx="10" class="b-zom"/><text x="110" y="178" text-anchor="middle" font-size="15" class="c-zom bd">一時停止</text><text x="110" y="202" text-anchor="middle" font-size="15" class="c-zom bd">15秒</text><text x="110" y="224" text-anchor="middle" font-size="12" class="c-mute">（GCなど）</text><rect x="215" y="140" width="170" height="40" rx="10" class="b-warn"/><text x="300.0" y="165.3" text-anchor="middle" font-size="14" class="c-warn bd">リース期限切れ</text><rect x="215" y="200" width="170" height="50" rx="10" class="b-info"/><text x="300.0" y="220.3" text-anchor="middle" font-size="14" class="bd">別のノードが</text><text x="300.0" y="240.3" text-anchor="middle" font-size="14" class="c-info">新リーダーになる</text><rect x="20" y="278" width="180" height="56" rx="10" class="b-bad"/><text x="110.0" y="301.3" text-anchor="middle" font-size="14" class="bd">process(request)</text><text x="110.0" y="321.3" text-anchor="middle" font-size="14" class="c-bad">気づかずに書き込む</text><text x="200" y="368" text-anchor="middle" font-size="14">確認した瞬間は正しかった。</text><text x="200" y="392" text-anchor="middle" font-size="14" class="c-bad bd">でも実行する瞬間には、もう古い。</text></svg>
+  <figcaption>止まっていた本人は、止まっていたことに気づきません。次に時計を見るまで、時間は飛んでいないつもりでいます。</figcaption>
+</figure>
+
+<p>「15秒も止まるなんて、ありえる？」。あります。原因はたくさんあります。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card zom"><b>ロックの取り合い</b>スレッド同士が共有リソースを待ち続ける。コアが多いほど悪化することも。</div>
+    <div class="card zom"><b>GC</b>全スレッドを止める「ストップ・ザ・ワールド」。昔は数分止まることもあった。</div>
+    <div class="card zom"><b>VMのサスペンド</b>別のホストへのライブマイグレーションでも止まる。いつ起きるかわからない。</div>
+    <div class="card zom"><b>ノートPCの蓋</b>閉じれば止まり、開ければ続きから動く。</div>
+    <div class="card zom"><b>CPUを取られる</b>OSが別スレッドに、ハイパーバイザーが別VMに切り替える。VMが取られた時間をスティールタイムと呼ぶ。</div>
+    <div class="card zom"><b>遅いディスクI/O</b>同期的なディスクアクセスで待つ。コードに書いていなくても、クラスの遅延ロードなどで起きる。</div>
+    <div class="card zom"><b>スワップ</b>ただのメモリアクセスがページフォールトになり、ディスクを待つ。ひどいと仕事が進まなくなる（スラッシング）。</div>
+    <div class="card zom"><b>SIGSTOP</b>シェルでCtrl-Zを押すと送られる。運用者がうっかり送ることもある。</div>
+  </div>
+</figure>
+
+<p>これは、1台のマシンでマルチスレッドのコードを安全にする問題に似ています。「いつ割り込まれるかわからない」という点で同じです。</p>
+<p>でも1台なら、ミューテックス、セマフォ、アトミックなカウンターなどの道具があります。分散システムには<strong>共有メモリがない</strong>ので、これらが使えません。あるのは、信頼できないネットワークを流れるメッセージだけです。</p>
+
+<div class="box key"><span class="lb">要点</span>
+<p>ノードは、関数の途中でも、どの行でも、かなり長く止まりうる。その間も世界は動き続ける。そして止まっていた本人は、後で時計を見るまで気づかない。</p>
+</div>
+
+<h4>止まらないシステムは作れる。ただし高い</h4>
+<p>飛行機やロケット、車のエアバッグを制御するコンピュータは、決まった時間内に<strong>必ず</strong>応答しなければなりません。衝突を検知したのに、GCで止まっていてエアバッグが遅れた、では済みません。こういうシステムを<strong>ハード・リアルタイム</strong>と呼びます。</p>
+<p>実現するには、すべての層の協力が必要です。CPU時間の割り当てを保証するリアルタイムOS。最悪実行時間が明記されたライブラリ。動的なメモリ確保の制限か禁止。そして膨大なテストと計測。</p>
+<p>ここでの「リアルタイム」は「速い」という意味ではありません。「期限を必ず守る」という意味です。期限を守ることを最優先するので、むしろスループットは下がることがあります。</p>
+<p>普通のサーバーサイドのシステムにとって、これは割に合いません。だから<strong>止まること、時計が不安定なことに耐える</strong>しかありません。</p>
+
+<h4>GCの影響を減らす工夫</h4>
+<p>最近のGCはかなり良くなっていて、きちんと調整すれば停止は数ミリ秒以下に収まります。それでも気になるなら、手はいくつかあります。</p>
+<ul>
+  <li><strong>GCのない言語を使う</strong>：Swiftは参照カウント。RustやMojoは型システムでオブジェクトの寿命を追う。</li>
+  <li><strong>ゴミを出さない</strong>：オブジェクトを捨てずにプールで再利用する。ヒープの外に置く。</li>
+  <li><strong>GCを「予定された短い停止」として扱う</strong>：もうすぐGCが必要だとわかったら、そのノードへの新規リクエストを止め、処理中のものを終わらせてからGCする。その間はほかのノードが受ける。</li>
+  <li><strong>定期的に再起動する</strong>：短命なオブジェクトだけGCに任せ、長命なオブジェクトが溜まってフルGCが必要になる前に、1台ずつ再起動する。</li>
+</ul>
+</section>
+
+<!-- ===================== 9.4 ===================== -->
+<section id="s94">
+<h2><span class="num">9.4</span>知識、真実、そして虚偽</h2>
+<p>ここまでの話をまとめると、かなり困った結論になります。</p>
+<p>ノードは、ほかのノードについて<strong>何ひとつ確実には知れません</strong>。届いたメッセージ（と、届かなかったメッセージ）から<strong>推測</strong>するしかないのです。相手が黙っているとき、ネットワークが悪いのか相手が悪いのか、区別する方法はありません。</p>
+<p>ほとんど哲学の話になってきました。知覚の手段が信用できないとき、何を「知っている」と言えるのか。</p>
+<p>幸い、そこまで深く潜らなくて済みます。<strong>「こういう前提を置く」とはっきり書き出す</strong>のです。これを<strong>システムモデル</strong>と呼びます。そして、その前提の中でアルゴリズムが正しく動くことを証明します。土台が頼りなくても、その上に信頼できる動作を作ることはできます。</p>
+
+<h3><span class="num">9.4.1</span>真実は多数決で決まる</h3>
+<p>3つの怖い話をします。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 200" role="img" aria-label="受信はできるが送信が届かないノードは、元気でも死亡と判定される"><rect x="14" y="56" width="140" height="70" rx="10" class="b-n"/><text x="84.0" y="96.7" text-anchor="middle" font-size="15" class="bd">ほかのノード</text><rect x="246" y="56" width="140" height="70" rx="10" class="b-ok"/><text x="316.0" y="87.2" text-anchor="middle" font-size="15" class="bd">ノードX</text><text x="316.0" y="106.4" text-anchor="middle" font-size="13" class="c-ok">実は元気</text><line x1="154" y1="76" x2="246" y2="76" class="ln l-ok" marker-end="url(#ah-ok)"/><text x="200" y="68" text-anchor="middle" font-size="13" class="c-ok">届く</text><line x1="246" y1="106" x2="212" y2="106" class="ln l-bad" marker-end="url(#ah-bad)"/><path d="M193,99L207,113M207,99L193,113" class="xm"/><text x="200" y="146" text-anchor="middle" font-size="13" class="c-bad">届かない</text><text x="84" y="160" text-anchor="middle" font-size="14" class="c-warn">「返事がない…」</text><text x="84" y="184" text-anchor="middle" font-size="14" class="c-bad bd">→ 死亡と判定</text><text x="316" y="160" text-anchor="middle" font-size="14" class="c-ok bd">「死んでない！」</text><text x="316" y="184" text-anchor="middle" font-size="13" class="c-mute">でも誰にも届かない</text></svg>
+  <figcaption>話その1：受信はできるのに、送信だけが届かないノード。</figcaption>
+</figure>
+
+<p>本はこれを、こう描写します。「死んでない！」と叫びながら墓場へ引きずられていく。でも誰にも聞こえないので、葬列は粛々と進む。</p>
+<ul>
+  <li><strong>話その2</strong>：そのノードが「自分の送信が届いていない」と気づいた場合。少しマシですが、やはり死亡と判定されます。本人には何もできません。</li>
+  <li><strong>話その3</strong>：ノードが1分間止まった場合。ほかのノードは待ち、リトライし、あきらめて死亡と判定します。そのあと本人は何事もなかったように起き上がり、しゃべり始めます。1分経ったことも、死んだことにされたことも知りません。</li>
+</ul>
+
+<div class="box key"><span class="lb">教訓</span>
+<p>ノードは、状況についての<strong>自分の判断を信用できません</strong>。「自分は生きている」「自分はリーダーだ」という確信ですら、です。</p>
+</div>
+
+<p>だから分散アルゴリズムの多くは、1台の判断に頼らず<strong>クォーラム</strong> <span class="en">(quorum、定足数)</span> を使います。ノードの投票です。決定には、決められた最低数の票が要ります。</p>
+<p>これは「誰が死んだか」の判定にも当てはまります。クォーラムが「あいつは死んだ」と決めたら、本人がどれだけ元気でも、死んだものとして身を引かなければなりません。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 236" role="img" aria-label="5台が3台と2台に分断されても、過半数になれるのは片方だけ"><line x1="60" y1="70" x2="140" y2="70" class="ln l-ok"/><line x1="60" y1="70" x2="100" y2="134" class="ln l-ok"/><line x1="140" y1="70" x2="100" y2="134" class="ln l-ok"/><line x1="300" y1="90" x2="362" y2="90" class="ln l-mute"/><circle cx="60" cy="70" r="26" class="b-ok"/><text x="60" y="76" text-anchor="middle" font-size="17" class="bd">1</text><circle cx="140" cy="70" r="26" class="b-ok"/><text x="140" y="76" text-anchor="middle" font-size="17" class="bd">2</text><circle cx="100" cy="134" r="26" class="b-ok"/><text x="100" y="140" text-anchor="middle" font-size="17" class="bd">3</text><circle cx="300" cy="90" r="26" class="b-n"/><text x="300" y="96" text-anchor="middle" font-size="17" class="bd">4</text><circle cx="362" cy="90" r="26" class="b-n"/><text x="362" y="96" text-anchor="middle" font-size="17" class="bd">5</text><line x1="226" y1="14" x2="226" y2="166" class="ln l-bad" stroke-dasharray="5 6"/><text x="226" y="186" text-anchor="middle" font-size="13" class="c-bad bd">分断</text><text x="100" y="202" text-anchor="middle" font-size="15" class="c-ok bd">3台＝過半数</text><text x="100" y="226" text-anchor="middle" font-size="14" class="c-ok">→ 決められる</text><text x="322" y="202" text-anchor="middle" font-size="15" class="c-bad bd">2台＝少数派</text><text x="322" y="226" text-anchor="middle" font-size="14" class="c-mute">→ 決めてはダメ</text></svg>
+  <figcaption>いちばん普通のクォーラムは<b>過半数</b>です。過半数は同時に1つしか存在できません。だから矛盾した決定が2つ出ることがありません。</figcaption>
+</figure>
+
+<div class="tw"><table>
+<thead><tr><th>ノード数</th><th>過半数</th><th>耐える故障</th></tr></thead>
+<tbody>
+<tr><td>3台</td><td>2台</td><td>1台まで</td></tr>
+<tr><td>5台</td><td>3台</td><td>2台まで</td></tr>
+</tbody></table></div>
+
+<h3><span class="num">9.4.2</span>分散ロックとリース</h3>
+<p>リースは、「これは1つだけであってほしい」という場面で使います。</p>
+<ul>
+  <li>シャードのリーダーは1台だけ（スプリットブレインを防ぐ）。</li>
+  <li>あるファイルを更新できるクライアントは1つだけ（同時書き込みで壊さない）。</li>
+  <li>ある入力ファイルを処理するノードは1台だけ（同じ仕事を二重にやらない）。</li>
+</ul>
+<p>3つ目は、破られても計算資源が少し無駄になるだけです。でも上の2つは、破られると<strong>データが消えるか壊れます</strong>。</p>
+<p>分散ロックは誤用されやすく、バグの定番です。具体例を見ます。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 440" role="img" aria-label="一時停止でリースが切れたクライアント1が、気づかずに書き込んでファイルを壊す"><line x1="52" y1="44" x2="52" y2="400" class="ln l-mute" stroke-dasharray="5 6"/><line x1="150" y1="44" x2="150" y2="400" class="ln l-mute" stroke-dasharray="5 6"/><line x1="250" y1="44" x2="250" y2="400" class="ln l-mute" stroke-dasharray="5 6"/><line x1="348" y1="44" x2="348" y2="400" class="ln l-mute" stroke-dasharray="5 6"/><rect x="6" y="8" width="92" height="36" rx="10" class="b-n"/><text x="52.0" y="30.6" text-anchor="middle" font-size="12" class="bd">ロックサービス</text><rect x="104" y="8" width="92" height="36" rx="10" class="b-n"/><text x="150.0" y="30.6" text-anchor="middle" font-size="12" class="bd">クライアント1</text><rect x="204" y="8" width="92" height="36" rx="10" class="b-n"/><text x="250.0" y="30.6" text-anchor="middle" font-size="12" class="bd">クライアント2</text><rect x="302" y="8" width="92" height="36" rx="10" class="b-n"/><text x="348.0" y="30.6" text-anchor="middle" font-size="12" class="bd">ストレージ</text><line x1="150" y1="78" x2="52" y2="78" class="ln l-n" marker-end="url(#ah-n)"/><text x="101" y="71" text-anchor="middle" font-size="12">リース要求</text><line x1="52" y1="104" x2="150" y2="104" class="ln l-ok" marker-end="url(#ah-ok)"/><text x="101" y="97" text-anchor="middle" font-size="12" class="c-ok bd">OK</text><rect x="118" y="116" width="64" height="196" rx="10" class="b-zom"/><text x="150" y="256" text-anchor="middle" font-size="14" class="c-zom bd">長い</text><text x="150" y="275" text-anchor="middle" font-size="14" class="c-zom bd">一時</text><text x="150" y="294" text-anchor="middle" font-size="14" class="c-zom bd">停止</text><rect x="6" y="140" width="92" height="34" rx="10" class="b-warn"/><text x="52.0" y="161.9" text-anchor="middle" font-size="13" class="c-warn bd">期限切れ</text><line x1="250" y1="206" x2="52" y2="206" class="ln l-n" marker-end="url(#ah-n)"/><text x="217" y="199" text-anchor="middle" font-size="12">リース要求</text><line x1="52" y1="232" x2="250" y2="232" class="ln l-ok" marker-end="url(#ah-ok)"/><text x="217" y="225" text-anchor="middle" font-size="12" class="c-ok bd">OK</text><line x1="250" y1="262" x2="348" y2="262" class="ln l-info" marker-end="url(#ah-info)"/><text x="299" y="255" text-anchor="middle" font-size="12" class="c-info">書き込み</text><line x1="348" y1="286" x2="250" y2="286" class="ln l-ok" marker-end="url(#ah-ok)"/><text x="299" y="279" text-anchor="middle" font-size="12" class="c-ok bd">OK</text><text x="150" y="334" text-anchor="middle" font-size="13" class="c-zom bd">再開</text><line x1="150" y1="352" x2="348" y2="352" class="ln l-bad" marker-end="url(#ah-bad)"/><rect x="178" y="332" width="142" height="19" rx="4" class="bgm"/><text x="249" y="345" text-anchor="middle" font-size="12" class="c-bad bd">期限切れなのに書き込む</text><rect x="299" y="366" width="98" height="36" rx="10" class="b-bad"/><text x="348.0" y="388.9" text-anchor="middle" font-size="13" class="c-bad bd">ファイル破損</text><text x="200" y="428" text-anchor="middle" font-size="13" class="c-bad bd">2人とも「自分がロック持ち」と信じている</text></svg>
+  <figcaption><span class="tagb">図9-4を描き直し</span>机上の空論ではありません。HBaseには実際にこのバグがありました。</figcaption>
+</figure>
+
+<p>一時停止がなくても、同じ結果になることがあります。</p>
+
+<figure class="fig">
+  <ol class="steps">
+    <li>クライアント1がリースを持ったまま、書き込みリクエストを送る。</li>
+    <li class="bad">その直後、クライアント1がクラッシュする。</li>
+    <li class="warn">リクエストはネットワークの中で長く足止めされる（1分以上の遅延は実際にある）。</li>
+    <li>クライアント1のリースが期限切れになる。</li>
+    <li class="ok">クライアント2がリースを取り、自分の書き込みをする。</li>
+    <li class="bad">足止めされていたクライアント1の書き込みが、今ごろ届く。ファイルが壊れる。</li>
+  </ol>
+  <figcaption><span class="tagb">図9-5を手順に書き直し</span>送った本人はもう死んでいるのに、メッセージだけが遅れて届きます。</figcaption>
+</figure>
+
+<h4>ゾンビを締め出す：フェンシングトークン</h4>
+<p>リースを失ったのに、まだ自分が持ち主だと思って動いているノードを<strong>ゾンビ</strong>と呼びます。ゾンビを完全になくすことはできません。だから、ゾンビが<strong>害を与えられないように</strong>します。これを<strong>フェンシング</strong> <span class="en">(fencing)</span> と言います。</p>
+<p>素朴な方法は、ゾンビを無理やり止めることです。ネットワークから切る、VMを落とす、電源を切る。STONITHと呼ばれることもあります。でもこれは弱い方法です。</p>
+<ul>
+  <li>遅れて届くメッセージ（上の手順の例）は防げない。</li>
+  <li>全ノードが互いを止め合ってしまうことがある。</li>
+  <li>ゾンビを見つけて止めたころには、もうデータが壊れているかもしれない。</li>
+</ul>
+<p>もっと堅い方法があります。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 440" role="img" aria-label="フェンシングトークン。ストレージは34を処理済みなので、古い33の書き込みを拒否する"><line x1="52" y1="44" x2="52" y2="392" class="ln l-mute" stroke-dasharray="5 6"/><line x1="150" y1="44" x2="150" y2="392" class="ln l-mute" stroke-dasharray="5 6"/><line x1="250" y1="44" x2="250" y2="392" class="ln l-mute" stroke-dasharray="5 6"/><line x1="348" y1="44" x2="348" y2="392" class="ln l-mute" stroke-dasharray="5 6"/><rect x="6" y="8" width="92" height="36" rx="10" class="b-n"/><text x="52.0" y="30.6" text-anchor="middle" font-size="12" class="bd">ロックサービス</text><rect x="104" y="8" width="92" height="36" rx="10" class="b-n"/><text x="150.0" y="30.6" text-anchor="middle" font-size="12" class="bd">クライアント1</text><rect x="204" y="8" width="92" height="36" rx="10" class="b-n"/><text x="250.0" y="30.6" text-anchor="middle" font-size="12" class="bd">クライアント2</text><rect x="302" y="8" width="92" height="36" rx="10" class="b-n"/><text x="348.0" y="30.6" text-anchor="middle" font-size="12" class="bd">ストレージ</text><line x1="52" y1="80" x2="150" y2="80" class="ln l-ok" marker-end="url(#ah-ok)"/><text x="101" y="73" text-anchor="middle" font-size="13" class="c-ok bd">札 33</text><rect x="118" y="92" width="64" height="206" rx="10" class="b-zom"/><text x="150" y="240" text-anchor="middle" font-size="14" class="c-zom bd">長い</text><text x="150" y="259" text-anchor="middle" font-size="14" class="c-zom bd">一時</text><text x="150" y="278" text-anchor="middle" font-size="14" class="c-zom bd">停止</text><rect x="6" y="116" width="92" height="34" rx="10" class="b-warn"/><text x="52.0" y="137.9" text-anchor="middle" font-size="13" class="c-warn bd">期限切れ</text><line x1="52" y1="186" x2="250" y2="186" class="ln l-ok" marker-end="url(#ah-ok)"/><rect x="193" y="165" width="46" height="20" rx="4" class="bgm"/><text x="216" y="179" text-anchor="middle" font-size="13" class="c-ok bd">札 34</text><line x1="250" y1="216" x2="348" y2="216" class="ln l-info" marker-end="url(#ah-info)"/><text x="299" y="209" text-anchor="middle" font-size="12" class="c-info bd">書込 34</text><line x1="348" y1="240" x2="250" y2="240" class="ln l-ok" marker-end="url(#ah-ok)"/><text x="299" y="233" text-anchor="middle" font-size="12" class="c-ok bd">OK</text><rect x="302" y="252" width="92" height="34" rx="10" class="b-info"/><text x="348.0" y="273.9" text-anchor="middle" font-size="13" class="c-info bd">最大＝34</text><text x="150" y="316" text-anchor="middle" font-size="13" class="c-zom bd">再開</text><line x1="150" y1="338" x2="348" y2="338" class="ln l-zom" marker-end="url(#ah-zom)"/><rect x="192" y="318" width="115" height="19" rx="4" class="bgm"/><text x="249" y="331" text-anchor="middle" font-size="12" class="c-zom bd">書込 33（古い札）</text><line x1="348" y1="370" x2="150" y2="370" class="ln l-bad" marker-end="url(#ah-bad)"/><rect x="199" y="350" width="100" height="19" rx="4" class="bgm"/><text x="249" y="363" text-anchor="middle" font-size="12" class="c-bad bd">拒否：33 ＜ 34</text><text x="200" y="424" text-anchor="middle" font-size="14" class="c-ok bd">古い番号札の書き込みは弾かれる</text></svg>
+  <figcaption><span class="tagb">図9-6を描き直し</span>ロックサービスは、リースを渡すたびに<b>1ずつ増える番号</b>も渡します。これがフェンシングトークンです。</figcaption>
+</figure>
+
+<p>ルールは2つだけです。</p>
+<ul>
+  <li>クライアントは、書き込みのたびに自分のトークンを添える。</li>
+  <li>ストレージは、これまでに見た最大のトークンを覚えておき、<strong>それより小さいトークンの書き込みを断る</strong>。</li>
+</ul>
+<p>新しくリースを取ったクライアントは、すぐに1回書き込みます。その書き込みが終わった瞬間に、古いトークンを持つゾンビは全員締め出されます。遅れて届いたメッセージも同じ理由で断られます。</p>
+
+<div class="box sup"><span class="lb">補足：たとえるなら</span>
+<p>窓口の番号札です。窓口は「34番まで呼んだ」と覚えています。あとから33番の札を持った人が来ても、「その番号はもう終わりました」と断れます。本人がどれだけ「自分の番だ」と信じていても関係ありません。</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>システム</th><th>フェンシングトークンにあたるもの</th></tr></thead>
+<tbody>
+<tr><td>Chubby</td><td>シーケンサー</td></tr>
+<tr><td>Kafka</td><td>エポック番号</td></tr>
+<tr><td>Paxos</td><td>バロット番号</td></tr>
+<tr><td>Raft</td><td>ターム番号</td></tr>
+<tr><td>ZooKeeper</td><td>zxid や cversion を流用できる</td></tr>
+<tr><td>etcd</td><td>リビジョン番号＋リースID</td></tr>
+<tr><td>Hazelcast</td><td>FencedLock APIが発行</td></tr>
+</tbody></table></div>
+
+<p>この仕組みには条件があります。<strong>ストレージ側がトークンを確認できる</strong>ことです。あるいは「自分が最後に読んだあと、誰も書いていなければ成功する書き込み」ができれば足ります。アトミックなCAS操作に似たものです。</p>
+<p>オブジェクトストレージはこれをサポートしています。Amazon S3では<strong>条件付き書き込み</strong>、Azure Blob Storageでは条件付きヘッダー、Google Cloud Storageではリクエスト前提条件と呼びます。</p>
+<p>第8章の楽観的並行性制御に似ていますが、違いが1つあります。楽観的並行性制御の失敗は<strong>リトライできます</strong>。フェンシングで断られたら<strong>永久に</strong>ダメです。</p>
+
+<h4>複数のレプリカでも使える</h4>
+<p>書き込み先が、LWWで衝突を解決するリーダーレスのキーバリューストアだとします。クライアントは各レプリカに直接書き、各レプリカはタイムスタンプを見て受け入れるかどうかを自分で決めます。</p>
+<p>ここでも手があります。<strong>タイムスタンプの先頭にトークンを入れる</strong>のです。トークン34のクライアントが作るタイムスタンプは <code>34…</code> で始まり、トークン33のゾンビが作る <code>33…</code> より必ず大きくなります。ゾンビがあとから書いても、です。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card ok"><b>レプリカ1</b>値：<code>34…</code>（クライアント2）<span class="mini">ゾンビの 33… は無視される</span></div>
+    <div class="card ok"><b>レプリカ2</b>値：<code>34…</code>（クライアント2）<span class="mini">ゾンビの 33… は無視される</span></div>
+    <div class="card zom"><b>レプリカ3</b>値：<code>33…</code>（ゾンビ）<span class="mini">クライアント2が届かなかったので、ゾンビの書き込みが通る</span></div>
+  </div>
+  <p class="figp" style="margin-top:16px">それでも大丈夫です。クォーラム読み取りをすれば、タイムスタンプの大きい <code>34…</code> が勝ちます。レプリカ3の値は、リードリペアかアンチエントロピーがいずれ上書きします。</p>
+  <figcaption><span class="tagb">図9-7を描き直し</span>クライアント2はレプリカ1と2（クォーラム）に書けましたが、レプリカ3には届きませんでした。</figcaption>
+</figure>
+
+<div class="box key"><span class="lb">要点</span>
+<p>「今リースを持っているのは1台だけ」と仮定するのは<strong>安全ではありません</strong>。フェンシングトークンを使えば、ゾンビや遅れたリクエストがいても被害を防げます。</p>
+</div>
+
+<h3><span class="num">9.4.3</span>嘘をつくノード：ビザンチン障害</h3>
+<p>フェンシングトークンが防げるのは、<strong>うっかり</strong>間違えているノードだけです。わざと壊そうとするノードは、偽のトークンを送れば済みます。</p>
+<p>この本はここまで、ノードは<strong>信頼できないが正直</strong>だと仮定してきました。遅いかもしれない。黙るかもしれない。情報が古いかもしれない。でも返事をするなら、自分の知るかぎりの本当のことを言う。</p>
+<p>ノードが<strong>嘘をつく</strong>かもしれないとなると、問題はずっと難しくなります。これを<strong>ビザンチン障害</strong> <span class="en">(Byzantine fault)</span> と呼びます。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 246" role="img" aria-label="ビザンチン障害。裏切り者は相手ごとに矛盾するメッセージを送る"><line x1="164" y1="62" x2="90" y2="158" class="ln l-bad" marker-end="url(#ah-bad)"/><line x1="236" y1="62" x2="310" y2="158" class="ln l-bad" marker-end="url(#ah-bad)"/><rect x="140" y="14" width="120" height="48" rx="10" class="b-bad"/><text x="200.0" y="43.7" text-anchor="middle" font-size="15" class="c-bad bd">裏切り者</text><rect x="14" y="160" width="130" height="46" rx="10" class="b-n"/><text x="79.0" y="188.3" text-anchor="middle" font-size="14" class="bd">正直な将軍A</text><rect x="256" y="160" width="130" height="46" rx="10" class="b-n"/><text x="321.0" y="188.3" text-anchor="middle" font-size="14" class="bd">正直な将軍B</text><text x="112" y="112" text-anchor="end" font-size="14" class="c-warn bd">「攻撃！」</text><text x="288" y="112" text-anchor="start" font-size="14" class="c-warn bd">「撤退！」</text><text x="200" y="236" text-anchor="middle" font-size="14" class="c-bad bd">相手によって違うことを言う</text></svg>
+  <figcaption>たとえば、同じ選挙で矛盾する票を複数入れる。こういう相手がいる中で合意する問題が<b>ビザンチン将軍問題</b>です。</figcaption>
+</figure>
+
+<div class="box col"><span class="lb">コラム：ビザンチン将軍問題</span>
+<p>もとになったのは<strong>二人の将軍問題</strong>です。離れた場所にいる2人の将軍が、伝令だけで作戦を合わせる。伝令は遅れたり、たどり着かなかったりする。ネットワークのパケットと同じです。</p>
+<p>ビザンチン版では、n人の将軍の中に<strong>裏切り者</strong>が混じります。誰が裏切り者かは事前にわかりません。</p>
+<p>ちなみに、ビザンティウムの将軍が実際に陰謀好きだったという証拠はありません。「ビザンチン」には「やたら複雑で、官僚的で、ずるい」という意味があり、名前はそこから来ています。</p>
+</div>
+
+<p>嘘つきが混じっても正しく動き続けるシステムを、<strong>ビザンチン耐障害性がある</strong>と言います。これが本当に必要な場面は限られています。</p>
+
+<div class="grid" style="margin-bottom:32px">
+  <div class="card info"><b>航空宇宙</b>放射線でメモリやCPUレジスタの中身が化ける。壊れたノードが、でたらめな応答を返す。墜落は許されない。</div>
+  <div class="card info"><b>ブロックチェーン</b>参加者同士が互いを信用していない。中央の管理者なしで、取引があったかどうかに合意する。</div>
+</div>
+
+<p>普通のデータセンターでは、<strong>ビザンチン障害はないと仮定して大丈夫</strong>です。理由はこうです。</p>
+<ul>
+  <li>全ノードが自分の組織の管理下にある。放射線も弱い。</li>
+  <li>ビザンチン耐障害性のあるプロトコルは、とても高くつく。</li>
+  <li>ほとんどのアルゴリズムは、<strong>3分の2を超える</strong>ノードが正常であることを要求する（4台なら、おかしくなってよいのは1台まで）。</li>
+  <li>バグ対策にはならない。全ノードに同じソフトを入れていれば、同じバグが全ノードにある。</li>
+  <li>攻撃対策にもならない。1台を乗っ取れる攻撃者は、同じソフトが動くほかのノードも乗っ取れる。守るのは認証、アクセス制御、暗号化、ファイアウォールの仕事。</li>
+</ul>
+<p>Webアプリは、ブラウザから悪意ある入力が来る前提で作ります。でもここでビザンチン耐障害性は使いません。<strong>サーバーが権威</strong>になって、何を許すかを決めるだけです。入力バリデーションやエスケープがそれです。</p>
+
+<h4>弱い嘘には備える</h4>
+<p>本格的な嘘つき対策は要らなくても、ハードの不調やバグや設定ミスによる<strong>弱い形の嘘</strong>には、安く備えられます。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card ok"><b>アプリ層のチェックサム</b>壊れたパケットは普通TCPやUDPのチェックサムが見つける。でも、たまにすり抜ける。TLSも守りになる。</div>
+    <div class="card ok"><b>入力を疑う</b>値の範囲を確かめる。文字列の長さを制限する。社内サービスでも、パーサーの基本的なチェックはしておく。</div>
+    <div class="card ok"><b>NTPは複数に聞く</b>複数のサーバーに聞いて、多数派が一致する範囲を使う。おかしな時刻を返すサーバーは外れ値として捨てられる。</div>
+  </div>
+</figure>
+
+<h3><span class="num">9.4.4</span>システムモデルと現実</h3>
+<p>アルゴリズムは、特定のハードやソフトの細部に頼らずに書きたいものです。そのために「どんな障害が起きると想定するか」を形式的に決めます。それがシステムモデルです。</p>
+
+<figure class="fig">
+  <p class="gt">タイミングについての前提（3種類）</p>
+  <div class="grid">
+    <div class="card"><b>同期モデル</b>遅延・一時停止・時計のズレに、決まった上限がある。<span class="mini">現実的ではない</span></div>
+    <div class="card ok star"><b>部分同期モデル</b>ほとんどの時間は上限を守る。でも、ときどき破る。破るときは、どこまでもひどくなる。<span class="mini">多くのシステムに現実的</span></div>
+    <div class="card"><b>非同期モデル</b>タイミングの前提を一切置かない。時計もないので、タイムアウトも使えない。<span class="mini">制約が厳しすぎる</span></div>
+  </div>
+  <p class="gt">ノードの壊れ方についての前提（4種類）</p>
+  <div class="grid">
+    <div class="card"><b>クラッシュストップ</b>壊れ方は「突然止まる」だけ。止まったら二度と戻らない。</div>
+    <div class="card ok star"><b>クラッシュリカバリ</b>いつでも落ちる。しばらくして戻ってくるかもしれない。ディスクの中身は残り、メモリの中身は消える。</div>
+    <div class="card warn"><b>性能劣化・部分的な機能不全</b>落ちてはいないが、遅すぎて役に立たない。ヘルスチェックには返事をする。</div>
+    <div class="card bad"><b>ビザンチン</b>嘘も含めて、何でもする。</div>
+  </div>
+  <figcaption>緑の枠の組み合わせ、<b>部分同期 × クラッシュリカバリ</b>が、現実のシステムを考えるのにいちばん役立ちます。</figcaption>
+</figure>
+
+<p>3つ目の「遅いだけのノード」は、<strong>リンピングノード</strong>、<strong>グレー障害</strong>、<strong>フェイルスロー</strong>などと呼ばれます。たとえば、ギガビットのネットワークカードが、ドライバのバグで突然1Kb/sしか出なくなる。きれいに死んでくれたノードより、ずっと扱いにくい相手です。</p>
+
+<h4>「正しい」とは、性質を満たすこと</h4>
+<p>アルゴリズムが正しいとは何でしょうか。<strong>満たすべき性質（プロパティ）</strong>を書き出して定義します。フェンシングトークンを配るアルゴリズムなら、こうです。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card bad"><b>ユニーク性</b>同じ番号を2回配らない。<span class="mini">安全性</span></div>
+    <div class="card bad"><b>単調列</b>先に終わった要求の番号は、後から始まった要求の番号より小さい。<span class="mini">安全性</span></div>
+    <div class="card ok"><b>可用性</b>番号を求めたノードは、クラッシュしないかぎり、最終的に返事をもらえる。<span class="mini">活性</span></div>
+  </div>
+</figure>
+
+<h4>安全性と活性</h4>
+<p>性質は2種類に分けられます。ざっくり言うと、<strong>安全性</strong> <span class="en">(safety)</span> は「悪いことが起きない」。<strong>活性</strong> <span class="en">(liveness)</span> は「良いことがいつか起きる」。定義に「最終的に」が入っていれば、たいてい活性です。結果整合性も活性の性質です。</p>
+
+<figure class="fig">
+  <svg viewBox="0 0 400 210" role="img" aria-label="安全性は破れた時点を特定できる。活性は将来満たされる望みが残る"><text x="12" y="24" text-anchor="start" font-size="15" class="c-bad bd">安全性：破れた瞬間を指させる</text><line x1="20" y1="62" x2="380" y2="62" class="ln l-mute" marker-end="url(#ah-mute)"/><path d="M222,54L238,70M238,54L222,70" class="xm"/><text x="230" y="92" text-anchor="middle" font-size="13" class="c-bad">ここで同じ番号を2回配った</text><text x="12" y="136" text-anchor="start" font-size="15" class="c-ok bd">活性：今はまだでも、いつか起きる</text><line x1="20" y1="170" x2="280" y2="170" class="ln l-mute"/><line x1="280" y1="170" x2="350" y2="170" class="ln l-mute" stroke-dasharray="5 6"/><circle cx="110" cy="170" r="6" class="d-info"/><circle cx="356" cy="170" r="7" class="d-ok"/><text x="110" y="198" text-anchor="middle" font-size="13" class="c-info">要求した</text><text x="388" y="198" text-anchor="end" font-size="13" class="c-ok">いつか応答</text></svg>
+  <figcaption>安全性は、破れたら取り消せません。活性は、今は満たされていなくても、将来満たされる望みが常に残ります。</figcaption>
+</figure>
+
+<p>分けると何が嬉しいのでしょうか。<strong>要求の強さを変えられる</strong>のです。</p>
+<div class="grid" style="margin-bottom:32px">
+  <div class="card bad"><b>安全性は「常に」</b>全ノードが落ちても、ネットワークが全滅しても、間違った結果だけは返さない。</div>
+  <div class="card ok"><b>活性は「条件つき」でよい</b>たとえば「過半数のノードが生きていて、ネットワークがいずれ回復するなら、返事が来る」。</div>
+</div>
+<p>全ノードが落ちたら、どんなアルゴリズムも前には進めません。それは仕方がない。でも、そのときに<strong>間違ったことはしない</strong>。これが分散アルゴリズムの基本姿勢です。</p>
+
+<h4>モデルは現実の簡略版</h4>
+<p>システムモデルは便利ですが、現実そのものではありません。</p>
+<p>クラッシュリカバリモデルは「ディスクの中身は残る」と仮定します。でも現実には、ディスクが壊れることがあります。ファームウェアのバグで、再起動後にドライブが見えなくなることもあります。クォーラムのアルゴリズムは「覚えたと言ったことは覚えている」前提なので、ノードが記憶喪失になると正しさが崩れます。</p>
+<p>理論では「これは起きない」と宣言できます。でも実装では、<strong>起きないはずのことが起きたときのコード</strong>を書かなければなりません。たとえそれが、エラーメッセージを出して終了し、あとは人間に任せるだけのコードでも。</p>
+<p>だからといって、モデルが無価値なわけではありません。逆です。現実のごちゃごちゃを、考えられる大きさに絞ってくれるからこそ、問題を体系的に解けるのです。</p>
+
+<h3><span class="num">9.4.5</span>正しさをどう確かめるか</h3>
+<p>並行性、部分障害、ネットワーク遅延。これらが組み合わさると、ありうる状態は膨大な数になります。全部の状態で性質が成り立つことを、どう確かめるのでしょうか。</p>
+<p>数学的な証明は良い第一歩です。でも、アルゴリズムが正しいことと、<strong>実装</strong>が正しいことは別です。そこで、理論と実地のテストを組み合わせます。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card info"><b>モデル検査</b>TLA+などの専用言語でアルゴリズムの「モデル」を書く。ツールが、ありうる状態を片っぱしから試す。<span class="mini">強み：設計の穴を早く見つける。CockroachDB、TiDB、Kafkaなどで実績。</span><span class="mini">弱み：動かすのはモデルで、本物のコードではない。両者がズレる危険。調べる範囲にも上限を設ける。</span></div>
+    <div class="card warn"><b>フォールトインジェクション</b>動いている本物のシステムに、わざと障害を入れる。ネットワークを切る、プロセスを殺す、ディスクを外す。<span class="mini">強み：本物の環境で試せる。Jepsenは有名なシステムのバグを数多く発見。本番でやるのがカオスエンジニアリング。</span><span class="mini">弱み：細かいタイミングを操れない。同じ失敗を再現しにくい。</span></div>
+    <div class="card ok"><b>決定的シミュレーションテスト（DST）</b>本物のコードを動かす。ただしネットワーク、I/O、時計を全部ニセモノに差し替え、出来事の順番をシミュレーターが握る。<span class="mini">強み：失敗したら同じ順番で何度でも再現できる。待ち時間を飛ばせるので、実時間より速い。</span><span class="mini">弱み：非決定性のもとを全部押さえる必要がある。</span></div>
+  </div>
+</figure>
+
+<p>DSTのためにコードを決定的にする方法は、3段階あります。</p>
+
+<figure class="fig">
+  <div class="grid">
+    <div class="card"><b>アプリのレベル</b>最初から決定的に動かせるように設計する。<span class="mini">FoundationDB（Flowライブラリ）、TigerBeetle（全変更を1つのイベントループで）</span></div>
+    <div class="card"><b>ランタイムのレベル</b>非同期ランタイムを差し替えて、全部を1スレッドで順番に動かす。<span class="mini">FrostDB（Goランタイムにパッチ）、RustのMadSim（TokioなどのAPIを決定的に）</span></div>
+    <div class="card"><b>マシンのレベル</b>ハイパーバイザーごと決定的にする。アプリのコードは変えない。<span class="mini">Antithesis</span></div>
+  </div>
+</figure>
+
+<div class="box col"><span class="lb">コラム：決定性の力</span>
+<p>この章の厄介ごとは、突き詰めると全部<strong>非決定性</strong>です。並行性、遅延、一時停止、時計のジャンプ、クラッシュ。どれも、実行のたびに違う形で起きます。</p>
+<p>裏を返せば、<strong>決定的にできれば話はずっと簡単になります</strong>。これは本の中で何度も出てくる考え方です。</p>
+<ul>
+  <li>イベントソーシング（第3章）：イベントのログを同じ順に再生すれば、同じビューを作り直せる。</li>
+  <li>ワークフローエンジン（第5章）：ワークフローの定義が決定的だから、途中から再実行できる。</li>
+  <li>ステートマシンレプリケーション（第10章）：各レプリカが同じ処理を同じ順に実行すれば、同じ状態になる。</li>
+</ul>
+<p>ただし完全に決定的にするのは大変です。ハッシュテーブルを走査する順番や、メモリ不足になるかどうかなど、思わぬところに非決定性が残ります。</p>
+</div>
+</section>
+
+<!-- ===================== 9.5 ===================== -->
+<section id="s95">
+<h2><span class="num">9.5</span>まとめ</h2>
+
+<figure class="fig">
+  <p class="gt">当てにできない3つのもの</p>
+  <div class="grid">
+    <div class="card info"><b>ネットワーク</b>パケットは消える。いくらでも遅れる。返事が来なくても、届いたかどうかはわからない。</div>
+    <div class="card warn"><b>時計</b>ほかのノードとズレる。突然進む、戻る。どれくらいズレているかも、わかりにくい。</div>
+    <div class="card zom"><b>プロセス</b>どの行でも長く止まる。死んだと判定され、そのあと何食わぬ顔で動き出す。</div>
+  </div>
+</figure>
+
+<p>この3つが引き起こす<strong>部分障害</strong>こそが、分散システムの本質です。話の流れを1本にするとこうなります。</p>
+
+<figure class="fig">
+  <ol class="steps">
+    <li>耐えるには、まず障害を<strong>検出</strong>しないといけない。</li>
+    <li class="warn">でも確実な検出手段は<strong>タイムアウト</strong>しかない。</li>
+    <li class="warn">タイムアウトは、ネットワークの故障とノードの故障を区別できない。遅いだけのノードを誤って殺すこともある。</li>
+    <li class="bad">共有メモリも、共通の時刻も、全員が知っている事実もない。1台の判断は信用できない。</li>
+    <li class="ok">だから大事な決定は<strong>クォーラム（多数決）</strong>で行う。</li>
+    <li class="ok">それでも残るゾンビや遅れたメッセージは、<strong>フェンシングトークン（番号札）</strong>で締め出す。</li>
+  </ol>
+</figure>
+
+<p>最後に、本が強調していることが2つあります。</p>
+<ul>
+  <li><strong>信頼性の低さは自然法則ではない</strong>。遅延に上限のあるネットワークも、止まらないプロセスも作れる。ただし高い。ほとんどのシステムは「安くて信頼性が低い」ほうを選んでいる。</li>
+  <li><strong>1台で済むなら1台で済ませる</strong>。今は1台でもかなりのことができる。分散にするのは、耐障害性や低レイテンシ（ユーザーの近くにデータを置く）が本当に必要なとき。</li>
+</ul>
+<p>この章は問題ばかりで、暗い話でした。次の第10章は解決編です。ここで見た問題に、実際のシステムがどんなアルゴリズムで立ち向かっているかを見ます。</p>
+
+<h3>確認問題</h3>
+<p>タップすると答えが開きます。</p>
+
+<details class="q"><summary>リクエストを送ったのに返事が来ない。考えられる原因を3つ以上挙げてください。</summary>
+<div class="ans"><p>リクエストが消えた。リクエストが行列で待たされている。相手が落ちている。相手が一時的に固まっている。相手は処理したが返事が消えた。返事が遅れている。この6つです。送った側からは区別できません。</p></div></details>
+
+<details class="q"><summary>TCPのACKが返ってきました。相手のアプリは処理を終えたと言えますか。</summary>
+<div class="ans"><p>言えません。ACKは「相手のOSが受け取った」という意味だけです。アプリに渡す前にクラッシュしているかもしれません。確かめるには、アプリ自身からの返事が必要です。</p></div></details>
+
+<details class="q"><summary>タイムアウトを短くしすぎると、何が起きますか。</summary>
+<div class="ans"><p>遅いだけの生きたノードを「死んだ」と誤判定します。同じ処理が二重に実行されたり、仕事を移されたほかのノードまで重くなって連鎖的に倒れたりします。</p></div></details>
+
+<details class="q"><summary>処理にかかった時間を測るとき、実時間クロックを使ってはいけない理由は。</summary>
+<div class="ans"><p>NTPの補正やうるう秒で、時刻が巻き戻ったり飛んだりするからです。経過時間にはモノトニッククロックを使い、2回読んだ値の差を取ります。</p></div></details>
+
+<details class="q"><summary>最終書き込み優先（LWW）で、後から書いたはずの値が消えるのはなぜですか。</summary>
+<div class="ans"><p>「後」をノードごとの実時間クロックで決めているからです。後から書いたノードの時計が少し遅れていると、タイムスタンプが小さくなり、古い書き込みとして捨てられます。エラーも出ません。</p></div></details>
+
+<details class="q"><summary>Spannerは、コミットの前に何を待っていますか。なぜですか。</summary>
+<div class="ans"><p>時計の信頼区間の長さぶんだけ待ちます。待てば、あとから来るトランザクションの区間と重ならなくなり、タイムスタンプの順番が実際の順番と必ず一致するからです。</p></div></details>
+
+<details class="q"><summary>「リースが有効か確認してから書き込む」コードの穴は何ですか。どう防ぎますか。</summary>
+<div class="ans"><p>確認と書き込みの間でプロセスが止まると、その間にリースが切れても気づけません。防ぐにはフェンシングトークンを使います。ストレージ側が、古い番号の書き込みを断ります。</p></div></details>
+
+<details class="q"><summary>安全性と活性の違いは。安全性が「常に」求められるのはなぜですか。</summary>
+<div class="ans"><p>安全性は、破れた瞬間を特定でき、破れたら取り消せない性質です。活性は、今は満たされていなくても将来満たされうる性質です。安全性の違反は取り返しがつかないので、全ノードが落ちるような状況でも守る必要があります。</p></div></details>
+
+</section>
+</main>
+
+<footer class="foot">
+  <p>このページは『データ指向アプリケーションデザイン 第2版』第9章の内容を、理解用にまとめ直したものです。図は本の図をそのまま写したものではなく、本文の説明をもとに描き直しています。「補足」と書いた囲みや図、たとえ話、TypeScript風のコードは本にはありません。</p>
+</footer>
+</div>
+
+<script>
+(function(){
+  var causes=[
+    "リクエストが途中で消えた。相手は何も知らない。",
+    "リクエストが行列で待たされている。あとで届いて実行される。",
+    "相手のノードが落ちている。",
+    "相手が長いGCで固まっている。あとで動き出して処理する。",
+    "相手は処理を終えた。でも返事が途中で消えた。",
+    "相手は処理を終えた。返事が遅れていて、タイムアウトのあとで届く。"
+  ];
+  var btn=document.getElementById('btn-send'),truth=document.getElementById('demo-truth'),view=document.getElementById('demo-view'),last=0;
+  if(!btn||!truth||!view)return;
+  btn.addEventListener('click',function(){
+    var i;do{i=Math.floor(Math.random()*causes.length);}while(i===last);
+    last=i;truth.textContent=causes[i];
+    [truth,view].forEach(function(el){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');});
+  });
+})();
+</script>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

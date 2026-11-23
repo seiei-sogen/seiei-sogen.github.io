@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 3章 データモデルとクエリ言語</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 1カラムの読み物。図はスマホ幅(340)を基準に描く。本文21px・行間2。ダーク固定。
+     色の役割: 青=リレーショナル ・琥珀=ドキュメント ・青緑=グラフ ・桃=イベント ・藤=データフレーム
+               若草=うれしい ・朱=困る */
+  --bg:#0f1420;
+  --panel:#171e2e;
+  --panel2:#1f2840;
+  --line:#34405f;
+  --text:#ebe7dc;
+  --mute:#9aa4bb;
+  --blue:#6cb6ff;
+  --amber:#f3b54a;
+  --teal:#58cfc2;
+  --rose:#f29bb8;
+  --violet:#c4a1ff;
+  --green:#a8d672;
+  --bad:#ff7d6e;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  --font-label:"M PLUS 1 Code","SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:27px;line-height:2;-webkit-text-size-adjust:100%}
+main{max-width:36em;margin:0 auto;padding:40px 18px 96px}
+h1,h2,h3,h4{line-height:1.5;text-wrap:balance;margin:0}
+h1{font-size:44px;font-weight:900;margin-top:6px}
+h2{font-size:38px;font-weight:900;margin-top:8px}
+h3{font-size:32px;font-weight:700;margin-top:72px;padding-left:14px;border-left:6px solid var(--sec,var(--mute))}
+h4{font-size:29px;font-weight:700;margin-top:48px;color:var(--sec,var(--text))}
+p{margin:22px 0 0}
+b,strong{font-weight:700;color:#fff}
+a{color:var(--teal)}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+code{font-family:var(--font-label);font-size:1em;background:var(--panel2);padding:2px 6px;border-radius:5px}
+ul,ol{margin:18px 0 0;padding-left:1.3em}
+li{margin-top:8px}
+.eyebrow{font-family:var(--font-label);font-size:27px;color:var(--mute);letter-spacing:.04em;line-height:1.6}
+.sub{color:var(--mute);margin-top:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px;font-size:27px;line-height:1.6;color:var(--mute)}
+.legend i{display:inline-block;width:18px;height:18px;border-radius:4px;margin-right:9px;vertical-align:-2px}
+nav.toc{margin-top:36px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0;border-top:1px solid var(--line)}
+nav.toc li:first-child{border-top:0}
+nav.toc a{display:flex;gap:14px;padding:9px 0;text-decoration:none;color:var(--text)}
+nav.toc a span{font-family:var(--font-label);font-weight:700;min-width:2.2em}
+section.sec{margin-top:96px;padding-top:28px;border-top:3px solid var(--sec,var(--line))}
+.num{font-family:var(--font-label);font-weight:700;font-size:27px;color:var(--sec,var(--mute));letter-spacing:.08em;line-height:1.5}
+.lede{margin-top:26px;background:var(--panel);border-left:6px solid var(--sec,var(--mute));border-radius:0 14px 14px 0;padding:14px 20px 18px}
+.lede small{display:block;font-family:var(--font-label);font-size:27px;color:var(--sec,var(--mute));letter-spacing:.08em}
+.lede p{margin:4px 0 0;font-weight:700}
+.fig{margin:30px -8px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 8px 12px}
+.fig svg{display:block;width:100%;max-width:720px;height:auto;margin:0 auto}
+.fig figcaption{font-size:27px;line-height:2;color:var(--mute);padding:12px 10px 0;max-width:720px;margin:0 auto}
+.fig text{font-family:var(--font-label);fill:var(--text)}
+.fig .t{font-size:14px}.fig .ts{font-size:12.5px}.fig .tx{font-size:11px}.fig .tl{font-size:16px}.fig .tb{font-weight:700}
+.fig .c-a{fill:var(--amber)}.fig .c-b{fill:var(--teal)}.fig .c-c{fill:var(--blue)}.fig .c-r{fill:var(--rose)}
+.fig .c-v{fill:var(--violet)}.fig .c-g{fill:var(--green)}.fig .c-bad{fill:var(--bad)}.fig .c-mute{fill:var(--mute)}.fig .c-ink{fill:var(--bg)}
+.bx{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+.bx-a{fill:rgba(243,181,74,.15);stroke:var(--amber)}
+.bx-b{fill:rgba(88,207,194,.13);stroke:var(--teal)}
+.bx-c{fill:rgba(108,182,255,.14);stroke:var(--blue)}
+.bx-r{fill:rgba(242,155,184,.13);stroke:var(--rose)}
+.bx-v{fill:rgba(196,161,255,.15);stroke:var(--violet)}
+.bx-g{fill:rgba(168,214,114,.14);stroke:var(--green)}
+.dashb{stroke-dasharray:5 5}
+.ln{fill:none;stroke-width:2;stroke-linecap:round}
+.thin{stroke-width:1.5}
+.dash{stroke-dasharray:5 5}
+.grid{stroke:var(--line);stroke-width:1;fill:none}
+.s-a{stroke:var(--amber)}.s-b{stroke:var(--teal)}.s-c{stroke:var(--blue)}.s-r{stroke:var(--rose)}.s-v{stroke:var(--violet)}
+.s-g{stroke:var(--green)}.s-bad{stroke:var(--bad)}.s-mute{stroke:var(--mute)}.s-text{stroke:var(--text)}
+.fl-a{fill:var(--amber)}.fl-b{fill:var(--teal)}.fl-c{fill:var(--blue)}.fl-r{fill:var(--rose)}.fl-v{fill:var(--violet)}
+.fl-g{fill:var(--green)}.fl-bad{fill:var(--bad)}.fl-mute{fill:var(--mute)}.fl-text{fill:var(--text)}.fl-cell{fill:#2a3552}
+pre{margin:26px 0 0;background:#0a0e18;border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto;font-family:var(--font-label);font-size:20px;line-height:1.8}
+pre code{background:none;padding:0;font-size:inherit}
+pre .c{color:var(--mute)}
+pre .h{color:var(--amber);font-weight:700}
+.cap{margin:30px 0 -18px;font-family:var(--font-label);font-size:27px;color:var(--mute);line-height:1.6}
+.tw{margin-top:26px;overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:27px;line-height:1.8;font-variant-numeric:tabular-nums}
+th,td{padding:11px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--line)}
+tr:first-child th,tr:first-child td{border-top:0}
+thead th{background:var(--panel2);font-weight:700;white-space:nowrap}
+tbody th{font-weight:700;color:#fff}
+td.n{font-family:var(--font-label);white-space:nowrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:26px}
+.cards.wide{grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-top:6px solid var(--k,var(--mute));border-radius:12px;padding:14px 18px 18px;font-size:27px;line-height:2}
+.card h5{margin:0 0 4px;font-size:29px;font-weight:700;color:var(--k,var(--text));line-height:1.5}
+.card ul,.card ol{margin:0;padding-left:1.15em}
+.card li{margin-top:4px}
+.card small{display:block;color:var(--mute);font-size:27px;font-family:var(--font-label);line-height:1.6}
+.card svg.ico{display:block;width:72px;height:46px;margin:2px 0 6px;color:var(--k)}
+.box{margin-top:34px;border-radius:14px;padding:6px 20px 22px}
+.box>small{display:inline-block;font-family:var(--font-label);font-size:27px;letter-spacing:.08em;padding:2px 10px;border-radius:999px;margin-top:14px;line-height:1.6}
+.box h4{margin-top:10px;color:var(--text)}
+.col{background:var(--panel);border:1px solid var(--line)}
+.col>small{background:var(--panel2);color:var(--text)}
+.note{border:1.5px dashed var(--mute)}
+.note>small{border:1px solid var(--mute);color:var(--mute)}
+dl.term{margin:26px 0 0}
+dl.term dt{font-weight:700;color:#fff;margin-top:18px}
+dl.term dt span{display:block;font-family:var(--font-label);font-weight:500;font-size:27px;color:var(--mute);line-height:1.6}
+dl.term dd{margin:2px 0 0;padding-left:16px;border-left:3px solid var(--line)}
+ol.tl{list-style:none;margin:30px 0 0;padding:0 0 0 24px;border-left:3px solid var(--line)}
+ol.tl li{position:relative;margin:0;padding:0 0 24px 4px;font-size:27px;line-height:2}
+ol.tl li:last-child{padding-bottom:0}
+ol.tl li::before{content:"";position:absolute;left:-37px;top:.45em;width:18px;height:18px;border-radius:50%;background:var(--k,var(--mute));border:4px solid var(--bg)}
+ol.tl time{display:block;font-family:var(--font-label);font-size:27px;color:var(--mute);line-height:1.6}
+.dbs{display:grid;gap:10px;padding:0 6px}
+.dbt{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--panel2)}
+.dbt .nm{font-family:var(--font-label);font-size:22px;font-weight:700;color:var(--blue);padding:8px 12px 0;line-height:1.6}
+.dbt table{font-family:var(--font-label);font-size:20px;line-height:1.6;width:auto;min-width:100%}
+.dbt th,.dbt td{padding:6px 12px;white-space:nowrap;border-top:1px solid var(--line)}
+.dbt tr:first-child th{border-top:0;background:none;color:var(--mute);font-weight:500}
+.dbt .fk{color:var(--amber);font-weight:700}
+.dbt .on{color:var(--green);font-weight:700}
+.dbt .off{color:var(--mute)}
+details{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 18px}
+summary{cursor:pointer;font-weight:700}
+details p{margin-top:8px;color:var(--green)}
+footer{margin-top:80px;padding-top:24px;border-top:1px solid var(--line);color:var(--mute);font-size:27px;line-height:2}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ah-mute" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-mute"/></marker>
+    <marker id="ah-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-a"/></marker>
+    <marker id="ah-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-b"/></marker>
+    <marker id="ah-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-c"/></marker>
+    <marker id="ah-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-r"/></marker>
+    <marker id="ah-v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-v"/></marker>
+    <marker id="ah-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-g"/></marker>
+    <marker id="ah-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-bad"/></marker>
+    <marker id="ah-text" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="fl-text"/></marker>
+  </defs>
+</svg>
+<main>
+
+<header>
+  <div class="eyebrow">データ指向アプリケーションデザイン 第2版 ／ 3章</div>
+  <h1>データモデルとクエリ言語</h1>
+  <p class="sub">データを「どんな形で持つか」と「どうやって取り出すか」の章です。形の選び方ひとつで、同じ質問が4行で書けたり、31行になったりします。</p>
+  <div class="legend">
+    <span><i style="background:var(--blue)"></i>リレーショナル</span>
+    <span><i style="background:var(--amber)"></i>ドキュメント</span>
+    <span><i style="background:var(--teal)"></i>グラフ</span>
+    <span><i style="background:var(--rose)"></i>イベント</span>
+    <span><i style="background:var(--violet)"></i>データフレーム</span>
+    <span><i style="background:var(--green)"></i>うれしい</span>
+    <span><i style="background:var(--bad)"></i>困る</span>
+  </div>
+  <nav class="toc" aria-label="目次">
+    <ol>
+      <li><a href="#intro"><span>3</span>データモデルは層になっている</a></li>
+      <li><a href="#s31"><span>3.1</span>リレーショナルとドキュメント</a></li>
+      <li><a href="#s32"><span>3.2</span>グラフ</a></li>
+      <li><a href="#s33"><span>3.3</span>イベントソーシングとCQRS</a></li>
+      <li><a href="#s34"><span>3.4</span>データフレーム・行列・配列</a></li>
+      <li><a href="#s35"><span>3.5</span>まとめと理解度チェック</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ============================================================ intro -->
+<section class="sec" id="intro">
+  <div class="num">3章の入口</div>
+  <h2>データモデルは層になっている</h2>
+
+  <p><b>データモデル</b>とは、データの「形」の決め方です。表にするのか、入れ子のJSONにするのか、点と線にするのか。</p>
+  <p>本は、データモデルを「ソフトウェア開発でおそらく最も重要な要素」と言います。コードの書き方だけでなく、<b>問題の考え方そのもの</b>を変えてしまうからです。</p>
+  <p>アプリは、データモデルを何段も重ねて作られています。どの段でも問いは同じです。「これを、1つ下の段でどう表現するか？」</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 318" role="img" aria-label="データモデルの4つの層。アプリのオブジェクト、汎用データモデル、バイト列、物理現象の順に下へ表現されていく。この章は2段目の汎用データモデルを扱う">
+    <rect x="8" y="8" width="324" height="58" rx="8" class="bx"/>
+    <text x="170" y="32" text-anchor="middle" class="t tb">アプリのオブジェクトとAPI</text>
+    <text x="170" y="52" text-anchor="middle" class="ts c-mute">現実世界をアプリ開発者がモデル化</text>
+    <line x1="170" y1="68" x2="170" y2="88" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="182" y="83" class="ts c-mute">どう保存する？</text>
+    <rect x="8" y="92" width="324" height="66" rx="8" class="bx" style="stroke:var(--text);stroke-width:2.5"/>
+    <text x="170" y="114" text-anchor="middle" class="t tb">汎用データモデル</text>
+    <text x="170" y="133" text-anchor="middle" class="ts">JSON ・ テーブル ・ グラフ</text>
+    <text x="170" y="150" text-anchor="middle" class="ts tb c-g">この章はここ</text>
+    <line x1="170" y1="160" x2="170" y2="180" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="182" y="175" class="ts c-mute">どうバイトにする？</text>
+    <rect x="8" y="184" width="324" height="58" rx="8" class="bx"/>
+    <text x="170" y="208" text-anchor="middle" class="t tb">バイト列</text>
+    <text x="170" y="228" text-anchor="middle" class="ts c-mute">メモリ・ディスク・ネットワーク（4章）</text>
+    <line x1="170" y1="244" x2="170" y2="264" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="182" y="259" class="ts c-mute">どう物理で表す？</text>
+    <rect x="8" y="268" width="324" height="42" rx="8" class="bx"/>
+    <text x="170" y="294" text-anchor="middle" class="t">電流 ・ 光パルス ・ 磁場</text>
+  </svg><figcaption>各層は、下の層のややこしさをきれいなモデルで隠します。だからDBを作る人とDBを使う人が、別々に仕事をしても協力できます。</figcaption></figure>
+
+  <p>この章で比べるモデルは5つです。あるモデルで簡単なことが、別のモデルではぎこちなくなります。だから「いつどれを使うか」を知っておく価値があります。</p>
+
+  <div class="cards">
+    <div class="card" style="--k:var(--blue)"><svg class="ico" viewBox="0 0 56 36" aria-hidden="true"><rect x="2" y="3" width="52" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2,13 H54 M2,23 H54 M20,3 V33 M38,3 V33" stroke="currentColor" stroke-width="1.5" fill="none"/></svg><h5>リレーショナル</h5><small>3.1</small>表と行。JOINでつなぐ。</div>
+    <div class="card" style="--k:var(--amber)"><svg class="ico" viewBox="0 0 56 36" aria-hidden="true"><path d="M28,8 L10,28 M28,8 L28,28 M28,8 L46,28" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="28" cy="8" r="5" fill="currentColor"/><circle cx="10" cy="28" r="4" fill="currentColor"/><circle cx="28" cy="28" r="4" fill="currentColor"/><circle cx="46" cy="28" r="4" fill="currentColor"/></svg><h5>ドキュメント</h5><small>3.1</small>入れ子のJSON。木の形。</div>
+    <div class="card" style="--k:var(--teal)"><svg class="ico" viewBox="0 0 56 36" aria-hidden="true"><path d="M8,8 L30,6 L48,14 L36,30 L12,28 Z M30,6 L36,30 M8,8 L36,30 M12,28 L30,6" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="4" fill="currentColor"/><circle cx="30" cy="6" r="4" fill="currentColor"/><circle cx="48" cy="14" r="4" fill="currentColor"/><circle cx="36" cy="30" r="4" fill="currentColor"/><circle cx="12" cy="28" r="4" fill="currentColor"/></svg><h5>グラフ</h5><small>3.2</small>点と線。何でもつながる。</div>
+    <div class="card" style="--k:var(--rose)"><svg class="ico" viewBox="0 0 56 36" aria-hidden="true"><path d="M4,6 H52 M4,14 H52 M4,22 H52" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4,31 H30" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="4 5"/></svg><h5>イベントソーシング</h5><small>3.3</small>起きたことを追記する。</div>
+    <div class="card" style="--k:var(--violet)"><svg class="ico" viewBox="0 0 56 36" aria-hidden="true"><g fill="currentColor"><circle cx="8" cy="7" r="3"/><circle cx="22" cy="7" r="3" opacity=".3"/><circle cx="36" cy="7" r="3"/><circle cx="50" cy="7" r="3" opacity=".3"/><circle cx="8" cy="18" r="3" opacity=".3"/><circle cx="22" cy="18" r="3"/><circle cx="36" cy="18" r="3" opacity=".3"/><circle cx="50" cy="18" r="3"/><circle cx="8" cy="29" r="3"/><circle cx="22" cy="29" r="3" opacity=".3"/><circle cx="36" cy="29" r="3"/><circle cx="50" cy="29" r="3" opacity=".3"/></g></svg><h5>データフレーム</h5><small>3.4</small>巨大な表を数字の行列へ。</div>
+  </div>
+
+  <h3>先に覚える言葉：宣言型クエリ言語</h3>
+  <p>この章に出てくるクエリ言語（SQL、Cypher、SPARQL、Datalog）は、ほとんどが<b>宣言型</b>です。</p>
+  <p>定食屋で考えます。「サバ味噌定食ください」と言うのが宣言型です。欲しいものだけ伝えて、作り方は厨房に任せます。厨房に入って「まず鍋に水を入れて」と手順を指図するのが、PythonやJavaのような普通のプログラミングです。</p>
+
+  <div class="cards wide">
+    <div class="card" style="--k:var(--green)"><h5>宣言型</h5><small>何が欲しいかを書く</small>
+      <ul><li>結果が満たす条件と、並べ替えや集約のしかたを書く</li><li>どのインデックスを使うか、どの順で実行するかは、DBのクエリオプティマイザが決める</li></ul></div>
+    <div class="card" style="--k:var(--mute)"><h5>命令型</h5><small>どうやるかを書く</small>
+      <ul><li>どの操作をどの順でやるか、アルゴリズムを自分で書く</li><li>速くしたければ、自分で書き直す</li></ul></div>
+  </div>
+
+  <p>宣言型がうれしい理由は3つあります。</p>
+  <ul>
+    <li><b>短い。</b>アルゴリズムを書くより簡潔です。</li>
+    <li><b>DBが勝手に速くなれる。</b>実装の中身が隠れているので、クエリを1文字も変えずにDB側が性能を改善できます。</li>
+    <li><b>並列化もDB任せ。</b>複数のCPUコアやマシンで並列に実行する方法を、自分で考えなくて済みます。</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 3.1 -->
+<section class="sec" id="s31" style="--sec:var(--blue)">
+  <div class="num">3.1</div>
+  <h2>リレーショナルモデルとドキュメントモデル</h2>
+  <div class="lede"><small>ひとことで言うと</small><p>木の形のデータはドキュメント、つながりの多いデータはリレーショナル。いまのDBはだいたい両方できる。</p></div>
+
+  <p>いちばん有名なデータモデルは、SQLが使っている<b>リレーショナルモデル</b>です。1970年にEdgar Coddが提案しました。</p>
+  <dl class="term">
+    <dt>リレーション<span>＝SQLのテーブル</span></dt><dd>データを入れる表。</dd>
+    <dt>タプル<span>＝SQLの行</span></dt><dd>表の1行。リレーションは、タプルの「順序のない集まり」です。</dd>
+  </dl>
+  <p>このモデルには、50年のあいだ何度も挑戦者が現れました。そして毎回、リレーショナルが生き残りました。</p>
+
+  <ol class="tl">
+    <li style="--k:var(--blue)"><time>1970年</time>Coddがリレーショナルモデルを提案。最初は「本当に効率よく作れるのか」と疑われた。</li>
+    <li><time>1970年代〜80年代前半</time>ネットワークモデルと階層モデルが対抗。リレーショナルが圧倒。</li>
+    <li style="--k:var(--blue)"><time>1980年代半ば</time>RDBMSとSQLが定番の道具になる。</li>
+    <li><time>1980年代後半〜90年代前半</time>オブジェクトデータベースが登場。定着せず。</li>
+    <li><time>2000年代前半</time>XMLデータベースが登場。ニッチ止まり。</li>
+    <li style="--k:var(--amber)"><time>2010年代</time>NoSQLとNewSQL。言葉としては薄れたが、<b>ドキュメントモデル</b>という置き土産を残した。</li>
+    <li style="--k:var(--green)"><time>いま</time>SQLのほうがXML、JSON、グラフを取り込んで成長している。</li>
+  </ol>
+
+  <p>NoSQLが残したドキュメントモデルは、データをふつうJSONで表します。MongoDBやCouchbaseが広め、いまではほとんどのRDBもJSONを扱えます。この節は、この2つのモデルの比べっこです。</p>
+
+  <h3>3.1.1 オブジェクトとテーブルは形が合わない</h3>
+  <p>アプリのコードの中では、データは入れ子のオブジェクトです。DBの中では、平たい表です。形が違うので、あいだに不格好な変換層が要ります。</p>
+  <p>このズレを<b>インピーダンスミスマッチ</b>と呼びます。電子工学から借りた言葉で、回路同士のインピーダンスが合わないと信号が反射してしまう、という話が元です。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 150" role="img" aria-label="アプリの入れ子のオブジェクトと、データベースの平たいテーブルのあいだに、変換層が必要になる">
+    <text x="62" y="18" text-anchor="middle" class="ts c-mute">アプリ：入れ子</text>
+    <rect x="8" y="28" width="108" height="112" rx="8" class="bx-a" stroke-width="1.5"/>
+    <text x="62" y="48" text-anchor="middle" class="ts tb">user</text>
+    <rect x="18" y="58" width="88" height="32" rx="6" class="bx-a" stroke-width="1.5"/>
+    <text x="62" y="78" text-anchor="middle" class="tx">positions[ ]</text>
+    <rect x="18" y="98" width="88" height="32" rx="6" class="bx-a" stroke-width="1.5"/>
+    <text x="62" y="118" text-anchor="middle" class="tx">education[ ]</text>
+    <line x1="124" y1="76" x2="216" y2="76" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <line x1="216" y1="96" x2="124" y2="96" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="170" y="64" text-anchor="middle" class="ts tb">変換層</text>
+    <text x="170" y="116" text-anchor="middle" class="tx c-mute">（ORMなど）</text>
+    <text x="278" y="18" text-anchor="middle" class="ts c-mute">DB：平たい表</text>
+    <g class="bx-c" stroke-width="1.5">
+      <rect x="224" y="28" width="108" height="30" rx="4"/>
+      <rect x="224" y="68" width="108" height="30" rx="4"/>
+      <rect x="224" y="108" width="108" height="30" rx="4"/>
+    </g>
+    <path d="M260,28 V58 M296,28 V58 M260,68 V98 M296,68 V98 M260,108 V138 M296,108 V138" class="grid" style="stroke:var(--blue);opacity:.5"/>
+    <text x="278" y="47" text-anchor="middle" class="tx">users</text>
+    <text x="278" y="87" text-anchor="middle" class="tx">positions</text>
+    <text x="278" y="127" text-anchor="middle" class="tx">education</text>
+  </svg><figcaption>オブジェクトは入れ子、テーブルは平ら。行き来のたびに変換が要ります。</figcaption></figure>
+
+  <h4>ORMは変換を楽にするが、万能ではない</h4>
+  <p>ActiveRecordやHibernateのような<b>ORM</b>は、この変換のための決まりきったコードを減らしてくれます。ただし批判も多い道具です。</p>
+
+  <div class="cards wide">
+    <div class="card" style="--k:var(--bad)"><h5>困るところ</h5>
+      <ul>
+        <li>2つのモデルの違いを隠しきれない。結局、両方を考えることになる</li>
+        <li>ほぼOLTP専用。分析する人は生のテーブルを触るので、スキーマ設計はやはり大事</li>
+        <li>検索エンジン、グラフDB、NoSQLには対応が弱い</li>
+        <li>自動生成されたスキーマは、使いにくく非効率なことがある</li>
+        <li>非効率なクエリを気づかずに書いてしまう（N+1問題）</li>
+      </ul></div>
+    <div class="card" style="--k:var(--green)"><h5>助かるところ</h5>
+      <ul>
+        <li>単純で繰り返しの多い変換コードが減る</li>
+        <li>クエリ結果のキャッシュで、DBの負荷を下げられるものもある</li>
+        <li>スキーマのマイグレーションなど、管理作業を手伝ってくれる</li>
+      </ul></div>
+  </div>
+
+  <p><b>N+1クエリ問題</b>は図で見るとすぐわかります。コメントをN件表示するページで、投稿者の名前も出したいとします。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 240" role="img" aria-label="N+1問題。ORM任せだとコメント一覧で1回、投稿者を1人ずつN回クエリする。JOINなら1回で済む">
+    <text x="8" y="18" class="t tb c-bad">ORMまかせ：N+1回</text>
+    <rect x="8" y="30" width="72" height="88" rx="8" class="bx"/><text x="44" y="79" text-anchor="middle" class="t">アプリ</text>
+    <rect x="260" y="30" width="72" height="88" rx="8" class="bx"/><text x="296" y="79" text-anchor="middle" class="t">DB</text>
+    <text x="170" y="42" text-anchor="middle" class="tx">①コメントN件を取得 ×1</text>
+    <line x1="84" y1="50" x2="256" y2="50" class="ln s-text" marker-end="url(#ah-text)"/>
+    <g class="ln thin s-bad">
+      <line x1="84" y1="64" x2="256" y2="64" marker-end="url(#ah-bad)"/>
+      <line x1="84" y1="74" x2="256" y2="74" marker-end="url(#ah-bad)"/>
+      <line x1="84" y1="84" x2="256" y2="84" marker-end="url(#ah-bad)"/>
+      <line x1="84" y1="94" x2="256" y2="94" marker-end="url(#ah-bad)"/>
+    </g>
+    <text x="170" y="111" text-anchor="middle" class="tx c-bad">②投稿者を1人ずつ取得 ×N</text>
+    <line x1="8" y1="134" x2="332" y2="134" class="grid"/>
+    <text x="8" y="158" class="t tb c-g">JOINする：1回</text>
+    <rect x="8" y="170" width="72" height="60" rx="8" class="bx"/><text x="44" y="205" text-anchor="middle" class="t">アプリ</text>
+    <rect x="260" y="170" width="72" height="60" rx="8" class="bx"/><text x="296" y="205" text-anchor="middle" class="t">DB</text>
+    <text x="170" y="190" text-anchor="middle" class="tx c-g">コメント＋投稿者 ×1</text>
+    <line x1="84" y1="200" x2="256" y2="200" class="ln s-g" style="stroke-width:3" marker-end="url(#ah-g)"/>
+  </svg><figcaption>コメントが100件なら、上は101回、下は1回。避けるには、ORMに「投稿者も一緒に取ってきて」と指示します。Railsなら <code>includes</code> がそれです。</figcaption></figure>
+
+  <h4>一対多のデータは、ドキュメントのほうが自然</h4>
+  <p>本は履歴書（LinkedInのプロフィール）を例にします。名前は1人に1つです。でも職歴や学歴は、1人が複数持ちます。これが<b>一対多</b>の関係です。</p>
+  <p>リレーショナルで素直に作ると、テーブルが4つに分かれます。子テーブルは <code>user_id</code> で親を指します。</p>
+
+  <figure class="fig">
+    <div class="dbs">
+      <div class="dbt"><div class="nm">users</div><table>
+        <tr><th>user_id</th><th>first_name</th><th>last_name</th><th>region_id</th></tr>
+        <tr><td class="fk">251</td><td>Barack</td><td>Obama</td><td>us:91</td></tr></table></div>
+      <div class="dbt"><div class="nm">positions</div><table>
+        <tr><th>user_id</th><th>job_title</th><th>organization</th></tr>
+        <tr><td class="fk">251</td><td>President</td><td>United States of America</td></tr>
+        <tr><td class="fk">251</td><td>US Senator</td><td>United States Senate</td></tr></table></div>
+      <div class="dbt"><div class="nm">education</div><table>
+        <tr><th>user_id</th><th>school_name</th><th>start</th><th>end</th></tr>
+        <tr><td class="fk">251</td><td>Harvard University</td><td>1988</td><td>1991</td></tr>
+        <tr><td class="fk">251</td><td>Columbia University</td><td>1981</td><td>1983</td></tr></table></div>
+      <div class="dbt"><div class="nm">contact_info</div><table>
+        <tr><th>user_id</th><th>type</th><th>url</th></tr>
+        <tr><td class="fk">251</td><td>website</td><td>https://barackobama.com</td></tr></table></div>
+    </div>
+    <figcaption>リレーショナル版。プロフィール1件を読むのに、テーブルごとにクエリを投げるか、多テーブルのJOINが要ります。</figcaption>
+  </figure>
+
+  <p>同じ情報を、JSONのドキュメント1個で書くとこうなります。</p>
+<pre><code>{
+  <span class="h">"user_id": 251</span>,
+  "first_name": "Barack",
+  "last_name": "Obama",
+  "region_id": "us:91",
+  "positions": [
+    {"job_title": "President",
+     "organization": "United States of America"},
+    {"job_title": "US Senator (D-IL)",
+     "organization": "United States Senate"}
+  ],
+  "education": [
+    {"school_name": "Harvard University",
+     "start": 1988, "end": 1991},
+    {"school_name": "Columbia University",
+     "start": 1981, "end": 1983}
+  ],
+  "contact_info": {"website": "https://barackobama.com"}
+}</code></pre>
+
+  <p>一対多の関係は、データの中に<b>木の形</b>を作ります。JSONはその木をそのまま書けます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 190" role="img" aria-label="ユーザーを根として、職歴、学歴、連絡先が枝になり、その先に個々の項目がぶら下がる木構造">
+    <path d="M170,42 L58,80 M170,42 L170,80 M170,42 L282,80 M58,110 L30,150 M58,110 L86,150 M170,110 L142,150 M170,110 L198,150 M282,110 L254,150 M282,110 L310,150" class="ln s-a thin"/>
+    <rect x="115" y="8" width="110" height="34" rx="8" class="bx-a" stroke-width="1.5"/><text x="170" y="30" text-anchor="middle" class="t tb">user 251</text>
+    <g class="bx-a" stroke-width="1.5"><rect x="8" y="80" width="100" height="30" rx="6"/><rect x="120" y="80" width="100" height="30" rx="6"/><rect x="232" y="80" width="100" height="30" rx="6"/></g>
+    <text x="58" y="100" text-anchor="middle" class="ts">positions</text><text x="170" y="100" text-anchor="middle" class="ts">education</text><text x="282" y="100" text-anchor="middle" class="ts">contact_info</text>
+    <g class="bx"><rect x="4" y="150" width="52" height="30" rx="6"/><rect x="60" y="150" width="52" height="30" rx="6"/><rect x="116" y="150" width="52" height="30" rx="6"/><rect x="172" y="150" width="52" height="30" rx="6"/><rect x="228" y="150" width="52" height="30" rx="6"/><rect x="284" y="150" width="52" height="30" rx="6"/></g>
+    <text x="30" y="169" text-anchor="middle" class="tx">大統領</text><text x="86" y="169" text-anchor="middle" class="tx">上院議員</text>
+    <text x="142" y="169" text-anchor="middle" class="tx">Harvard</text><text x="198" y="169" text-anchor="middle" class="tx">Columbia</text>
+    <text x="254" y="169" text-anchor="middle" class="tx">website</text><text x="310" y="169" text-anchor="middle" class="tx">…</text>
+  </svg><figcaption>一対多の関係は木になる。JSONは木をそのまま表せます。</figcaption></figure>
+
+  <p>JSON版のいいところは<b>局所性</b>です。関連する情報が1か所にまとまっているので、1回読めば全部そろいます。クエリも速くて単純です。</p>
+
+  <div class="box note"><small>補足</small>
+    <h4>「一対多」は本当は「一対少数」</h4>
+    <p>履歴書の職歴は、せいぜい数件です。だから埋め込めます。有名人の投稿につくコメントのように数千件あるものを、1つのドキュメントに全部埋め込むのは無理があります。その場合はテーブルを分けるリレーショナル方式のほうが向いています。</p>
+  </div>
+
+  <h3>3.1.2 正規化、非正規化、結合</h3>
+  <p>さっきのJSONで、地域は <code>"us:91"</code> というIDでした。なぜ「Washington, DC」と文字で書かないのでしょう。</p>
+  <p>地域の一覧を別に用意して、そこから選ばせる形にすると、いいことが5つあります。</p>
+  <ul>
+    <li><b>表記がそろう。</b>書き方やスペルがバラバラになりません。</li>
+    <li><b>あいまいさが消える。</b>「Washington」が首都なのか州なのか、迷いません。</li>
+    <li><b>直すのが楽。</b>名前は1か所にしかないので、都市名が変わっても一発です。</li>
+    <li><b>翻訳できる。</b>一覧を翻訳しておけば、見る人の言語で表示できます。</li>
+    <li><b>検索が賢くなる。</b>「ワシントンは東海岸」という知識を一覧に持たせれば、「東海岸の人」で検索できます。</li>
+  </ul>
+
+  <figure class="fig"><svg viewBox="0 0 340 284" role="img" aria-label="正規化では3人のユーザーが1つの地域レコードをIDで指す。非正規化では3人それぞれが地域名のコピーを持つ">
+    <text x="8" y="18" class="t tb c-c">正規化：IDで指す</text>
+    <g class="bx"><rect x="8" y="28" width="140" height="26" rx="6"/><rect x="8" y="60" width="140" height="26" rx="6"/><rect x="8" y="92" width="140" height="26" rx="6"/></g>
+    <text x="18" y="45" class="ts">user 251 → us:91</text><text x="18" y="77" class="ts">user 310 → us:91</text><text x="18" y="109" class="ts">user 402 → us:91</text>
+    <rect x="212" y="50" width="120" height="46" rx="8" class="bx-c" stroke-width="1.5"/>
+    <text x="272" y="69" text-anchor="middle" class="ts tb">us:91</text><text x="272" y="87" text-anchor="middle" class="ts">Washington, DC</text>
+    <line x1="150" y1="41" x2="208" y2="64" class="ln s-c thin" marker-end="url(#ah-c)"/>
+    <line x1="150" y1="73" x2="208" y2="73" class="ln s-c thin" marker-end="url(#ah-c)"/>
+    <line x1="150" y1="105" x2="208" y2="82" class="ln s-c thin" marker-end="url(#ah-c)"/>
+    <text x="170" y="138" text-anchor="middle" class="ts c-c">名前は1か所。直すのも1か所。</text>
+    <line x1="8" y1="152" x2="332" y2="152" class="grid"/>
+    <text x="8" y="176" class="t tb c-a">非正規化：コピーを持つ</text>
+    <g class="bx"><rect x="8" y="186" width="324" height="24" rx="6"/><rect x="8" y="214" width="324" height="24" rx="6"/><rect x="8" y="242" width="324" height="24" rx="6"/></g>
+    <text x="18" y="202" class="ts">user 251</text><text x="18" y="230" class="ts">user 310</text><text x="18" y="258" class="ts">user 402</text>
+    <text x="322" y="202" text-anchor="end" class="ts c-a">"Washington, DC"</text><text x="322" y="230" text-anchor="end" class="ts c-a">"Washington, DC"</text><text x="322" y="258" text-anchor="end" class="ts c-a">"Washington, DC"</text>
+    <text x="170" y="280" text-anchor="middle" class="ts c-a">コピーが3つ。直すなら3か所。</text>
+  </svg><figcaption>人間に意味のある情報を1か所にだけ置き、ほかはIDで指すのが正規化。使う場所ごとに複製するのが非正規化です。</figcaption></figure>
+
+  <p>IDは人間にとって意味がないので、変える必要がありません。指している中身が変わっても、IDはそのままです。逆に、意味のある文字をあちこちに複製すると、変更のたびに全部のコピーを直すことになります。直し漏れれば<b>不整合</b>です。</p>
+  <p>正規化にも代償があります。画面に出すたびに、IDを人間が読める文字に引き直す必要があります。リレーショナルでは、これを<b>結合（JOIN）</b>でやります。</p>
+
+<pre><code>SELECT users.*, regions.region_name
+FROM users
+<span class="h">JOIN regions ON users.region_id = regions.id</span>
+WHERE users.id = 251;</code></pre>
+
+  <p>ドキュメントDBは、正規化したデータも入れられます。でも非正規化と結びつけて語られがちです。JSONは複製したフィールドを足しやすく、しかも結合の機能が弱いDBが多いからです。</p>
+  <p>結合がまったくないDBでは、アプリ側で2回クエリを投げます。MongoDBなら、集約パイプラインの <code>$lookup</code> で結合できます。</p>
+
+<pre><code>db.users.aggregate([
+  { $match: { _id: 251 } },
+  { <span class="h">$lookup</span>: {
+      from: "regions",
+      localField: "region_id",
+      foreignField: "_id",
+      as: "region"
+  } }
+])</code></pre>
+
+  <h4>正規化のトレードオフ</h4>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>正規化</th><th>非正規化</th></tr></thead>
+    <tbody>
+      <tr><th>書き込み</th><td>速い。コピーは1つ</td><td>高くつく。コピーを全部直す</td></tr>
+      <tr><th>読み取り</th><td>遅め。結合が要る</td><td>速い。結合が少ない</td></tr>
+      <tr><th>ディスク</th><td>少ない</td><td>多い</td></tr>
+      <tr><th>不整合</th><td>起きにくい</td><td>直し漏れの危険</td></tr>
+      <tr><th>向く場面</th><td>OLTP、小〜中規模</td><td>分析、超大規模の読み取り</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>非正規化は、1章で出てきた<b>導出データ</b>の一種だと考えるとわかりやすいです。元のデータからコピーを作っているので、コピーを更新し続ける仕組みが要ります。</p>
+  <p>更新の途中でプロセスが落ちたらどうなるか、も考える必要があります。アトミックなトランザクション（8章）があれば楽ですが、複数ドキュメントにまたがる原子性を持たないDBもあります。ストリーム処理（12章）で整合性を保つ手もあります。</p>
+
+  <h4>Xのタイムラインは、実は「半分だけ」非正規化</h4>
+  <p>2章のケーススタディを思い出してください。ホームタイムラインは、<code>posts</code> と <code>follows</code> の結合が高すぎるので、結果を事前に計算してキャッシュしていました。これは非正規化です。</p>
+  <p>ところが、X（旧Twitter）の実装では、このキャッシュに投稿の本文が入っていません。入っているのは<b>投稿IDと投稿者のIDだけ</b>です。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 240" role="img" aria-label="事前計算したタイムラインは投稿IDと投稿者IDだけを持ち、読むたびにpostsとusersから中身を引いてくる。これをハイドレーションと呼ぶ">
+    <rect x="8" y="8" width="324" height="62" rx="8" class="bx-a" stroke-width="1.5"/>
+    <text x="170" y="32" text-anchor="middle" class="t tb">事前計算したタイムライン</text>
+    <text x="170" y="54" text-anchor="middle" class="ts">投稿ID と 投稿者ID だけ。本文は持たない</text>
+    <line x1="30" y1="72" x2="30" y2="112" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <line x1="310" y1="72" x2="310" y2="112" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="170" y="90" text-anchor="middle" class="ts">読むたびにIDから中身を引く</text>
+    <text x="170" y="107" text-anchor="middle" class="ts tb c-g">＝ ハイドレーション</text>
+    <rect x="8" y="116" width="156" height="62" rx="8" class="bx-c" stroke-width="1.5"/>
+    <text x="86" y="140" text-anchor="middle" class="t tb">posts</text><text x="86" y="162" text-anchor="middle" class="ts">本文・いいね数</text>
+    <rect x="176" y="116" width="156" height="62" rx="8" class="bx-c" stroke-width="1.5"/>
+    <text x="254" y="140" text-anchor="middle" class="t tb">users</text><text x="254" y="162" text-anchor="middle" class="ts">名前・アイコン</text>
+    <line x1="86" y1="180" x2="126" y2="200" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <line x1="254" y1="180" x2="214" y2="200" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <rect x="60" y="204" width="220" height="30" rx="8" class="bx"/>
+    <text x="170" y="224" text-anchor="middle" class="ts tb">画面に表示（いつも最新）</text>
+  </svg><figcaption>ハイドレーションは、アプリのコードでやる結合です。</figcaption></figure>
+
+  <p>IDだけにする理由は単純です。いいね数は毎秒変わります。アイコンを頻繁に変える人もいます。そんなものをタイムラインに複製しても、すぐ古くなるだけです。容量も大きく増えます。</p>
+
+  <div class="box col"><small>この例の教訓</small>
+    <p>読むときに結合があっても、速くてスケールするサービスは作れます。ハイドレーションは並列化しやすく、コストがフォロー数やフォロワー数に左右されないからです。</p>
+    <p>正規化と非正規化は、良い悪いではありません。読みと書きの速さ、作る手間のトレードオフです。一部だけ非正規化して残りは正規化のまま、という組み合わせが最善のこともあります。判断するときは、情報がどれくらい頻繁に変わるか、読み書きのコストがどうなるかを見ます。</p>
+  </div>
+
+  <h3>3.1.3 多対一と多対多</h3>
+  <p>関係には3種類あります。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 150" role="img" aria-label="関係の3種類。一対多は1つから複数へ、多対一は複数から1つへ、多対多は複数同士が交差してつながる">
+    <text x="53" y="20" text-anchor="middle" class="ts tb">一対多</text><text x="170" y="20" text-anchor="middle" class="ts tb">多対一</text><text x="287" y="20" text-anchor="middle" class="ts tb">多対多</text>
+    <path d="M20,80 L86,50 M20,80 L86,80 M20,80 L86,110" class="ln s-mute thin"/>
+    <circle cx="20" cy="80" r="8" class="fl-a"/><circle cx="86" cy="50" r="7" class="fl-text"/><circle cx="86" cy="80" r="7" class="fl-text"/><circle cx="86" cy="110" r="7" class="fl-text"/>
+    <path d="M137,50 L203,80 M137,80 L203,80 M137,110 L203,80" class="ln s-mute thin"/>
+    <circle cx="137" cy="50" r="7" class="fl-text"/><circle cx="137" cy="80" r="7" class="fl-text"/><circle cx="137" cy="110" r="7" class="fl-text"/><circle cx="203" cy="80" r="8" class="fl-c"/>
+    <path d="M254,60 L320,60 M254,60 L320,100 M254,100 L320,60 M254,100 L320,100" class="ln s-mute thin"/>
+    <circle cx="254" cy="60" r="7" class="fl-text"/><circle cx="254" cy="100" r="7" class="fl-text"/><circle cx="320" cy="60" r="8" class="fl-b"/><circle cx="320" cy="100" r="8" class="fl-b"/>
+    <text x="53" y="142" text-anchor="middle" class="tx c-mute">1人 → 複数の職歴</text><text x="170" y="142" text-anchor="middle" class="tx c-mute">多くの人 → 1地域</text><text x="287" y="142" text-anchor="middle" class="tx c-mute">人 ⇄ 組織</text>
+    <line x1="111" y1="34" x2="111" y2="126" class="grid"/><line x1="229" y1="34" x2="229" y2="126" class="grid"/>
+  </svg><figcaption>職歴は一対多。<code>region_id</code> は多対一。組織や学校をIDで指すようにすると、多対多が生まれます。</figcaption></figure>
+
+  <p>いまの履歴書では、勤務先や学校名はただの文字列でした。これを「組織」というエンティティにして、IDで指すようにするとどうなるでしょう。ロゴを載せたいとき、文字列方式だと全員のプロフィールにロゴURLを複製することになります。エンティティ方式なら、ロゴは組織に1回だけ書けば済みます。</p>
+  <p>すると関係は<b>多対多</b>になります。1人は複数の組織で働き、1つの組織には複数の人がいるからです。リレーショナルでは、これを<b>関連テーブル</b>（結合テーブル）で表します。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 160" role="img" aria-label="positionsテーブルの1行が、ユーザーIDと組織IDを1つずつ持ち、人と組織を結びつける">
+    <rect x="4" y="40" width="76" height="60" rx="8" class="bx"/>
+    <text x="42" y="58" text-anchor="middle" class="tx c-mute">users</text><text x="42" y="82" text-anchor="middle" class="ts">251 Obama</text>
+    <rect x="112" y="18" width="116" height="104" rx="8" class="bx-c" stroke-width="1.5"/>
+    <text x="170" y="36" text-anchor="middle" class="tx c-mute">positions</text>
+    <text x="170" y="56" text-anchor="middle" class="tx c-c">user_id ｜ org_id</text>
+    <line x1="120" y1="64" x2="220" y2="64" class="grid" style="stroke:var(--blue);opacity:.5"/>
+    <text x="170" y="84" text-anchor="middle" class="ts">251 ｜ 513</text><text x="170" y="108" text-anchor="middle" class="ts">251 ｜ 514</text>
+    <rect x="260" y="28" width="76" height="84" rx="8" class="bx"/>
+    <text x="298" y="46" text-anchor="middle" class="tx c-mute">organizations</text><text x="298" y="72" text-anchor="middle" class="ts">513 米国</text><text x="298" y="96" text-anchor="middle" class="ts">514 上院</text>
+    <line x1="110" y1="70" x2="84" y2="70" class="ln s-c" marker-end="url(#ah-c)"/>
+    <line x1="230" y1="70" x2="256" y2="70" class="ln s-c" marker-end="url(#ah-c)"/>
+    <text x="170" y="148" text-anchor="middle" class="ts c-mute">positions の1行が、1人と1組織を結ぶ</text>
+  </svg><figcaption>関連テーブル。多対多を、2つの多対一に分解しています。</figcaption></figure>
+
+  <p>多対一や多対多は、自己完結したJSON 1個にはうまく収まりません。ドキュメントモデルでやるなら、組織は別のドキュメントにして、IDで参照します。</p>
+
+<pre><code>{
+  "user_id": 251,
+  "first_name": "Barack",
+  "last_name": "Obama",
+  "positions": [
+    {"start": 2009, "end": 2017,
+     "job_title": "President", <span class="h">"org_id": 513</span>},
+    {"start": 2005, "end": 2008,
+     "job_title": "US Senator (D-IL)", <span class="h">"org_id": 514</span>}
+  ]
+}</code></pre>
+
+  <h4>多対多は、両方向から引きたくなる</h4>
+  <p>「この人が働いた組織は？」と「この組織で働いた人は？」の両方を聞きたくなります。</p>
+  <ul>
+    <li><b>両側にIDを持つ。</b>履歴書に組織IDを、組織に履歴書IDを書きます。同じ関係を2か所に書くので非正規化です。食い違う危険があります。</li>
+    <li><b>1か所に持ってインデックスで引く。</b>正規化して、<b>セカンダリインデックス</b>（4章）で両方向から速く引けるようにします。リレーショナルなら <code>positions</code> の <code>user_id</code> と <code>org_id</code> の両方にインデックスを張ります。</li>
+  </ul>
+  <p>ドキュメントモデルでも、配列の中の <code>org_id</code> にインデックスを張れるDBは多いです。</p>
+
+  <h3>3.1.4 スターとスノーフレーク：分析のためのスキーマ</h3>
+  <p>ここは分析の話です。データウェアハウスはふつうリレーショナルで、テーブルの組み方に定番があります。代表が<b>スタースキーマ</b>です。本の例は食料品チェーンの売上です。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 230" role="img" aria-label="スタースキーマ。中央のファクトテーブルfact_salesを、日付、商品、店舗、顧客、販促の5つのディメンションテーブルが囲む">
+    <path d="M170,110 V54 M118,112 L90,102 M222,112 L250,102 M118,164 L90,176 M222,164 L250,176" class="ln s-mute thin"/>
+    <rect x="105" y="110" width="130" height="56" rx="8" class="bx-c" style="stroke-width:2.5"/>
+    <text x="170" y="134" text-anchor="middle" class="t tb">fact_sales</text><text x="170" y="154" text-anchor="middle" class="ts">1行＝1回の購入</text>
+    <g class="bx"><rect x="114" y="10" width="112" height="44" rx="8"/><rect x="6" y="58" width="112" height="44" rx="8"/><rect x="222" y="58" width="112" height="44" rx="8"/><rect x="6" y="176" width="112" height="44" rx="8"/><rect x="222" y="176" width="112" height="44" rx="8"/></g>
+    <text x="170" y="28" text-anchor="middle" class="ts tb">dim_date</text><text x="170" y="45" text-anchor="middle" class="tx c-mute">いつ</text>
+    <text x="62" y="76" text-anchor="middle" class="ts tb">dim_product</text><text x="62" y="93" text-anchor="middle" class="tx c-mute">何を</text>
+    <text x="278" y="76" text-anchor="middle" class="ts tb">dim_store</text><text x="278" y="93" text-anchor="middle" class="tx c-mute">どこで</text>
+    <text x="62" y="194" text-anchor="middle" class="ts tb">dim_customer</text><text x="62" y="211" text-anchor="middle" class="tx c-mute">誰が</text>
+    <text x="278" y="194" text-anchor="middle" class="ts tb">dim_promotion</text><text x="278" y="211" text-anchor="middle" class="tx c-mute">なぜ・どのように</text>
+  </svg><figcaption>真ん中から線が星の光のように伸びるので、スタースキーマと呼びます。</figcaption></figure>
+
+  <dl class="term">
+    <dt>ファクトテーブル<span>真ん中</span></dt>
+    <dd>1行が1つの出来事です。売上なら1回の購入、Webなら1回のページビューやクリック。あとで自由に分析できるよう、まとめずに1件ずつ記録します。だから巨大になります。大企業では数ペタバイトにもなります。</dd>
+    <dt>ディメンションテーブル<span>まわり</span></dt>
+    <dd>その出来事の「誰が、何を、どこで、いつ、どのように、なぜ」を表します。ファクトテーブルから外部キーで指します。</dd>
+  </dl>
+  <p>ファクトテーブルのカラムは2種類です。売値や仕入れ値のような<b>属性</b>と、ディメンションへの<b>外部キー</b>です。</p>
+  <p>日付までディメンションにするのは、「祝日かどうか」のような追加情報を持たせるためです。そうすれば祝日とそれ以外の売上を比べられます。</p>
+  <p>テーブルは横にとても広くなります。ファクトテーブルは100カラムを超えることが多く、ディメンションも広いです。店舗なら、ベーカリーがあるか、床面積、開業日、最寄りの幹線道路までの距離など、分析に使えそうな情報を全部載せます。</p>
+
+  <h4>変種：スノーフレークとOne Big Table</h4>
+  <figure class="fig"><svg viewBox="0 0 340 132" role="img" aria-label="3つのスキーマの比較。スターは中心とまわり、スノーフレークはまわりがさらに枝分かれ、One Big Tableは全部を1枚の広いテーブルに畳み込む">
+    <text x="57" y="16" text-anchor="middle" class="ts tb">スター</text><text x="170" y="16" text-anchor="middle" class="ts tb">スノーフレーク</text><text x="283" y="16" text-anchor="middle" class="ts tb">OBT</text>
+    <path d="M57,65 L27,40 M57,65 L87,40 M57,65 L27,92 M57,65 L87,92" class="ln s-mute thin"/>
+    <rect x="45" y="56" width="24" height="18" rx="3" class="fl-c"/>
+    <g class="fl-text"><rect x="18" y="34" width="18" height="12" rx="2"/><rect x="78" y="34" width="18" height="12" rx="2"/><rect x="18" y="86" width="18" height="12" rx="2"/><rect x="78" y="86" width="18" height="12" rx="2"/></g>
+    <path d="M170,65 L144,42 M170,65 L196,42 M170,65 L144,90 M170,65 L196,90 M144,42 L124,28 M196,42 L216,28 M144,90 L124,104 M196,90 L216,104" class="ln s-mute thin"/>
+    <rect x="158" y="56" width="24" height="18" rx="3" class="fl-c"/>
+    <g class="fl-text"><rect x="135" y="36" width="18" height="12" rx="2"/><rect x="187" y="36" width="18" height="12" rx="2"/><rect x="135" y="84" width="18" height="12" rx="2"/><rect x="187" y="84" width="18" height="12" rx="2"/></g>
+    <g class="fl-mute"><rect x="118" y="24" width="12" height="8" rx="2"/><rect x="210" y="24" width="12" height="8" rx="2"/><rect x="118" y="100" width="12" height="8" rx="2"/><rect x="210" y="100" width="12" height="8" rx="2"/></g>
+    <rect x="238" y="52" width="90" height="26" rx="3" class="fl-c"/>
+    <path d="M248,52 V78 M258,52 V78 M268,52 V78 M278,52 V78 M288,52 V78 M298,52 V78 M308,52 V78 M318,52 V78" stroke="#0f1420" stroke-width="1.5"/>
+    <text x="57" y="124" text-anchor="middle" class="tx c-mute">中心＋まわり</text><text x="170" y="124" text-anchor="middle" class="tx c-mute">まわりをさらに分割</text><text x="283" y="124" text-anchor="middle" class="tx c-mute">全部を1枚に</text>
+    <line x1="111" y1="28" x2="111" y2="110" class="grid"/><line x1="229" y1="28" x2="229" y2="110" class="grid"/>
+  </svg><figcaption>右へ行くほど非正規化が進みます。</figcaption></figure>
+
+  <ul>
+    <li><b>スノーフレークスキーマ。</b>ディメンションをさらにサブディメンションに分けます。たとえば商品テーブルが、ブランドやカテゴリを文字列で持たずに外部キーで指します。スターより正規化されていますが、アナリストにはスターのほうが扱いやすいので、スターが好まれがちです。</li>
+    <li><b>One Big Table（OBT）。</b>ディメンションテーブルをなくして、全部をファクトテーブルのカラムに畳み込みます。結合を事前に済ませておくようなものです。容量は食いますが、クエリが速くなることがあります。</li>
+  </ul>
+  <p>分析では、こういう非正規化があまり問題になりません。データは「過去に起きたことの記録」で、基本的に変わらないからです。OLTPで怖かった不整合や書き込みの重さが、ここでは切実ではありません。</p>
+  <p>ちなみにスターやスノーフレークは、ほぼ多対一の関係でできています。1回の買い物で3品買っても、「まとめ買い」という関係は表しません。商品ごとに別の行を作り、たまたま顧客ID、店舗ID、時刻が同じ、という形にします。</p>
+
+  <h3>3.1.5 どのモデルをいつ使うか</h3>
+  <div class="cards wide">
+    <div class="card" style="--k:var(--amber)"><h5>ドキュメントの強み</h5>
+      <ul><li>スキーマが柔軟</li><li>局所性のおかげで速い</li><li>アプリのオブジェクトの形に近いことがある</li></ul></div>
+    <div class="card" style="--k:var(--blue)"><h5>リレーショナルの強み</h5>
+      <ul><li>結合が得意</li><li>多対一、多対多の関係をうまく扱える</li></ul></div>
+  </div>
+
+  <figure class="fig"><svg viewBox="0 0 340 246" role="img" aria-label="モデル選びの流れ。データが木の形で丸ごと読むならドキュメント。多対多が多いか入れ子の中を直接指したいならリレーショナル。どちらでもなければどちらでもよい">
+    <rect x="40" y="8" width="260" height="52" rx="8" class="bx"/>
+    <text x="170" y="30" text-anchor="middle" class="t">データは木の形で、</text><text x="170" y="50" text-anchor="middle" class="t">だいたい丸ごと読む？</text>
+    <line x1="110" y1="62" x2="84" y2="98" class="ln s-mute" marker-end="url(#ah-mute)"/><text x="88" y="80" text-anchor="end" class="ts c-g">はい</text>
+    <line x1="230" y1="62" x2="252" y2="90" class="ln s-mute" marker-end="url(#ah-mute)"/><text x="250" y="76" class="ts c-mute">いいえ</text>
+    <rect x="8" y="102" width="148" height="42" rx="8" class="bx-a" stroke-width="1.5"/><text x="82" y="128" text-anchor="middle" class="t tb">ドキュメント</text>
+    <rect x="176" y="94" width="156" height="58" rx="8" class="bx"/>
+    <text x="254" y="118" text-anchor="middle" class="ts">多対多が多い？入れ子の</text><text x="254" y="138" text-anchor="middle" class="ts">中を外から指したい？</text>
+    <line x1="254" y1="154" x2="254" y2="190" class="ln s-mute" marker-end="url(#ah-mute)"/><text x="262" y="176" class="ts c-g">はい</text>
+    <line x1="196" y1="154" x2="132" y2="190" class="ln s-mute" marker-end="url(#ah-mute)"/><text x="154" y="166" text-anchor="end" class="ts c-mute">いいえ</text>
+    <rect x="176" y="194" width="156" height="42" rx="8" class="bx-c" stroke-width="1.5"/><text x="254" y="220" text-anchor="middle" class="t tb">リレーショナル</text>
+    <rect x="8" y="194" width="148" height="42" rx="8" class="bx"/><text x="82" y="212" text-anchor="middle" class="ts">どちらでもよい</text><text x="82" y="228" text-anchor="middle" class="tx c-mute">（混ぜるのも強い）</text>
+  </svg><figcaption>本の議論を、ざっくり1枚にしたものです。</figcaption></figure>
+
+  <ul>
+    <li><b>木の形なら、無理に分割しない。</b>ドキュメント的な構造を複数テーブルにバラすことを<b>シュレッディング</b>と呼びます。面倒なスキーマと、必要以上に複雑なコードになりがちです。</li>
+    <li><b>入れ子の中身は、外から直接指せない。</b>ドキュメントでは「ユーザー251の職歴の2番目」のような言い方になります。直接参照したいなら、どの項目にもIDがあるリレーショナルが向きます。</li>
+    <li><b>並べ替えできるリストは、ドキュメントが楽。</b>ToDoのドラッグ&ドロップは、JSON配列に順番どおり入れるだけです。RDBには標準の方法がありません。整数カラムで並べる（途中に入れると番号の振り直し）、IDのリンクドリスト、小数インデックス法（fractional indexing）などの工夫が要ります。</li>
+  </ul>
+
+  <h4>スキーマの柔軟性：「スキーマレス」は言いすぎ</h4>
+  <p>ドキュメントDBは、入れるデータの形を強制しません。好きなキーを足せます。だから「スキーマレス」と呼ばれますが、本はこれを誤解を招く言い方だと言います。</p>
+  <p>データを読むコードは、結局なにかの形を前提にしているからです。スキーマは「ない」のではなく、「DBが強制していない」だけです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 204" role="img" aria-label="スキーマオンライトは書き込み時に検査してからDBに入れる。スキーマオンリードは何でもDBに入れ、読むときにアプリが解釈する">
+    <text x="8" y="18" class="ts tb c-c">スキーマオンライト（書くとき検査）</text>
+    <rect x="8" y="28" width="56" height="40" rx="8" class="bx"/><text x="36" y="53" text-anchor="middle" class="ts">書く</text>
+    <rect x="92" y="28" width="64" height="40" rx="8" class="bx-c" stroke-width="2"/><text x="124" y="53" text-anchor="middle" class="ts tb">検査</text>
+    <rect x="184" y="28" width="56" height="40" rx="8" class="bx"/><text x="212" y="53" text-anchor="middle" class="ts">DB</text>
+    <rect x="268" y="28" width="64" height="40" rx="8" class="bx"/><text x="300" y="53" text-anchor="middle" class="ts">読む</text>
+    <line x1="66" y1="48" x2="88" y2="48" class="ln s-mute" marker-end="url(#ah-mute)"/><line x1="158" y1="48" x2="180" y2="48" class="ln s-mute" marker-end="url(#ah-mute)"/><line x1="242" y1="48" x2="264" y2="48" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="8" y="88" class="tx c-mute">合わないデータは入口で弾く（静的型に似ている）</text>
+    <line x1="8" y1="102" x2="332" y2="102" class="grid"/>
+    <text x="8" y="124" class="ts tb c-a">スキーマオンリード（読むとき解釈）</text>
+    <rect x="8" y="134" width="56" height="40" rx="8" class="bx"/><text x="36" y="159" text-anchor="middle" class="ts">書く</text>
+    <rect x="92" y="134" width="64" height="40" rx="8" class="bx"/><text x="124" y="159" text-anchor="middle" class="ts">DB</text>
+    <rect x="184" y="134" width="56" height="40" rx="8" class="bx-a" stroke-width="2"/><text x="212" y="159" text-anchor="middle" class="ts tb">解釈</text>
+    <rect x="268" y="134" width="64" height="40" rx="8" class="bx"/><text x="300" y="159" text-anchor="middle" class="ts">読む</text>
+    <line x1="66" y1="154" x2="88" y2="154" class="ln s-mute" marker-end="url(#ah-mute)"/><line x1="158" y1="154" x2="180" y2="154" class="ln s-mute" marker-end="url(#ah-mute)"/><line x1="242" y1="154" x2="264" y2="154" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="8" y="194" class="tx c-mute">何でも入る。読む側が面倒を見る（動的型に似ている）</text>
+  </svg><figcaption>静的型と動的型の論争と同じで、はっきりした勝者はいません。</figcaption></figure>
+
+  <p>違いがはっきり出るのは、データの形を変えたいときです。氏名を1つのフィールドに入れていたのを、名と姓に分けたくなったとします。</p>
+
+  <p class="cap">ドキュメントDB：新しい形で書き始めて、読む側で古い形に対応する</p>
+<pre><code>if (user &amp;&amp; user.name &amp;&amp; !user.first_name) {
+  <span class="c">// 古いドキュメントには first_name がない</span>
+  user.first_name = user.name.split(" ")[0];
+}</code></pre>
+
+  <p class="cap">RDB：マイグレーションで全行を新しい形にそろえる</p>
+<pre><code>ALTER TABLE users
+  ADD COLUMN first_name text DEFAULT NULL;
+
+UPDATE users
+  SET first_name = split_part(name, ' ', 1);
+<span class="c">-- ↑ PostgreSQLの場合</span></code></pre>
+
+  <ul>
+    <li>ドキュメント方式の弱点は、DBを読む<b>すべての場所</b>が、ずっと昔に書かれた古い形にも対応し続けなければならないことです。</li>
+    <li>RDB方式の弱点は<b>重さ</b>です。デフォルト値つきのカラム追加は大きなテーブルでも速いですが、<code>UPDATE</code> は全行を書き換えるので遅くなります。カラムの型変更などは、テーブル全体のコピーが必要になるのが普通です。</li>
+    <li>無停止でスキーマを変えるツールはいろいろあります。それでも大規模DBでは運用が難しいままです。逃げ道として、カラムを <code>NULL</code> で足すだけにして、読むときに値を補う手もあります。ドキュメントDBと同じやり方です。</li>
+  </ul>
+
+  <p>スキーマオンリードが向くのは、中身がバラバラなときです。</p>
+  <ul>
+    <li>オブジェクトの種類が多すぎて、種類ごとにテーブルを作るのが現実的でない。</li>
+    <li>データの形を外部のシステムが決めていて、いつ変わるかこちらでは制御できない。</li>
+  </ul>
+  <p>逆に、全レコードが同じ形のはずなら、スキーマは形を文書化して守らせる便利な仕組みです。</p>
+
+  <h4>局所性：まとめて読むなら速い</h4>
+  <p>ドキュメントは、JSONやXML、またはそのバイナリ版（MongoDBのBSONなど）の、<b>ひと続きの文字列</b>として保存されます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 146" role="img" aria-label="ディスク上の配置。ドキュメントは連続した1かたまりなので1回で読める。複数テーブルに分かれたデータは離れた場所に散らばり、何回も探しに行く">
+    <text x="10" y="16" class="ts">ドキュメント：1かたまりで並ぶ</text>
+    <g class="fl-cell"><rect x="10" y="24" width="18" height="22" rx="2"/><rect x="30" y="24" width="18" height="22" rx="2"/><rect x="50" y="24" width="18" height="22" rx="2"/><rect x="70" y="24" width="18" height="22" rx="2"/><rect x="190" y="24" width="18" height="22" rx="2"/><rect x="210" y="24" width="18" height="22" rx="2"/><rect x="230" y="24" width="18" height="22" rx="2"/><rect x="250" y="24" width="18" height="22" rx="2"/><rect x="270" y="24" width="18" height="22" rx="2"/><rect x="290" y="24" width="18" height="22" rx="2"/><rect x="310" y="24" width="18" height="22" rx="2"/></g>
+    <g class="fl-a"><rect x="90" y="24" width="18" height="22" rx="2"/><rect x="110" y="24" width="18" height="22" rx="2"/><rect x="130" y="24" width="18" height="22" rx="2"/><rect x="150" y="24" width="18" height="22" rx="2"/><rect x="170" y="24" width="18" height="22" rx="2"/></g>
+    <text x="139" y="64" text-anchor="middle" class="tx c-a">1回で読める</text>
+    <text x="10" y="92" class="ts">複数テーブル：あちこちに散らばる</text>
+    <g class="fl-cell"><rect x="10" y="100" width="18" height="22" rx="2"/><rect x="50" y="100" width="18" height="22" rx="2"/><rect x="70" y="100" width="18" height="22" rx="2"/><rect x="90" y="100" width="18" height="22" rx="2"/><rect x="110" y="100" width="18" height="22" rx="2"/><rect x="150" y="100" width="18" height="22" rx="2"/><rect x="170" y="100" width="18" height="22" rx="2"/><rect x="190" y="100" width="18" height="22" rx="2"/><rect x="230" y="100" width="18" height="22" rx="2"/><rect x="250" y="100" width="18" height="22" rx="2"/><rect x="270" y="100" width="18" height="22" rx="2"/><rect x="310" y="100" width="18" height="22" rx="2"/></g>
+    <g class="fl-c"><rect x="30" y="100" width="18" height="22" rx="2"/><rect x="130" y="100" width="18" height="22" rx="2"/><rect x="210" y="100" width="18" height="22" rx="2"/><rect x="290" y="100" width="18" height="22" rx="2"/></g>
+    <text x="170" y="140" text-anchor="middle" class="tx c-c">インデックスを何回も引いて、探しに行く</text>
+  </svg><figcaption>ストレージの局所性。ドキュメント全体をよく使うなら有利です。</figcaption></figure>
+
+  <p>ただし、この利点が効くのは<b>ドキュメントの大部分を同時に使うとき</b>だけです。</p>
+  <ul>
+    <li>DBはふつうドキュメント全体をロードします。大きなドキュメントの一部だけ欲しいときは無駄です。</li>
+    <li>更新するときも、ふつう全体を書き直します。</li>
+  </ul>
+  <p>なので、ドキュメントは小さめに保ち、こまごました更新を頻繁にしないのがおすすめとされます。</p>
+  <p>なお、局所性はドキュメントモデルだけの特権ではありません。GoogleのSpannerは、子テーブルの行を親テーブルの中に入れ子にして置けます。Oracleにも似た機能があります。BigtableやHBaseの<b>カラムファミリー</b>も、局所性を管理するための仕組みです。</p>
+
+  <h4>ドキュメントのためのクエリ言語</h4>
+  <p>RDBはだいたいSQLで聞きます。ドキュメントDBはバラバラです。主キーで出し入れできるだけのもの、セカンダリインデックスがあるもの、立派なクエリ言語を持つものがあります。</p>
+  <p>XMLにはXQueryやXPath、JSONにはJSON PointerやJSONPathがあります。MongoDBの集約パイプラインも、その仲間です。</p>
+  <p>本の例は海洋生物学者です。「月ごとに、サメを何匹見たか」を出します。</p>
+
+  <p class="cap">PostgreSQL</p>
+<pre><code>SELECT
+  date_trunc('month', observation_timestamp)
+    AS observation_month,
+  sum(num_animals) AS total_animals
+FROM observations
+WHERE family = 'Sharks'
+GROUP BY observation_month;</code></pre>
+
+  <p class="cap">MongoDBの集約パイプライン</p>
+<pre><code>db.observations.aggregate([
+  { $match: { family: "Sharks" } },
+  { $group: {
+      _id: {
+        year:  { $year:  "$observationTimestamp" },
+        month: { $month: "$observationTimestamp" }
+      },
+      totalAnimals: { $sum: "$numAnimals" }
+  } }
+]);</code></pre>
+
+  <p>やっていることは同じです。サメだけに絞り、月でまとめ、数を合計します。集約パイプラインの表現力はSQLの一部と同じくらいで、書き方が英文風かJSON風かの違いです。本は「好みの問題かもしれない」と言います。</p>
+
+  <h4>2つのモデルは近づいている</h4>
+  <figure class="fig"><svg viewBox="0 0 340 120" role="img" aria-label="リレーショナルDBはJSON対応を足し、ドキュメントDBは結合やインデックスを足して、両方できるDBへ収束している">
+    <rect x="8" y="8" width="130" height="34" rx="8" class="bx-c" stroke-width="1.5"/><text x="73" y="30" text-anchor="middle" class="ts tb">リレーショナルDB</text>
+    <rect x="8" y="78" width="130" height="34" rx="8" class="bx-a" stroke-width="1.5"/><text x="73" y="100" text-anchor="middle" class="ts tb">ドキュメントDB</text>
+    <rect x="232" y="40" width="100" height="40" rx="8" class="bx" style="stroke:var(--green)"/><text x="282" y="65" text-anchor="middle" class="ts tb">両方できる</text>
+    <line x1="140" y1="25" x2="228" y2="52" class="ln s-c" marker-end="url(#ah-c)"/><line x1="140" y1="95" x2="228" y2="68" class="ln s-a" marker-end="url(#ah-a)"/>
+    <text x="190" y="26" text-anchor="middle" class="tx c-c">＋JSON</text><text x="192" y="104" text-anchor="middle" class="tx c-a">＋結合・索引</text>
+  </svg><figcaption>RDBはJSONの型と、JSON内へのインデックスを追加。MongoDBなどは結合、セカンダリインデックス、宣言型クエリ言語を追加。</figcaption></figure>
+
+  <p>これは開発者にとって良いニュースです。ドキュメント側にも他のドキュメントへの参照は要りますし、リレーショナル側にもスキーマをゆるくしたい場所はあります。同じDBで両方を混ぜられるときが、いちばんうまくいきます。</p>
+
+  <div class="box note"><small>豆知識</small>
+    <h4>Coddは最初から入れ子を認めていた</h4>
+    <p>1970年の最初の論文は、行の中の値が「入れ子のテーブル」であってもよいとしていました。Coddはこれを非単純ドメインと呼びました。30年以上あとにSQLへ入ったJSONサポートと、ほぼ同じ発想です。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 3.2 -->
+<section class="sec" id="s32" style="--sec:var(--teal)">
+  <div class="num">3.2</div>
+  <h2>グラフ型データモデル</h2>
+  <div class="lede"><small>ひとことで言うと</small><p>何でも何にでもつながるデータは、点と線で持つ。「何段先まであるかわからない」たどり方が得意。</p></div>
+
+  <p>モデルの向き不向きは、関係の種類で決まります。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 124" role="img" aria-label="つながりが複雑になるにつれて、ドキュメント、リレーショナル、グラフの順に向くモデルが変わる">
+    <path d="M57,14 L39,44 M57,14 L57,44 M57,14 L75,44" class="ln s-a thin"/>
+    <g class="fl-a"><circle cx="57" cy="14" r="5"/><circle cx="39" cy="44" r="5"/><circle cx="57" cy="44" r="5"/><circle cx="75" cy="44" r="5"/></g>
+    <rect x="148" y="12" width="44" height="34" rx="3" fill="none" class="s-c" stroke-width="2"/><path d="M148,23 H192 M148,34 H192 M170,12 V46" class="ln s-c thin"/>
+    <path d="M265,16 L301,14 L283,30 L263,46 L303,44 L301,14 M265,16 L283,30 L303,44 M265,16 L263,46" class="ln s-b thin"/>
+    <g class="fl-b"><circle cx="265" cy="16" r="5"/><circle cx="301" cy="14" r="5"/><circle cx="283" cy="30" r="5"/><circle cx="263" cy="46" r="5"/><circle cx="303" cy="44" r="5"/></g>
+    <text x="57" y="68" text-anchor="middle" class="ts tb">ドキュメント</text><text x="170" y="68" text-anchor="middle" class="ts tb">リレーショナル</text><text x="283" y="68" text-anchor="middle" class="ts tb">グラフ</text>
+    <text x="57" y="84" text-anchor="middle" class="tx c-mute">一対多の木</text><text x="170" y="84" text-anchor="middle" class="tx c-mute">単純な多対多</text><text x="283" y="84" text-anchor="middle" class="tx c-mute">複雑な多対多</text>
+    <line x1="20" y1="100" x2="320" y2="100" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <text x="170" y="118" text-anchor="middle" class="tx c-mute">つながりが多く、複雑になる</text>
+  </svg><figcaption>多対多だらけになったら、グラフとして考えるほうが自然です。</figcaption></figure>
+
+  <p>グラフの部品は2種類だけです。</p>
+  <dl class="term">
+    <dt>頂点<span>vertex ／ ノード ／ エンティティ</span></dt><dd>点。人、場所、ページなど「もの」を表します。</dd>
+    <dt>辺<span>edge ／ リレーションシップ ／ アーク</span></dt><dd>線。もの同士の関係を表します。</dd>
+  </dl>
+
+  <div class="tw"><table>
+    <thead><tr><th>例</th><th>頂点</th><th>辺</th><th>よく使う計算</th></tr></thead>
+    <tbody>
+      <tr><th>ソーシャルグラフ</th><td>人</td><td>知り合い</td><td></td></tr>
+      <tr><th>Webグラフ</th><td>ページ</td><td>リンク</td><td>PageRankで人気度を出す</td></tr>
+      <tr><th>道路・鉄道</th><td>交差点</td><td>道路、路線</td><td>最短経路を探す</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>グラフの持ち方には、大きく2通りあります。</p>
+  <figure class="fig"><svg viewBox="0 0 340 162" role="img" aria-label="同じグラフの2つの表現。隣接リストは各頂点が隣の頂点のリストを持つ。隣接行列は行と列が頂点で、辺があれば1、なければ0">
+    <line x1="52" y1="40" x2="84" y2="40" class="ln s-b" marker-end="url(#ah-b)"/><line x1="44" y1="53" x2="62" y2="86" class="ln s-b" marker-end="url(#ah-b)"/><line x1="78" y1="88" x2="94" y2="54" class="ln s-b" marker-end="url(#ah-b)"/>
+    <g class="bx-b" stroke-width="1.5"><circle cx="38" cy="40" r="14"/><circle cx="100" cy="40" r="14"/><circle cx="70" cy="100" r="14"/></g>
+    <text x="38" y="45" text-anchor="middle" class="t tb">A</text><text x="100" y="45" text-anchor="middle" class="t tb">B</text><text x="70" y="105" text-anchor="middle" class="t tb">C</text>
+    <text x="178" y="20" text-anchor="middle" class="ts tb">隣接リスト</text>
+    <text x="146" y="50" class="ts">A → B, C</text><text x="146" y="74" class="ts">B → なし</text><text x="146" y="98" class="ts">C → B</text>
+    <text x="283" y="20" text-anchor="middle" class="ts tb">隣接行列</text>
+    <text x="273" y="44" text-anchor="middle" class="ts c-mute">A</text><text x="295" y="44" text-anchor="middle" class="ts c-mute">B</text><text x="317" y="44" text-anchor="middle" class="ts c-mute">C</text>
+    <text x="250" y="66" text-anchor="middle" class="ts c-mute">A</text><text x="250" y="88" text-anchor="middle" class="ts c-mute">B</text><text x="250" y="110" text-anchor="middle" class="ts c-mute">C</text>
+    <text x="273" y="66" text-anchor="middle" class="ts c-mute">0</text><text x="295" y="66" text-anchor="middle" class="ts tb c-b">1</text><text x="317" y="66" text-anchor="middle" class="ts tb c-b">1</text>
+    <text x="273" y="88" text-anchor="middle" class="ts c-mute">0</text><text x="295" y="88" text-anchor="middle" class="ts c-mute">0</text><text x="317" y="88" text-anchor="middle" class="ts c-mute">0</text>
+    <text x="273" y="110" text-anchor="middle" class="ts c-mute">0</text><text x="295" y="110" text-anchor="middle" class="ts tb c-b">1</text><text x="317" y="110" text-anchor="middle" class="ts c-mute">0</text>
+    <text x="178" y="146" text-anchor="middle" class="tx c-g">たどるのに向く</text><text x="283" y="146" text-anchor="middle" class="tx c-g">機械学習に向く</text>
+    <line x1="126" y1="10" x2="126" y2="152" class="grid"/><line x1="232" y1="10" x2="232" y2="152" class="grid"/>
+  </svg><figcaption>隣接リストと隣接行列。行列の話は3.4でまた出ます。</figcaption></figure>
+
+  <p>グラフのもう1つの強みは、<b>種類の違うものを1つに入れられる</b>ことです。Facebookは、人、場所、イベント、チェックイン、コメントを全部1つのグラフで持っています。検索エンジンのナレッジグラフや、Wikidataも同じ発想です。</p>
+  <p>この節で見るのは、モデル2つと言語4つです。</p>
+  <div class="cards wide">
+    <div class="card" style="--k:var(--teal)"><h5>モデル</h5>
+      <ul><li><b>プロパティグラフ</b><small>Neo4j、Memgraph、KùzuDB</small></li><li><b>トリプルストア</b><small>Datomic、AllegroGraph、Blazegraph</small></li></ul>
+      <small>Amazon Neptuneは両方に対応</small></div>
+    <div class="card" style="--k:var(--teal)"><h5>クエリ言語</h5>
+      <ul><li>Cypher</li><li>SPARQL</li><li>Datalog</li><li>GraphQL</li></ul><small>おまけでSQLでの書き方も</small></div>
+  </div>
+
+  <p>例はずっと同じものを使います。アイダホ出身のLucyと、フランスのサン・ロー出身のAlain。2人は結婚して、ロンドンに住んでいます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 410" role="img" aria-label="LucyとAlainのグラフ。Lucyはアイダホ生まれ、Alainはサン・ロー生まれ、2人は結婚してロンドン在住。場所はwithinの辺で国や大陸へつながる">
+    <g class="ln s-mute thin">
+      <line x1="62" y1="180" x2="62" y2="140" marker-end="url(#ah-mute)"/><line x1="62" y1="94" x2="62" y2="54" marker-end="url(#ah-mute)"/>
+      <line x1="170" y1="180" x2="170" y2="140" marker-end="url(#ah-mute)"/><line x1="176" y1="94" x2="206" y2="54" marker-end="url(#ah-mute)"/>
+      <line x1="278" y1="180" x2="278" y2="140" marker-end="url(#ah-mute)"/><line x1="272" y1="94" x2="242" y2="54" marker-end="url(#ah-mute)"/>
+      <line x1="278" y1="298" x2="278" y2="226" marker-end="url(#ah-mute)"/>
+    </g>
+    <line x1="62" y1="298" x2="62" y2="226" class="ln s-a" marker-end="url(#ah-a)"/>
+    <line x1="170" y1="298" x2="170" y2="226" class="ln s-a" marker-end="url(#ah-a)"/>
+    <line x1="106" y1="320" x2="126" y2="320" class="ln s-text" style="stroke-width:3"/>
+    <line x1="214" y1="320" x2="232" y2="320" class="ln s-c" marker-end="url(#ah-c)"/>
+    <path d="M62,342 C62,398 278,398 278,346" class="ln s-c" marker-end="url(#ah-c)"/>
+    <g class="bx-b" stroke-width="1.5">
+      <rect x="20" y="10" width="84" height="40" rx="8"/><rect x="182" y="10" width="84" height="40" rx="8"/>
+      <rect x="20" y="96" width="84" height="40" rx="8"/><rect x="128" y="96" width="84" height="40" rx="8"/><rect x="236" y="96" width="84" height="40" rx="8"/>
+      <rect x="20" y="182" width="84" height="40" rx="8"/><rect x="128" y="182" width="84" height="40" rx="8"/><rect x="236" y="182" width="84" height="40" rx="8"/>
+      <rect x="236" y="300" width="84" height="40" rx="8"/>
+    </g>
+    <g class="bx-r" stroke-width="1.5"><rect x="20" y="300" width="84" height="40" rx="8"/><rect x="128" y="300" width="84" height="40" rx="8"/></g>
+    <text x="62" y="27" text-anchor="middle" class="ts tb">北アメリカ</text><text x="62" y="42" text-anchor="middle" class="tx c-mute">大陸</text>
+    <text x="224" y="27" text-anchor="middle" class="ts tb">ヨーロッパ</text><text x="224" y="42" text-anchor="middle" class="tx c-mute">大陸</text>
+    <text x="62" y="113" text-anchor="middle" class="ts tb">アメリカ</text><text x="62" y="128" text-anchor="middle" class="tx c-mute">国</text>
+    <text x="170" y="113" text-anchor="middle" class="ts tb">フランス</text><text x="170" y="128" text-anchor="middle" class="tx c-mute">国</text>
+    <text x="278" y="113" text-anchor="middle" class="ts tb">イギリス</text><text x="278" y="128" text-anchor="middle" class="tx c-mute">国</text>
+    <text x="62" y="199" text-anchor="middle" class="ts tb">アイダホ</text><text x="62" y="214" text-anchor="middle" class="tx c-mute">州</text>
+    <text x="170" y="199" text-anchor="middle" class="ts tb">サン・ロー</text><text x="170" y="214" text-anchor="middle" class="tx c-mute">市</text>
+    <text x="278" y="199" text-anchor="middle" class="ts tb">イングランド</text><text x="278" y="214" text-anchor="middle" class="tx c-mute">国の中の国</text>
+    <text x="62" y="317" text-anchor="middle" class="ts tb">Lucy</text><text x="62" y="332" text-anchor="middle" class="tx c-mute">人</text>
+    <text x="170" y="317" text-anchor="middle" class="ts tb">Alain</text><text x="170" y="332" text-anchor="middle" class="tx c-mute">人</text>
+    <text x="278" y="317" text-anchor="middle" class="ts tb">ロンドン</text><text x="278" y="332" text-anchor="middle" class="tx c-mute">市</text>
+    <text x="68" y="164" class="tx c-mute">within</text><text x="68" y="78" class="tx c-mute">within</text><text x="176" y="164" class="tx c-mute">within</text><text x="284" y="164" class="tx c-mute">within</text><text x="284" y="266" class="tx c-mute">within</text>
+    <text x="68" y="266" class="tx c-a">born_in</text><text x="176" y="266" class="tx c-a">born_in</text>
+    <text x="116" y="292" text-anchor="middle" class="tx">married</text>
+    <text x="224" y="292" text-anchor="middle" class="tx c-c">lives_in</text>
+    <text x="170" y="402" text-anchor="middle" class="tx c-c">lives_in</text>
+  </svg><figcaption>箱が頂点、矢印が辺。灰色は「〜の中にある」、琥珀は「〜で生まれた」、青は「〜に住んでいる」。フランス側は簡略化しています。</figcaption></figure>
+
+  <h3>3.2.1 プロパティグラフ</h3>
+  <div class="cards wide">
+    <div class="card" style="--k:var(--teal)"><h5>頂点が持つもの</h5>
+      <ul><li>一意なID</li><li>ラベル（種類を表す文字列）</li><li>出ていく辺の集合</li><li>入ってくる辺の集合</li><li>プロパティ（キーと値）</li></ul></div>
+    <div class="card" style="--k:var(--teal)"><h5>辺が持つもの</h5>
+      <ul><li>一意なID</li><li>始点（テール頂点）</li><li>終点（ヘッド頂点）</li><li>ラベル（関係の種類）</li><li>プロパティ（キーと値）</li></ul></div>
+  </div>
+
+  <figure class="fig"><svg viewBox="0 0 340 96" role="img" aria-label="辺の向き。矢印のしっぽ側がテール頂点で始点、矢印の頭側がヘッド頂点で終点">
+    <text x="56" y="20" text-anchor="middle" class="ts c-mute">tail</text><text x="284" y="20" text-anchor="middle" class="ts c-mute">head</text>
+    <rect x="8" y="28" width="96" height="40" rx="8" class="bx-r" stroke-width="1.5"/><text x="56" y="53" text-anchor="middle" class="t tb">lucy</text>
+    <rect x="236" y="28" width="96" height="40" rx="8" class="bx-b" stroke-width="1.5"/><text x="284" y="53" text-anchor="middle" class="t tb">idaho</text>
+    <line x1="108" y1="48" x2="232" y2="48" class="ln s-a" marker-end="url(#ah-a)"/><text x="170" y="40" text-anchor="middle" class="ts tb c-a">BORN_IN</text>
+    <text x="56" y="88" text-anchor="middle" class="tx">しっぽ＝始点</text><text x="284" y="88" text-anchor="middle" class="tx">あたま＝終点</text>
+  </svg><figcaption>テールとヘッドは、矢印の「しっぽ」と「あたま」です。</figcaption></figure>
+
+  <p>中身は、リレーショナルのテーブル2枚で表せます。頂点用と辺用です。</p>
+<pre><code>CREATE TABLE vertices (
+  vertex_id  integer PRIMARY KEY,
+  label      text,
+  properties jsonb
+);
+
+CREATE TABLE edges (
+  edge_id     integer PRIMARY KEY,
+  <span class="h">tail_vertex</span> integer REFERENCES vertices,
+  <span class="h">head_vertex</span> integer REFERENCES vertices,
+  label       text,
+  properties  jsonb
+);
+
+<span class="c">-- 前にも後ろにもたどれるよう、両方に索引</span>
+CREATE INDEX edges_tails ON edges (tail_vertex);
+CREATE INDEX edges_heads ON edges (head_vertex);</code></pre>
+
+  <p>このモデルの大事な性質は3つです。</p>
+  <ol>
+    <li><b>どの頂点も、どの頂点とでもつなげる。</b>「この種類とこの種類しかつながない」と縛るスキーマがありません。</li>
+    <li><b>前にも後ろにもたどれる。</b>ある頂点から、出ていく辺も入ってくる辺も速く見つかります。これが<b>走査</b>です。</li>
+    <li><b>ラベルで種類を分けられる。</b>いろいろな情報を1つのグラフに入れても、ごちゃごちゃになりません。</li>
+  </ol>
+  <p><code>edges</code> テーブルは、3.1.3の関連テーブルを<b>一般化</b>したものと言えます。あらゆる種類の関係を、1枚のテーブルに入れられるようにしたわけです。</p>
+
+  <div class="box note"><small>補足</small>
+    <h4>辺が結べるのは2つの頂点だけ</h4>
+    <p>関連テーブルなら、1行に外部キーを3つ持たせて「3者の関係」を表せます。グラフでこれをやるには、その関係自体を表す頂点を1つ足して、そこへ辺を張ります。または、ハイパーグラフという別の仕組みを使います。</p>
+  </div>
+
+  <p>グラフは柔軟です。さっきの図にも、普通のテーブル設計では面倒なことが入っています。国によって地域の区切り方が違う。国の中に国がある。Lucyの住所は市まであるのに、出生地は州までしかない。グラフならどれも素直に書けます。</p>
+  <p>あとから広げるのも楽です。たとえば食物アレルギーを足したければ、アレルゲンの頂点を作り、人から辺を張ります。食品とアレルゲンもつなげば、「この人が安全に食べられるもの」を聞けるようになります。</p>
+
+  <h3>3.2.2 Cypherクエリ言語</h3>
+  <p><b>Cypher</b>は、プロパティグラフのためのクエリ言語です。Neo4jのために作られ、いまはopenCypherというオープンな標準になっています。名前は映画『マトリックス』の登場人物からで、暗号のcipherとは関係ありません。</p>
+  <p>Cypherは、グラフを<b>文字の絵</b>で書きます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 104" role="img" aria-label="Cypherの記法。丸カッコが頂点、角カッコ入りの矢印が辺で、コロンの後ろがラベル">
+    <text x="170" y="62" text-anchor="middle" class="tl tb"><tspan class="c-b">(idaho)</tspan> <tspan class="c-a">-[:WITHIN]-&gt;</tspan> <tspan class="c-b">(usa)</tspan></text>
+    <text x="94" y="20" text-anchor="middle" class="tx c-b">頂点</text><line x1="94" y1="26" x2="94" y2="42" class="ln s-b thin"/>
+    <text x="178" y="20" text-anchor="middle" class="tx c-a">辺。WITHIN がラベル</text><line x1="178" y1="26" x2="178" y2="42" class="ln s-a thin"/>
+    <text x="254" y="20" text-anchor="middle" class="tx c-b">頂点</text><line x1="254" y1="26" x2="254" y2="42" class="ln s-b thin"/>
+    <text x="170" y="92" text-anchor="middle" class="tx c-mute">「idaho は usa の中にある」。左がしっぽ、右があたま</text>
+  </svg><figcaption>丸カッコが頂点、矢印が辺。</figcaption></figure>
+
+  <p>データを入れるときはこう書きます。<code>usa</code> や <code>idaho</code> は、クエリの中だけで使う仮の名前です。</p>
+<pre><code>CREATE
+  (namerica :Location {name:'North America', type:'continent'}),
+  (usa      :Location {name:'United States', type:'country'}),
+  (idaho    :Location {name:'Idaho',         type:'state'}),
+  (lucy     :Person   {name:'Lucy'}),
+  (idaho) -[:WITHIN]-&gt; (usa) -[:WITHIN]-&gt; (namerica),
+  (lucy)  -[:BORN_IN]-&gt; (idaho)</code></pre>
+
+  <p>では質問です。<b>「アメリカで生まれて、いまヨーロッパに住んでいる人の名前は？」</b></p>
+<pre><code>MATCH
+  (person) -[:BORN_IN]-&gt;  () -[:WITHIN<span class="h">*0..</span>]-&gt;
+           (:Location {name:'United States'}),
+  (person) -[:LIVES_IN]-&gt; () -[:WITHIN<span class="h">*0..</span>]-&gt;
+           (:Location {name:'Europe'})
+RETURN person.name</code></pre>
+
+  <figure class="fig"><svg viewBox="0 0 340 140" role="img" aria-label="クエリのパターン。同じpersonから、BORN_INとWITHINをたどってアメリカに着く道と、LIVES_INとWITHINをたどってヨーロッパに着く道の両方があること">
+    <rect x="8" y="16" width="70" height="110" rx="8" class="bx-r" stroke-width="1.5"/><text x="43" y="76" text-anchor="middle" class="ts tb">person</text>
+    <line x1="82" y1="36" x2="132" y2="36" class="ln s-a" marker-end="url(#ah-a)"/><text x="107" y="27" text-anchor="middle" class="tx c-a">BORN_IN</text>
+    <circle cx="150" cy="36" r="14" class="bx"/><text x="150" y="40" text-anchor="middle" class="ts c-mute">?</text>
+    <line x1="168" y1="36" x2="246" y2="36" class="ln s-mute dash" marker-end="url(#ah-mute)"/><text x="207" y="27" text-anchor="middle" class="tx c-mute">WITHIN*0..</text>
+    <rect x="250" y="18" width="82" height="36" rx="8" class="bx-b" stroke-width="1.5"/><text x="291" y="41" text-anchor="middle" class="ts tb">アメリカ</text>
+    <text x="207" y="76" text-anchor="middle" class="ts tb">かつ</text>
+    <line x1="82" y1="106" x2="132" y2="106" class="ln s-c" marker-end="url(#ah-c)"/><text x="107" y="97" text-anchor="middle" class="tx c-c">LIVES_IN</text>
+    <circle cx="150" cy="106" r="14" class="bx"/><text x="150" y="110" text-anchor="middle" class="ts c-mute">?</text>
+    <line x1="168" y1="106" x2="246" y2="106" class="ln s-mute dash" marker-end="url(#ah-mute)"/><text x="207" y="97" text-anchor="middle" class="tx c-mute">WITHIN*0..</text>
+    <rect x="250" y="88" width="82" height="36" rx="8" class="bx-b" stroke-width="1.5"/><text x="291" y="111" text-anchor="middle" class="ts tb">ヨーロッパ</text>
+  </svg><figcaption>2本の道の両方が見つかる <code>person</code> を探します。<code>()</code> は名前をつけない頂点です。</figcaption></figure>
+
+  <p>肝は <code>*0..</code> です。「<code>WITHIN</code> の辺を<b>0回以上</b>たどる」という意味で、正規表現の <code>*</code> と同じ感覚です。生まれた場所が州でも市でも、何段か上にアメリカがあればマッチします。</p>
+  <p>Cypherは宣言型なので、<b>どう探すかは書いていません</b>。全員を1人ずつ調べてもいいし、アメリカとヨーロッパの頂点から逆向きにたどってもいい。どちらが速いかはDBが決めます。</p>
+
+  <h3>3.2.3 同じことをSQLでやると</h3>
+  <p>グラフはテーブル2枚に入るのだから、SQLでも聞けるはずです。答えは「できるが、つらい」です。</p>
+  <p>グラフの辺を1本たどることは、<code>edges</code> テーブルとの結合1回にあたります。普通のSQLは、何回結合するかを書く時点で決めます。ところがグラフでは、<b>何本たどるかが事前にわかりません</b>。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 116" role="img" aria-label="住んでいる場所がヨーロッパそのものならWITHINは0本、ロンドンならイングランド、イギリスを経て3本。本数は事前に決まらない">
+    <rect x="6" y="10" width="30" height="28" rx="6" class="bx-r" stroke-width="1.5"/><text x="21" y="28" text-anchor="middle" class="tx">人</text>
+    <line x1="38" y1="24" x2="46" y2="24" class="ln s-c thin" marker-end="url(#ah-c)"/>
+    <rect x="50" y="10" width="62" height="28" rx="6" class="bx-b" stroke-width="1.5"/><text x="81" y="28" text-anchor="middle" class="tx">ヨーロッパ</text>
+    <text x="126" y="28" class="tx c-mute">WITHIN 0本</text>
+    <rect x="6" y="58" width="30" height="28" rx="6" class="bx-r" stroke-width="1.5"/><text x="21" y="76" text-anchor="middle" class="tx">人</text>
+    <line x1="38" y1="72" x2="46" y2="72" class="ln s-c thin" marker-end="url(#ah-c)"/>
+    <rect x="50" y="58" width="50" height="28" rx="6" class="bx"/><text x="75" y="76" text-anchor="middle" class="tx">ロンドン</text>
+    <line x1="102" y1="72" x2="110" y2="72" class="ln s-mute thin" marker-end="url(#ah-mute)"/>
+    <rect x="114" y="58" width="72" height="28" rx="6" class="bx"/><text x="150" y="76" text-anchor="middle" class="tx">イングランド</text>
+    <line x1="188" y1="72" x2="196" y2="72" class="ln s-mute thin" marker-end="url(#ah-mute)"/>
+    <rect x="200" y="58" width="50" height="28" rx="6" class="bx"/><text x="225" y="76" text-anchor="middle" class="tx">イギリス</text>
+    <line x1="252" y1="72" x2="260" y2="72" class="ln s-mute thin" marker-end="url(#ah-mute)"/>
+    <rect x="264" y="58" width="62" height="28" rx="6" class="bx-b" stroke-width="1.5"/><text x="295" y="76" text-anchor="middle" class="tx">ヨーロッパ</text>
+    <text x="170" y="108" text-anchor="middle" class="tx c-mute">WITHIN 3本。何本になるかは、たどるまでわからない</text>
+  </svg><figcaption>結合の回数が固定できない。これがSQLで困る理由です。</figcaption></figure>
+
+  <p>SQLでは、<b>再帰共通テーブル式</b>（<code>WITH RECURSIVE</code>）を使います。骨組みはこうです。</p>
+<pre><code>WITH RECURSIVE
+  <span class="c">-- アメリカの中にある場所を全部集める</span>
+  in_usa(vertex_id) AS (
+    SELECT vertex_id FROM vertices
+     WHERE label = 'Location'
+       AND properties-&gt;&gt;'name' = 'United States'
+    <span class="h">UNION</span>
+    SELECT edges.tail_vertex FROM edges
+      JOIN <span class="h">in_usa</span>  <span class="c">-- 自分自身を参照＝再帰</span>
+        ON edges.head_vertex = in_usa.vertex_id
+     WHERE edges.label = 'within'
+  ),
+  in_europe(vertex_id) AS ( <span class="c">/* 同じ形 */</span> ),
+  born_in_usa(vertex_id) AS ( <span class="c">/* in_usa に born_in で入る人 */</span> ),
+  lives_in_europe(vertex_id) AS ( <span class="c">/* in_europe に lives_in で入る人 */</span> )
+SELECT vertices.properties-&gt;&gt;'name'
+  FROM vertices
+  JOIN born_in_usa     ON vertices.vertex_id = born_in_usa.vertex_id
+  JOIN lives_in_europe ON vertices.vertex_id = lives_in_europe.vertex_id;</code></pre>
+
+  <figure class="fig"><svg viewBox="0 0 340 84" role="img" aria-label="同じ質問を書くのに、Cypherは4行、SQLは31行かかる">
+    <text x="8" y="27" class="ts">Cypher</text><rect x="70" y="12" width="34" height="20" rx="3" class="fl-b"/><text x="112" y="27" class="ts tb">4行</text>
+    <text x="8" y="63" class="ts">SQL</text><rect x="70" y="48" width="264" height="20" rx="3" class="fl-c"/><text x="326" y="63" text-anchor="end" class="ts tb c-ink">31行</text>
+  </svg><figcaption>本に載っている完全版での行数。データモデルとクエリ言語の選び方で、これだけ差が出ます。</figcaption></figure>
+
+  <p>しかもこれは入口です。サイクルの扱いや、幅優先か深さ優先かなど、考えることはまだあります。</p>
+  <p>なお、CypherをもとにしたGQLというISO標準が2024年に公開されました。まだ普及はこれからですが、グラフDBのあいだで書き方がそろっていくことが期待されています。</p>
+
+  <h3>3.2.4 トリプルストアとSPARQL</h3>
+  <p><b>トリプルストア</b>は、プロパティグラフとほぼ同じことを、違う言葉で表すモデルです。すべての情報を、3つ組の短い文で持ちます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 228" role="img" aria-label="トリプルは主語、述語、目的語の3つ組。目的語が値ならプロパティに、目的語が頂点なら辺にあたる">
+    <g class="bx"><rect x="8" y="8" width="96" height="36" rx="8"/><rect x="122" y="8" width="96" height="36" rx="8"/><rect x="236" y="8" width="96" height="36" rx="8"/></g>
+    <text x="56" y="31" text-anchor="middle" class="t tb">主語</text><text x="170" y="31" text-anchor="middle" class="t tb">述語</text><text x="284" y="31" text-anchor="middle" class="t tb">目的語</text>
+    <text x="8" y="74" class="ts tb c-a">目的語が「値」 → プロパティ</text>
+    <rect x="8" y="84" width="96" height="32" rx="8" class="bx-r" stroke-width="1.5"/><rect x="122" y="84" width="96" height="32" rx="8" class="bx"/><rect x="236" y="84" width="96" height="32" rx="8" class="bx-a" stroke-width="1.5"/>
+    <text x="56" y="105" text-anchor="middle" class="ts">lucy</text><text x="170" y="105" text-anchor="middle" class="ts">birthYear</text><text x="284" y="105" text-anchor="middle" class="ts">1989</text>
+    <text x="8" y="134" class="tx c-mute">＝ lucy 頂点のプロパティ {birthYear: 1989}</text>
+    <text x="8" y="166" class="ts tb c-b">目的語が「頂点」 → 辺</text>
+    <rect x="8" y="176" width="96" height="32" rx="8" class="bx-r" stroke-width="1.5"/><rect x="122" y="176" width="96" height="32" rx="8" class="bx"/><rect x="236" y="176" width="96" height="32" rx="8" class="bx-r" stroke-width="1.5"/>
+    <text x="56" y="197" text-anchor="middle" class="ts">lucy</text><text x="170" y="197" text-anchor="middle" class="ts">marriedTo</text><text x="284" y="197" text-anchor="middle" class="ts">alain</text>
+    <text x="8" y="224" class="tx c-mute">＝ lucy から alain への辺。ラベルは marriedTo</text>
+  </svg><figcaption>主語はいつも頂点です。目的語が何かで、プロパティか辺かが決まります。</figcaption></figure>
+
+  <p>書き方の1つが<b>Turtle</b>という形式です。同じ主語についての文は、セミコロンでつなげられます。</p>
+<pre><code>@prefix : &lt;urn:example:&gt;.
+_:lucy   a :Person;   :name "Lucy";  :bornIn _:idaho.
+_:idaho  a :Location; :name "Idaho"; :type "state";
+         :within _:usa.
+_:usa    a :Location; :name "United States";
+         :type "country"; :within _:namerica.</code></pre>
+
+  <div class="box note"><small>背景</small>
+    <h4>セマンティックWebの遺産</h4>
+    <p>トリプルストアの研究の一部は、2000年代初頭の<b>セマンティックWeb</b>構想から来ています。Webのデータを機械が読める形でも公開しよう、という取り組みでした。構想そのものは成功しませんでしたが、JSON-LD、生物医学のオントロジー、リンクのプレビューに使うOpen Graph、Wikidata、Schema.orgなどに形を変えて生きています。セマンティックWebに興味がなくても、トリプルはアプリの内部データモデルとして良い選択肢になりえます。</p>
+  </div>
+
+  <h4>RDF：名前がURIになっている理由</h4>
+  <p>Turtleは、<b>RDF</b>というデータモデルを書き表す方法の1つです。RDFはインターネット規模でデータを交換するために作られたので、少し変わったところがあります。主語や述語が、よく<b>URI</b>になるのです。</p>
+  <p>たとえば述語が、ただの <code>within</code> ではなく <code>&lt;http://my-company.com/namespace#within&gt;</code> になります。理由は、他人のデータと混ぜても名前がぶつからないようにするためです。他の誰かが <code>within</code> に別の意味を持たせていても、URIが違うので衝突しません。このURLが実際に何かのページにつながる必要はなく、ただの名前空間です。</p>
+
+  <h4>SPARQL</h4>
+  <p><b>SPARQL</b>（スパークル）は、RDFのトリプルストア用のクエリ言語です。Cypherより先に生まれ、Cypherのパターンマッチングはここから借りています。だからよく似ています。</p>
+<pre><code>PREFIX : &lt;urn:example:&gt;
+
+SELECT ?personName WHERE {
+  ?person :name ?personName.
+  ?person :bornIn  / :within* / :name "United States".
+  ?person :livesIn / :within* / :name "Europe".
+}</code></pre>
+
+  <div class="tw"><table>
+    <thead><tr><th></th><th>Cypher</th><th>SPARQL</th></tr></thead>
+    <tbody>
+      <tr><th>変数</th><td class="n">person</td><td class="n">?person</td></tr>
+      <tr><th>0回以上たどる</th><td class="n">-[:WITHIN*0..]-&gt;</td><td class="n">:within*</td></tr>
+      <tr><th>プロパティで絞る</th><td class="n">(usa {name:'…'})</td><td class="n">?usa :name "…".</td></tr>
+    </tbody>
+  </table></div>
+  <p>RDFはプロパティと辺を区別しません。どちらも述語です。だから、プロパティの条件も辺の条件も同じ書き方で書けます。</p>
+
+  <h3>3.2.5 Datalog：小さなルールを積み上げる</h3>
+  <p><b>Datalog</b>は、SPARQLやCypherよりずっと古く、1980年代の学術研究から生まれました。エンジニアにはあまり知られていませんが、本は「もっと知られるべき」と推しています。Datomic、LogicBlox、CozoDB、LinkedInのLIquidなどが採用しています。</p>
+  <p>土台はグラフではなくリレーショナルモデルです。それでもここで扱うのは、グラフの再帰的なクエリが特に得意だからです。</p>
+  <p>データは<b>ファクト</b>と呼びます。1つのファクトは、テーブルの1行です。</p>
+<pre><code>location(1, "North America", "continent").
+location(2, "United States", "country").
+location(3, "Idaho", "state").
+
+within(2, 1).    <span class="c">/* アメリカは北アメリカの中 */</span>
+within(3, 2).    <span class="c">/* アイダホはアメリカの中 */</span>
+
+person(100, "Lucy").
+born_in(100, 3). <span class="c">/* Lucyはアイダホ生まれ */</span></code></pre>
+
+  <p>クエリは、いきなり答えを取りに行きません。<b>ルール</b>を1つずつ定義して、新しい仮想のテーブルを作っていきます。SQLのビューに近いものです。</p>
+<pre><code><span class="c">/* ルール1：どの場所も、自分自身の「中」にある */</span>
+within_recursive(LocID, PlaceName) :-
+  location(LocID, PlaceName, _).
+
+<span class="c">/* ルール2：中の中も、中（自分を呼ぶ＝再帰） */</span>
+within_recursive(LocID, PlaceName) :-
+  within(LocID, ViaID),
+  <span class="h">within_recursive</span>(ViaID, PlaceName).
+
+<span class="c">/* ルール3：どこで生まれ、どこに住んでいるか */</span>
+migrated(PName, BornIn, LivingIn) :-
+  person(PersonID, PName),
+  born_in(PersonID, BornID),
+  within_recursive(BornID, BornIn),
+  lives_in(PersonID, LivingID),
+  within_recursive(LivingID, LivingIn).
+
+<span class="c">/* ルール4：アメリカ → ヨーロッパだけ取り出す */</span>
+us_to_europe(Person) :-
+  migrated(Person, "United States", "Europe").</code></pre>
+
+  <p>読み方は、<code>:-</code> の<b>左が「作るテーブル」、右が「条件」</b>です。右側のパターンが全部マッチしたら、左側の行ができたものとして扱われます。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 322" role="img" aria-label="ルールの適用過程。北アメリカのファクトにルール1を適用し、within(2,1)とルール2でアメリカが、within(3,2)とルール2でアイダホが、北アメリカの中にあると導かれる">
+    <rect x="8" y="8" width="324" height="30" rx="6" class="bx-c" stroke-width="1.5"/><text x="170" y="28" text-anchor="middle" class="ts">location(1, "North America", "continent")</text>
+    <line x1="170" y1="40" x2="170" y2="62" class="ln s-b" marker-end="url(#ah-b)"/><text x="180" y="56" class="tx c-b">ルール1</text>
+    <rect x="8" y="66" width="324" height="30" rx="6" class="bx-b" stroke-width="1.5"/><text x="170" y="86" text-anchor="middle" class="ts tb">within_recursive(1, "North America")</text>
+    <rect x="8" y="114" width="110" height="28" rx="6" class="bx-c" stroke-width="1.5"/><text x="63" y="133" text-anchor="middle" class="ts">within(2, 1)</text>
+    <text x="126" y="133" class="tx c-mute">2＝アメリカ</text>
+    <line x1="62" y1="144" x2="62" y2="158" class="ln s-b" marker-end="url(#ah-b)"/>
+    <line x1="270" y1="98" x2="270" y2="158" class="ln s-b" marker-end="url(#ah-b)"/><text x="278" y="133" class="tx c-b">ルール2</text>
+    <rect x="8" y="162" width="324" height="30" rx="6" class="bx-b" stroke-width="1.5"/><text x="170" y="182" text-anchor="middle" class="ts tb">within_recursive(2, "North America")</text>
+    <rect x="8" y="210" width="110" height="28" rx="6" class="bx-c" stroke-width="1.5"/><text x="63" y="229" text-anchor="middle" class="ts">within(3, 2)</text>
+    <text x="126" y="229" class="tx c-mute">3＝アイダホ</text>
+    <line x1="62" y1="240" x2="62" y2="254" class="ln s-b" marker-end="url(#ah-b)"/>
+    <line x1="270" y1="194" x2="270" y2="254" class="ln s-b" marker-end="url(#ah-b)"/><text x="278" y="229" class="tx c-b">ルール2</text>
+    <rect x="8" y="258" width="324" height="30" rx="6" class="bx-b" stroke-width="1.5"/><text x="170" y="278" text-anchor="middle" class="ts tb">within_recursive(3, "North America")</text>
+    <text x="170" y="312" text-anchor="middle" class="ts tb c-g">＝ アイダホは北アメリカの中にある</text>
+  </svg><figcaption>青が元からあるファクト、青緑がルールで導かれた行。前の結果を次のルールが使います。</figcaption></figure>
+
+  <p>Datalogは、他の言語とは違う頭の使い方をします。コードを小さな関数に分けて、互いに呼び出すのに似ています。関数が再帰できるように、ルールも自分自身を呼べます。それがグラフをたどる力になります。</p>
+
+  <h3>3.2.6 GraphQL：わざと不自由にしてある言語</h3>
+  <p><b>GraphQL</b>は、ここまでの言語と性格が違います。<b>設計上、できることをかなり絞ってあります。</b></p>
+  <p>目的は1つです。スマホアプリやWebフロントエンドが、「この画面を描くのに必要な形のJSON」をサーバーに頼めるようにすることです。</p>
+
+  <p class="cap">クエリ：チャットアプリの画面に必要なもの</p>
+<pre><code>query ChatApp {
+  channels {
+    name
+    recentMessages(latest: 50) {
+      timestamp
+      content
+      sender  { fullName imageUrl }
+      replyTo { content sender { fullName } }
+    }
+  }
+}</code></pre>
+
+  <p class="cap">レスポンス：クエリと同じ形のJSON</p>
+<pre><code>{ "data": { "channels": [ {
+  "name": "#general",
+  "recentMessages": [
+    { "timestamp": 1693143014,
+      "content": "Hey! How are y'all doing?",
+      "sender": {"fullName": "Aaliyah", "imageUrl": "https://..."},
+      "replyTo": null },
+    { "timestamp": 1693143024,
+      "content": "Great! And you?",
+      "sender": {"fullName": "Caleb", "imageUrl": "https://..."},
+      "replyTo": {
+        "content": "Hey! How are y'all doing?",
+        "sender": {"fullName": "Aaliyah"} } }
+  ] } ] } }</code></pre>
+
+  <div class="cards wide">
+    <div class="card" style="--k:var(--green)"><h5>うれしいところ</h5>
+      <ul><li>返ってくるのは、頼んだ項目だけ。多くも少なくもない</li><li>画面に項目を足したいとき、クライアントのクエリを直すだけ。サーバーのAPIは変えなくていい</li></ul></div>
+    <div class="card" style="--k:var(--bad)"><h5>コスト</h5>
+      <ul><li>クエリを内部サービス（RESTやgRPC）への呼び出しに変換する仕組みが要る</li><li>認可、レート制限、パフォーマンスが悩みになる</li></ul></div>
+  </div>
+
+  <p>制限が強い理由は、クエリが<b>信頼できない相手</b>（ユーザーの端末）から来るからです。重いクエリを大量に投げられたら、サーバーが落ちます。</p>
+  <ul>
+    <li><b>再帰クエリは禁止。</b>Cypher、SPARQL、SQL、Datalogと違うところです。</li>
+    <li><b>自由な検索条件も禁止。</b>「アメリカ生まれでヨーロッパ在住の人」のような検索は、サービス側がわざわざ用意しない限りできません。</li>
+    <li><b>結合も宣言されたものだけ。</b>GraphQLのスキーマに明示された結合しか頼めません。</li>
+  </ul>
+
+  <p>上のレスポンスには<b>重複</b>があります。同じ人が何度も発言すれば、名前と画像URLは毎回くり返されます。返信先のメッセージも、IDではなく中身ごと複製されています。</p>
+  <p>これはわざとです。レスポンスは大きくなりますが、画面を描くコードが単純になります。IDだけ返すと、そのメッセージが直近50件に入っていないとき、クライアントはもう1回サーバーに聞きに行くことになります。</p>
+  <p>サーバーの中のDBは、正規化して持っていてかまいません。クエリを受けたときに結合して、この形に組み立てます。</p>
+  <p>最後に名前の話です。「graph」と付いていますが、GraphQLはグラフDB専用ではありません。リレーショナルでもドキュメントでも、どんなDBの上にも作れます。</p>
+
+  <h4>5つの言語を並べる</h4>
+  <div class="tw"><table>
+    <thead><tr><th>言語</th><th>相手</th><th>再帰</th><th>ひとこと</th></tr></thead>
+    <tbody>
+      <tr><th>Cypher</th><td>プロパティグラフ</td><td class="n">できる</td><td>矢印の絵で書く</td></tr>
+      <tr><th>SQL</th><td>リレーショナル</td><td class="n">できるが長い</td><td>WITH RECURSIVE</td></tr>
+      <tr><th>SPARQL</th><td>トリプルストア</td><td class="n">できる</td><td>Cypherの先輩</td></tr>
+      <tr><th>Datalog</th><td>リレーショナル</td><td class="n">得意</td><td>ルールを積む</td></tr>
+      <tr><th>GraphQL</th><td>何でも</td><td class="n">禁止</td><td>画面用のJSONを頼む</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================================================ 3.3 -->
+<section class="sec" id="s33" style="--sec:var(--rose)">
+  <div class="num">3.3</div>
+  <h2>イベントソーシングとCQRS</h2>
+  <div class="lede"><small>ひとことで言うと</small><p>「いまの状態」を上書きせず、「起きたこと」を追記し続ける。読むための形は、そこから何個でも作る。</p></div>
+
+  <p>ここまでのモデルは全部、<b>書いた形のまま読む</b>ものでした。JSONで書いたらJSONで読む。行で書いたら行で読む。</p>
+  <p>でも複雑なアプリでは、あらゆる読み方を満たす「たった1つの形」が見つからないことがあります。それなら、書く形と読む形を<b>分けてしまえばいい</b>。これがこの節のアイデアです。</p>
+  <p>では、読みやすさを一切気にせず、書くことだけに最適化するとどうなるか。答えは<b>イベントログ</b>です。何か起きるたびに、時刻つきの自己完結したデータ（たとえばJSON）を、列のうしろに足すだけです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 196" role="img" aria-label="状態を上書きする方式では空席数41という今の値しか残らない。出来事を追記する方式では、受付開始、予約、予約、キャンセルの履歴が残り、空席数は計算で出せる">
+    <text x="85" y="18" text-anchor="middle" class="ts tb c-mute">状態を上書き</text>
+    <rect x="6" y="28" width="158" height="60" rx="8" class="bx"/>
+    <text x="85" y="48" text-anchor="middle" class="tx c-mute">空席数</text><text x="85" y="76" text-anchor="middle" class="tl tb">41</text>
+    <text x="85" y="110" text-anchor="middle" class="tx c-bad">前はいくつだった？</text><text x="85" y="128" text-anchor="middle" class="tx c-bad">なぜ変わった？</text><text x="85" y="146" text-anchor="middle" class="tx c-bad">→ もうわからない</text>
+    <text x="255" y="18" text-anchor="middle" class="ts tb c-r">出来事を追記</text>
+    <g class="bx-r" stroke-width="1.5"><rect x="176" y="28" width="158" height="24" rx="5"/><rect x="176" y="56" width="158" height="24" rx="5"/><rect x="176" y="84" width="158" height="24" rx="5"/><rect x="176" y="112" width="158" height="24" rx="5"/></g>
+    <rect x="176" y="140" width="158" height="24" rx="5" class="bx dashb" style="fill:none"/>
+    <text x="255" y="44" text-anchor="middle" class="tx">受付が開始された</text><text x="255" y="72" text-anchor="middle" class="tx">席が予約された</text><text x="255" y="100" text-anchor="middle" class="tx">席が予約された</text><text x="255" y="128" text-anchor="middle" class="tx">予約がキャンセルされた</text><text x="255" y="156" text-anchor="middle" class="tx c-mute">＋ 次の出来事…</text>
+    <text x="255" y="186" text-anchor="middle" class="tx c-g">空席数は、計算すれば出る</text>
+    <line x1="170" y1="10" x2="170" y2="190" class="grid"/>
+  </svg><figcaption>銀行の通帳と同じです。残高だけを書き換えるのではなく、入出金を1行ずつ書く。残高は足し引きすれば出ます。Gitのコミット履歴と作業ツリーの関係にも似ています。</figcaption></figure>
+
+  <p>ログの中のイベントは<b>イミュータブル</b>です。変更も削除もしません。新しいイベントを足すだけです。あとのイベントが前のイベントの効果を打ち消すことはあります。</p>
+
+  <h4>例：カンファレンス管理システム</h4>
+  <p>本の例はカンファレンスの申し込みです。意外と複雑な業務です。個人がカードで申し込む。企業がまとめて席を買い、請求書で払い、あとから誰が座るか決める。スピーカーやスポンサー用の席を取り置く。キャンセルが出る。会場が変わって定員が変わる。こうなると、「空席はいくつ？」を出すだけで難しいクエリになります。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 456" role="img" aria-label="イベントソーシングの全体像。コマンドは検証され、有効ならイベントとしてログに追記される。ログから予約状況、ダッシュボード、バッジ印刷の3つのマテリアライズドビューが導出される">
+    <rect x="50" y="8" width="240" height="40" rx="8" class="bx"/><text x="170" y="33" text-anchor="middle" class="ts">コマンド：席を1つ予約したい</text>
+    <line x1="170" y1="50" x2="170" y2="72" class="ln s-mute" marker-end="url(#ah-mute)"/>
+    <rect x="70" y="76" width="180" height="40" rx="8" class="bx" style="stroke:var(--text)"/><text x="160" y="101" text-anchor="middle" class="t tb">検証：空席はある？</text>
+    <line x1="252" y1="96" x2="296" y2="96" class="ln s-bad" marker-end="url(#ah-bad)"/><text x="316" y="100" text-anchor="middle" class="tx c-bad">拒否</text>
+    <line x1="160" y1="118" x2="160" y2="146" class="ln s-r" marker-end="url(#ah-r)"/><text x="170" y="137" class="tx c-r">有効なら事実になる</text>
+    <rect x="20" y="150" width="300" height="186" rx="10" class="bx-r" stroke-width="1.5"/>
+    <text x="170" y="171" text-anchor="middle" class="ts tb c-r">イベントログ（追記だけ。書き換えない）</text>
+    <g class="bx"><rect x="34" y="180" width="272" height="26" rx="5"/><rect x="34" y="210" width="272" height="26" rx="5"/><rect x="34" y="240" width="272" height="26" rx="5"/><rect x="34" y="270" width="272" height="26" rx="5"/></g>
+    <rect x="34" y="300" width="272" height="26" rx="5" class="bx dashb" style="fill:none"/>
+    <text x="44" y="198" class="ts">1　登録受付が開始された</text><text x="44" y="228" class="ts">2　席が予約された（Aさん）</text><text x="44" y="258" class="ts">3　席が予約された（Bさん）</text><text x="44" y="288" class="ts">4　予約がキャンセルされた（Aさん）</text><text x="44" y="318" class="ts c-mute">5　新しいイベントはここに足す</text>
+    <line x1="80" y1="338" x2="60" y2="368" class="ln s-b" marker-end="url(#ah-b)"/><line x1="170" y1="338" x2="170" y2="368" class="ln s-b" marker-end="url(#ah-b)"/><line x1="260" y1="338" x2="280" y2="368" class="ln s-b" marker-end="url(#ah-b)"/>
+    <g class="bx" style="stroke:var(--teal)"><rect x="6" y="372" width="104" height="52" rx="8"/><rect x="118" y="372" width="104" height="52" rx="8"/><rect x="230" y="372" width="104" height="52" rx="8"/></g>
+    <text x="58" y="394" text-anchor="middle" class="ts tb">予約状況</text><text x="58" y="412" text-anchor="middle" class="tx c-mute">誰がどの席か</text>
+    <text x="170" y="394" text-anchor="middle" class="ts tb">ダッシュボード</text><text x="170" y="412" text-anchor="middle" class="tx c-mute">主催者用グラフ</text>
+    <text x="282" y="394" text-anchor="middle" class="ts tb">バッジ印刷</text><text x="282" y="412" text-anchor="middle" class="tx c-mute">名札用ファイル</text>
+    <text x="170" y="446" text-anchor="middle" class="ts tb c-b">マテリアライズドビュー（読む用。作り直せる）</text>
+  </svg><figcaption>ログが「信頼できる唯一の情報源」。読むための3つのビューは、すべてログから導き出します。</figcaption></figure>
+
+  <dl class="term">
+    <dt>コマンド</dt><dd>ユーザーからのリクエスト。「予約したい」。まだ事実ではないので、検証して断ることができます。</dd>
+    <dt>イベント</dt><dd>検証を通って事実になったもの。<b>過去形</b>で名づけます。「席が予約された」。あとでキャンセルしても、一度予約したという事実は消えません。キャンセルは別のイベントとして足します。</dd>
+    <dt>マテリアライズドビュー<span>＝プロジェクション ＝リードモデル</span></dt><dd>イベントログから作った、読むための形。</dd>
+    <dt>イベントソーシング</dt><dd>イベントを情報源にして、状態の変化をすべてイベントで表す考え方。</dd>
+    <dt>CQRS<span>コマンドクエリ責務分離</span></dt><dd>書く用の表現と読む用の表現を分け、読む用を書く用から導くという原則。</dd>
+  </dl>
+
+  <p>大事なルールがあります。ログに入るのは<b>有効なイベントだけ</b>です。だから、ログを読んでビューを作る側は、イベントを拒否できません。断れるのは、コマンドの段階までです。</p>
+
+  <h4>スタースキーマのファクトテーブルとは何が違う？</h4>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>ファクトテーブル</th><th>イベントログ</th></tr></thead>
+    <tbody>
+      <tr><th>同じ点</th><td colspan="2">どちらも、過去に起きた出来事の集まり</td></tr>
+      <tr><th>行の形</th><td>全行が同じカラム</td><td>イベントの種類ごとに、中身が違う</td></tr>
+      <tr><th>順序</th><td>順序なし</td><td>順序が命。予約の前にキャンセルは処理できない</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>うれしいところ</h4>
+  <ol>
+    <li><b>「なぜ」が伝わる。</b>「予約がキャンセルされた」のほうが、「bookingsの行4001のactiveがfalseになり、seat_assignmentsから3行消え、paymentsに返金の行が入った」よりずっとわかりやすいです。</li>
+    <li><b>ビューは作り直せる。</b>ビューを消して、同じイベントを同じ順に同じコードで流せば、同じものができます。ビューを作るコードにバグがあったら、直して作り直すだけです。</li>
+    <li><b>用途ごとにビューを持てる。</b>クエリごとに最適な形を、いくつでも作れます。読みやすいように非正規化してかまいません。再起動のたびに作り直してよいなら、メモリ上にだけ置くこともできます。</li>
+    <li><b>あとから育てやすい。</b>新しい見せ方が欲しくなったら、既存のログから新しいビューを作ります。新しい種類のイベントも足せます。「キャンセルが出たら、順番待ちの次の人に席を回す」のような動きも、あとから連鎖させられます。</li>
+    <li><b>間違いを取り消せる。</b>誤ったイベントは、取り消しのイベントを足して打ち消します。下流のビューは自動で直ります。直接更新するDBでは、コミット済みの変更を戻すのは大変です。</li>
+    <li><b>監査ログになる。</b>何が起きたかが全部残ります。規制の厳しい業界で役立ちます。</li>
+    <li><b>書き込みが速い。</b>うしろに足すだけなので、普通のDBより高いスループットをさばけます。急にイベントが増えてもログが受け止め、ビュー側は自分のペースで追いつけます。</li>
+  </ol>
+
+  <h4>困るところ</h4>
+  <ol>
+    <li><b>外部の情報に頼ると、作り直しで結果が変わる。</b>たとえば通貨換算です。処理するときに為替レートを取りに行くと、別の日に作り直したとき違う金額になります。対策は、レートをイベントの中に入れておくか、「その時刻のレート」をいつでも同じ値で引けるようにすることです。つまり処理を<b>決定的</b>にします。</li>
+    <li><b>個人データを消せない。</b>イベントは変更しないのが原則ですが、GDPRなどでユーザーは削除を要求できます。ログがユーザーごとに分かれていれば丸ごと消せますが、混ざっていると難しい。個人データをイベントの外に置く、あとで捨てられる鍵で暗号化する（<b>暗号シュレッディング</b>）、といった手があります。ただしその分、作り直しは難しくなります。</li>
+    <li><b>再処理で副作用がまた起きる。</b>ビューを作り直すたびに、確認メールがもう一度飛んでは困ります。</li>
+  </ol>
+
+  <p>イベントソーシングは、どんなDBの上にも作れます。専用のものとしてはEventStoreDB、MartenDB（PostgreSQLベース）、Axon Frameworkがあります。Kafkaのようなメッセージブローカーにログを置き、ストリームプロセッサでビューを更新する構成もあります（12章）。</p>
+
+  <div class="box col"><small>ただ1つの必須条件</small>
+    <p>すべてのビューが、<b>ログに並んでいるのとまったく同じ順序</b>でイベントを処理すること。イベントを保存するシステムは、これを保証しなければなりません。分散システムでは、これが意外と難しい。その話は10章です。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 3.4 -->
+<section class="sec" id="s34" style="--sec:var(--violet)">
+  <div class="num">3.4</div>
+  <h2>データフレーム、行列、配列</h2>
+  <div class="lede"><small>ひとことで言うと</small><p>表のデータを、機械学習が食べられる「数字の行列」に変えていくための道具。</p></div>
+
+  <p>ここまでのモデルは、トランザクション処理にも分析にも使われます。この節のモデルは違います。分析や科学の世界のもので、OLTPにはほとんど出てきません。</p>
+  <p><b>データフレーム</b>は、R言語、Pythonのpandas、Apache Spark、ArcticDB、Daskなどが持っているモデルです。機械学習の訓練データを用意するデータサイエンティストに人気があります。</p>
+  <p>見た目は、DBのテーブルやスプレッドシートに似ています。できることも似ています。</p>
+  <ul>
+    <li>全部の行に関数を当てる</li>
+    <li>条件で行を絞る</li>
+    <li>カラムでグループ化して集約する</li>
+    <li>キーで別のデータフレームとくっつける（DBの結合。データフレームでは<b>マージ</b>と呼びます）</li>
+  </ul>
+  <p>違うのは使い方です。SQLのように「欲しい結果」を宣言するのではなく、<b>コマンドを順番に当てて、少しずつ形を変えていきます</b>。問いに答えられる形になるまで、データをこねていく感じです。作業はたいてい、手元のマシンにコピーしたデータの上でやります。</p>
+
+  <h4>表を行列に変える</h4>
+  <p>データフレームのよくある使い道は、リレーショナル風の表を、行列に変えることです。多くの機械学習アルゴリズムは、行列の形の入力を求めるからです。</p>
+
+  <figure class="fig"><svg viewBox="0 0 340 282" role="img" aria-label="ユーザー、映画、評価の3列の縦長の表を、行がユーザー、列が映画の行列に変換する。評価のない組み合わせは空欄になる">
+    <rect x="70" y="8" width="200" height="134" rx="6" class="bx"/>
+    <rect x="70" y="8" width="200" height="24" rx="6" class="fl-cell"/>
+    <path d="M70,32 H270 M70,54 H270 M70,76 H270 M70,98 H270 M70,120 H270 M130,8 V142 M210,8 V142" class="grid"/>
+    <text x="100" y="25" text-anchor="middle" class="tx c-mute">user</text><text x="170" y="25" text-anchor="middle" class="tx c-mute">movie</text><text x="240" y="25" text-anchor="middle" class="tx c-mute">rating</text>
+    <text x="100" y="48" text-anchor="middle" class="ts">A</text><text x="170" y="48" text-anchor="middle" class="ts">映画1</text><text x="240" y="48" text-anchor="middle" class="ts">5</text>
+    <text x="100" y="70" text-anchor="middle" class="ts">A</text><text x="170" y="70" text-anchor="middle" class="ts">映画3</text><text x="240" y="70" text-anchor="middle" class="ts">3</text>
+    <text x="100" y="92" text-anchor="middle" class="ts">B</text><text x="170" y="92" text-anchor="middle" class="ts">映画2</text><text x="240" y="92" text-anchor="middle" class="ts">4</text>
+    <text x="100" y="114" text-anchor="middle" class="ts">C</text><text x="170" y="114" text-anchor="middle" class="ts">映画1</text><text x="240" y="114" text-anchor="middle" class="ts">2</text>
+    <text x="100" y="136" text-anchor="middle" class="ts">C</text><text x="170" y="136" text-anchor="middle" class="ts">映画3</text><text x="240" y="136" text-anchor="middle" class="ts">5</text>
+    <line x1="170" y1="146" x2="170" y2="170" class="ln s-v" marker-end="url(#ah-v)"/><text x="180" y="163" class="tx c-v">行列に変換</text>
+    <rect x="70" y="176" width="200" height="96" rx="6" class="bx"/>
+    <g class="bx-v" stroke-width="1"><rect x="120" y="200" width="50" height="24"/><rect x="220" y="200" width="50" height="24"/><rect x="170" y="224" width="50" height="24"/><rect x="120" y="248" width="50" height="24"/><rect x="220" y="248" width="50" height="24"/></g>
+    <path d="M70,200 H270 M70,224 H270 M70,248 H270 M120,176 V272 M170,176 V272 M220,176 V272" class="grid"/>
+    <text x="145" y="193" text-anchor="middle" class="tx c-mute">映画1</text><text x="195" y="193" text-anchor="middle" class="tx c-mute">映画2</text><text x="245" y="193" text-anchor="middle" class="tx c-mute">映画3</text>
+    <text x="95" y="217" text-anchor="middle" class="ts c-mute">A</text><text x="95" y="241" text-anchor="middle" class="ts c-mute">B</text><text x="95" y="265" text-anchor="middle" class="ts c-mute">C</text>
+    <text x="145" y="217" text-anchor="middle" class="ts tb">5</text><text x="245" y="217" text-anchor="middle" class="ts tb">3</text>
+    <text x="195" y="241" text-anchor="middle" class="ts tb">4</text>
+    <text x="145" y="265" text-anchor="middle" class="ts tb">2</text><text x="245" y="265" text-anchor="middle" class="ts tb">5</text>
+  </svg><figcaption>行がユーザー、列が映画。スプレッドシートのピボットテーブルと同じ変換です。空欄が多い行列を<b>疎</b>（sparse）と言います。</figcaption></figure>
+
+  <p>映画が数千本あれば、列も数千になります。こんな表はRDBにはうまく収まりません。データフレームや、NumPyのような疎配列を扱えるライブラリなら大丈夫です。</p>
+
+  <h4>数字でないものを、数字にする</h4>
+  <p>行列に入れられるのは数字だけです。数字でないデータは、数字に直します。</p>
+  <ul>
+    <li><b>日付</b>は、適当な範囲の浮動小数点数にスケーリングします。</li>
+    <li><b>決まった選択肢から選ぶ値</b>（映画のジャンルなど）は、<b>ワンホットエンコーディング</b>にします。選択肢ごとに列を作り、当てはまる列に1、それ以外に0を入れます。</li>
+  </ul>
+
+  <figure class="fig">
+    <div class="dbs">
+      <div class="dbt"><div class="nm" style="color:var(--violet)">ジャンルのワンホットエンコーディング</div><table>
+        <tr><th>映画</th><th>コメディ</th><th>ドラマ</th><th>ホラー</th></tr>
+        <tr><td>映画1</td><td class="on">1</td><td class="off">0</td><td class="off">0</td></tr>
+        <tr><td>映画2</td><td class="off">0</td><td class="on">1</td><td class="off">0</td></tr>
+        <tr><td>映画3</td><td class="off">0</td><td class="off">0</td><td class="on">1</td></tr>
+        <tr><td>映画4</td><td class="on">1</td><td class="off">0</td><td class="on">1</td></tr></table></div>
+    </div>
+    <figcaption>映画4はホラーコメディ。複数のジャンルに当てはまる場合も、1を複数立てるだけで表せます。</figcaption>
+  </figure>
+
+  <p>全部が数字の行列になれば、<b>線形代数</b>の計算ができます。線形代数は多くの機械学習アルゴリズムの土台です。さっきの評価の行列は、「この人が好きそうな映画」をすすめるレコメンドの材料になります。</p>
+
+  <h4>仲間たち</h4>
+  <ul>
+    <li><b>配列データベース。</b>TileDBのように、大きな多次元の数値配列の保存に特化したDBです。地理空間の計測データ、医療画像、天文台の観測データなど、科学の分野でよく使われます。</li>
+    <li><b>時系列データ。</b>金融業界では、資産価格や取引の移り変わりをデータフレームで表します。</li>
+    <li><b>バッチ処理。</b>人気があるので、SparkやFlinkにもデータフレームが入っています（11章）。</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 3.5 -->
+<section class="sec" id="s35">
+  <div class="num">3.5</div>
+  <h2>まとめと理解度チェック</h2>
+
+  <div class="tw"><table>
+    <thead><tr><th>モデル</th><th>データの形</th><th>向いている場面</th></tr></thead>
+    <tbody>
+      <tr><th style="color:var(--blue)">リレーショナル</th><td>テーブルと行</td><td>結合、多対一、多対多。分析ではスタースキーマとSQLが定番</td></tr>
+      <tr><th style="color:var(--amber)">ドキュメント</th><td>自己完結したJSON</td><td>一対多の木。ドキュメント同士の関係がまれなとき</td></tr>
+      <tr><th style="color:var(--teal)">グラフ</th><td>頂点と辺</td><td>何でも何にでもつながる。何ホップもたどるクエリ</td></tr>
+      <tr><th style="color:var(--rose)">イベントソーシング</th><td>追記専用のイベントログ</td><td>複雑な業務の記録。読む形はCQRSでビューにする</td></tr>
+      <tr><th style="color:var(--violet)">データフレーム</th><td>多数のカラムを持つ表、行列</td><td>機械学習、統計、科学計算への橋渡し</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>章全体から持ち帰ることは3つです。</p>
+  <ul>
+    <li><b>モデル同士は真似し合える。でも真似は不格好。</b>グラフをRDBに入れることはできます。ただ、SQLの再帰クエリで見たとおり扱いにくい。だから各モデルに専用のDBがあります。</li>
+    <li><b>一方で、DBは隣の領域に広がっている。</b>RDBはJSONカラムを持ち、ドキュメントDBは結合を持ち、SQLのグラフ対応も少しずつ良くなっています。</li>
+    <li><b>スキーマは、あるかないかではない。</b>リレーショナル以外のモデルは、たいていスキーマを強制しません。変化に強くなる反面、アプリは結局なにかの形を前提にしています。違いは、スキーマが明示的（書くときに強制）か、暗黙的（読むときに仮定）かだけです。</li>
+  </ul>
+
+  <div class="box note"><small>本が触れなかったモデル</small>
+    <p><b>ゲノムデータ。</b>とても長い文字列（DNA）を、似ているが同じではない大量の文字列と照らし合わせます。ここで見たどのDBも向かないので、GenBankのような専用ソフトがあります。</p>
+    <p><b>台帳。</b>金融システムの多くは複式簿記の台帳をモデルにします。RDBでも表せますが、TigerBeetleのような専用DBもあります。暗号通貨やブロックチェーンも分散台帳が土台です。</p>
+    <p><b>全文検索。</b>DBと並べてよく使う、一種のデータモデルです。検索インデックスとベクトル検索は4章で少し出てきます。</p>
+  </div>
+
+  <h3>理解度チェック</h3>
+  <p>答えを頭の中で言ってから、開いてください。</p>
+  <details><summary>正規化と非正規化。書き込みが速いのは？ 読み取りが速いのは？</summary>
+    <p>書き込みが速いのは正規化（コピーが1つだけ）。読み取りが速いのは非正規化（結合が少ない）。良し悪しではなくトレードオフです。</p></details>
+  <details><summary>Xのタイムラインのキャッシュが、本文を持たずIDだけ持つのはなぜ？</summary>
+    <p>いいね数やアイコンは頻繁に変わるので、複製してもすぐ古くなり、容量も食うから。読むときにIDから引く（ハイドレーション）ほうが理にかなっています。</p></details>
+  <details><summary>ドキュメントモデルが向くのは、データがどんな形のとき？</summary>
+    <p>一対多の関係でできた木の形で、たいてい木を丸ごと読むとき。多対多が多い、入れ子の中身を直接指したい、という場合はリレーショナルが向きます。</p></details>
+  <details><summary>「スキーマレス」が誤解を招くと言われるのはなぜ？</summary>
+    <p>読むコードは何らかの構造を前提にしていて、暗黙のスキーマは存在するから。DBが強制していないだけです。正確にはスキーマオンリードと呼びます。</p></details>
+  <details><summary>グラフのクエリを普通のSQLで書くと長くなるのはなぜ？</summary>
+    <p>辺を1本たどるのが結合1回にあたり、何本たどるかが事前に決まらないから。WITH RECURSIVE で再帰を書く必要があります。</p></details>
+  <details><summary>コマンドとイベントの違いは？</summary>
+    <p>コマンドはリクエストで、検証して断れる。イベントは検証を通った事実で、過去形で名づけ、あとから変更も拒否もできません。</p></details>
+  <details><summary>イベントソーシングで、ビューを作り直すときに気をつけることを1つ。</summary>
+    <p>為替レートのような外部情報に頼ると結果が変わること。メール送信のような副作用がまた起きること。どちらかが言えれば正解です。</p></details>
+
+  <p style="margin-top:40px">次の4章は、ここで見たデータモデルを<b>実際にどう実装するか</b>の話です。ストレージエンジンとインデックスの中身に入ります。</p>
+</section>
+
+<footer>
+  出典：『データ指向アプリケーションデザイン 第2版』（Martin Kleppmann、Chris Riccomini 著／斉藤 太郎 訳、オライリー・ジャパン）3章。図はこのページのために描き直したもので、一部は簡略化しています。
+</footer>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>

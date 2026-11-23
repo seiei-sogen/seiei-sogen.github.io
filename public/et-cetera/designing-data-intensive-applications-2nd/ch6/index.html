@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDIA 6章 レプリケーション</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@500;700&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 1カラムの読み物。図はスマホ幅(340)基準で描き、幅に合わせて伸縮。本文27px・行間2。常にダーク。
+     色の役割: 琥珀=リーダーと書き込み / 青緑=フォロワー・レプリカと読み取り / 藤=ログとバージョン番号(コピーを運ぶ流れ) / 朱=障害・古い値・コンフリクト */
+  --bg:#0f1420;
+  --panel:#171e2e;
+  --panel2:#1f2840;
+  --line:#34405f;
+  --text:#ebe7dc;
+  --mute:#a3adc4;
+  --ldr:#f3b54a;
+  --fol:#58cfc2;
+  --log:#b9a2ff;
+  --bad:#ff8372;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic",sans-serif;
+  --font-label:"M PLUS 1 Code","SFMono-Regular",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:27px;line-height:2;font-weight:400;
+  -webkit-text-size-adjust:100%;overflow-wrap:anywhere;line-break:strict;
+}
+main{max-width:36em;margin:0 auto;padding:36px 18px 140px}
+h1,h2,h3,h4{text-wrap:balance;word-break:auto-phrase;margin:0}
+h1{font-size:42px;line-height:1.4;font-weight:900;margin:6px 0 28px}
+h2{font-size:36px;line-height:1.5;font-weight:900;margin:120px 0 28px;padding-top:28px;border-top:3px solid var(--line)}
+h3{font-size:31px;line-height:1.5;font-weight:900;margin:84px 0 20px}
+h4{font-size:28px;line-height:1.6;font-weight:900;margin:60px 0 12px;color:var(--text)}
+h2 .num,h3 .num,h4 .num{font-family:var(--font-label);font-weight:700;color:var(--mute);margin-right:.4em}
+p{margin:0 0 30px}
+b,strong{font-weight:900}
+b.ldr{color:var(--ldr)} b.fol{color:var(--fol)} b.log{color:var(--log)} b.bad{color:var(--bad)}
+a{color:var(--fol);text-underline-offset:.2em}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--fol);outline-offset:4px;border-radius:6px}
+.eyebrow{font-family:var(--font-label);font-weight:700;color:var(--mute);margin:0}
+.lead{font-weight:500}
+ul,ol{margin:0 0 30px;padding-left:1.25em}
+li{margin:0 0 14px}
+li::marker{color:var(--mute);font-family:var(--font-label);font-weight:700}
+code{font-family:var(--font-label);font-size:1em;background:var(--panel2);padding:2px 7px;border-radius:7px;overflow-wrap:anywhere}
+
+nav.toc{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px 22px;margin:48px 0 0}
+nav.toc p{margin:0 0 6px;font-weight:900}
+nav.toc ol{list-style:none;padding:0;margin:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:6px 0;text-decoration:none;color:var(--text)}
+nav.toc a .num{font-family:var(--font-label);color:var(--mute);margin-right:.5em}
+nav.toc li.sub a{padding-left:1em}
+
+/* 囲み。左の帯の色が役割を表す */
+.box{background:var(--panel);border:1.5px solid var(--line);border-left:8px solid var(--mute);border-radius:14px;padding:18px 20px;margin:0 0 30px}
+.box>:last-child{margin-bottom:0}
+.box .lab{display:block;font-family:var(--font-label);font-weight:700;color:var(--mute);line-height:1.6;margin-bottom:6px}
+.box.key{border-left-color:var(--text)} .box.key .lab{color:var(--text)}
+.box.ldr{border-left-color:var(--ldr)} .box.ldr .lab{color:var(--ldr)}
+.box.fol{border-left-color:var(--fol)} .box.fol .lab{color:var(--fol)}
+.box.log{border-left-color:var(--log)} .box.log .lab{color:var(--log)}
+.box.bad{border-left-color:var(--bad)} .box.bad .lab{color:var(--bad)}
+.box.extra{border-style:dashed;border-left-style:solid}
+.box h4{margin-top:36px}
+.box figure.fig{margin-left:-14px;margin-right:-14px}
+
+/* 並べて比べる */
+.cmp{display:grid;gap:14px;margin:0 0 30px}
+@media (min-width:900px){.cmp{grid-template-columns:1fr 1fr}.cmp.three{grid-template-columns:1fr}}
+.cmp .side{background:var(--panel);border:1.5px solid var(--line);border-top:8px solid var(--mute);border-radius:14px;padding:14px 20px 18px}
+.cmp .side>:last-child{margin-bottom:0}
+.cmp .side ul{padding-left:1.1em}
+.cmp .tag{display:block;font-family:var(--font-label);font-weight:700}
+.cmp .ldr{border-top-color:var(--ldr)} .cmp .ldr .tag{color:var(--ldr)}
+.cmp .fol{border-top-color:var(--fol)} .cmp .fol .tag{color:var(--fol)}
+.cmp .log{border-top-color:var(--log)} .cmp .log .tag{color:var(--log)}
+.cmp .bad{border-top-color:var(--bad)} .cmp .bad .tag{color:var(--bad)}
+
+/* 図 */
+figure.fig{margin:8px 0 34px}
+.canvas{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:14px 8px}
+.canvas svg{display:block;width:100%;height:auto;max-width:680px;margin:0 auto}
+figcaption{color:var(--mute);line-height:1.8;margin-top:14px}
+svg text{font-family:var(--font-body);fill:var(--text);font-weight:500}
+.t{font-size:15px} .ts{font-size:13px} .tb{font-size:16px;font-weight:900}
+.tm{font-family:var(--font-label);font-size:13px} .tmx{font-family:var(--font-label);font-size:12px} .tn{font-family:var(--font-label);font-size:11px}
+svg .c-mute{fill:var(--mute)} svg .c-ldr{fill:var(--ldr)} svg .c-fol{fill:var(--fol)} svg .c-log{fill:var(--log)} svg .c-bad{fill:var(--bad)}
+.f-panel{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+.f-ldr{fill:rgba(243,181,74,.2);stroke:var(--ldr);stroke-width:1.5}
+.f-fol{fill:rgba(88,207,194,.18);stroke:var(--fol);stroke-width:1.5}
+.f-log{fill:rgba(185,162,255,.2);stroke:var(--log);stroke-width:1.5}
+.f-bad{fill:rgba(255,131,114,.18);stroke:var(--bad);stroke-width:1.5}
+.zone{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5}
+.pg-off{fill:none;stroke:var(--mute);stroke-width:1.2;stroke-dasharray:3 3}
+.ln,.ln-ldr,.ln-fol,.ln-log,.ln-bad,.ln-tx{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ln{stroke:var(--mute)} .ln-ldr{stroke:var(--ldr)} .ln-fol{stroke:var(--fol)} .ln-log{stroke:var(--log)} .ln-bad{stroke:var(--bad)} .ln-tx{stroke:var(--text)}
+.thin{stroke-width:1.2} .dash{stroke-dasharray:5 4}
+.hd{fill:var(--mute)} .hd-ldr{fill:var(--ldr)} .hd-fol{fill:var(--fol)} .hd-log{fill:var(--log)} .hd-bad{fill:var(--bad)} .hd-tx{fill:var(--text)}
+
+/* まとめ */
+dl.pick{margin:0 0 30px}
+dl.pick div{border-bottom:1.5px solid var(--line);padding:14px 0}
+dl.pick dt{color:var(--mute)}
+dl.pick dd{margin:0;font-weight:700}
+
+details{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;margin:0 0 14px}
+summary{cursor:pointer;padding:16px 20px;font-weight:700}
+details .ans{padding:14px 20px 18px;border-top:1.5px dashed var(--line);margin-top:4px}
+details .ans>:last-child{margin-bottom:0}
+.foot{color:var(--mute);margin-top:96px;border-top:1.5px solid var(--line);padding-top:28px}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+/* et-cetera: 図解ノートの目次へのリンク（ページ本体の CSS とぶつからないよう etc-ddia- で始める） */
+.etc-ddia-nav{max-width:760px;margin:0 auto;padding:18px 18px 0;display:flex;flex-wrap:wrap;gap:6px 28px;font:500 20px/1.7 "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+.etc-ddia-nav--end{padding:28px 18px 48px}
+.etc-ddia-nav a{color:inherit;opacity:.8;text-underline-offset:5px}
+.etc-ddia-nav a:hover{opacity:1}
+</style>
+</head>
+<body>
+<nav class="etc-ddia-nav" aria-label="図解ノートの目次へ"><a href="../">← DDIA 第2版 図解ノートの目次</a></nav>
+<main>
+
+<header>
+<p class="eyebrow">データ指向アプリケーションデザイン 第2版</p>
+<h1>6章 レプリケーション</h1>
+<p class="lead">同じデータのコピーを、ネットワークでつながった何台ものマシンに置いておく。これがレプリケーションです。データが変わらないなら、一度コピーして終わりです。難しいのは、<b>変わり続けるデータを、全部のコピーにどう行き渡らせるか</b>。6章はまるごとその話です。</p>
+
+<div class="box key">
+<span class="lab">ひとことで</span>
+<p>やり方は3つあります。シングルリーダー、マルチリーダー、リーダーレス。違いは「書き込みを誰が受けるか」です。書き込み口を増やすほど、止まりにくく、速くなります。そのかわり、コピー同士の食い違い（<b>コンフリクト</b>）を片づける仕事が増えます。</p>
+</div>
+
+<figure class="fig" id="fig-map"><div class="canvas"><svg viewBox="0 0 340 268" role="img" aria-label="レプリケーションの3方式。シングルリーダーは書き込み口が1つ、マルチリーダーは複数、リーダーレスは全レプリカが対等"><text x="8" y="34" class="tb" text-anchor="start">シングルリーダー</text><text x="8" y="54" class="ts c-mute" text-anchor="start">書き込み口は1つ</text><rect x="168" y="22" width="62" height="32" rx="6" class="f-ldr"/><text x="199.0" y="42.5" class="ts" text-anchor="middle">リーダー</text><rect x="262" y="8" width="70" height="28" rx="6" class="f-fol"/><text x="297.0" y="26.5" class="ts" text-anchor="middle">フォロワー</text><rect x="262" y="42" width="70" height="28" rx="6" class="f-fol"/><text x="297.0" y="60.5" class="ts" text-anchor="middle">フォロワー</text><polygon points="262.0,22.0 255.9,28.6 253.1,21.1" class="hd-log"/><line x1="230.0" y1="34.0" x2="255.4" y2="24.5" class="ln-log"/><polygon points="262.0,56.0 253.1,56.5 256.3,49.1" class="hd-log"/><line x1="230.0" y1="42.0" x2="255.6" y2="53.2" class="ln-log"/><text x="8" y="124" class="tb" text-anchor="start">マルチリーダー</text><text x="8" y="144" class="ts c-mute" text-anchor="start">書き込み口が複数</text><rect x="168" y="112" width="62" height="32" rx="6" class="f-ldr"/><text x="199.0" y="132.5" class="ts" text-anchor="middle">リーダー</text><rect x="270" y="112" width="62" height="32" rx="6" class="f-ldr"/><text x="301.0" y="132.5" class="ts" text-anchor="middle">リーダー</text><polygon points="270.0,122.0 262.0,126.0 262.0,118.0" class="hd-log"/><line x1="230.0" y1="122.0" x2="263.0" y2="122.0" class="ln-log"/><polygon points="230.0,134.0 238.0,130.0 238.0,138.0" class="hd-log"/><line x1="270.0" y1="134.0" x2="237.0" y2="134.0" class="ln-log"/><text x="8" y="214" class="tb" text-anchor="start">リーダーレス</text><text x="8" y="234" class="ts c-mute" text-anchor="start">全員が対等</text><rect x="150" y="202" width="86" height="32" rx="6" class="f-panel"/><text x="193.0" y="222.5" class="ts" text-anchor="middle">クライアント</text><rect x="270" y="186" width="62" height="22" rx="6" class="f-fol"/><text x="301.0" y="201.5" class="ts" text-anchor="middle">レプリカ</text><rect x="270" y="212" width="62" height="22" rx="6" class="f-fol"/><text x="301.0" y="227.5" class="ts" text-anchor="middle">レプリカ</text><rect x="270" y="238" width="62" height="22" rx="6" class="f-fol"/><text x="301.0" y="253.5" class="ts" text-anchor="middle">レプリカ</text><polygon points="270.0,197.0 264.3,203.9 261.1,196.6" class="hd-ldr"/><line x1="236.0" y1="212.0" x2="263.6" y2="199.8" class="ln-ldr"/><polygon points="270.0,223.0 261.5,225.8 262.7,217.9" class="hd-ldr"/><line x1="236.0" y1="218.0" x2="263.1" y2="222.0" class="ln-ldr"/><polygon points="270.0,249.0 261.2,247.5 265.9,241.0" class="hd-ldr"/><line x1="236.0" y1="224.0" x2="264.4" y2="244.9" class="ln-ldr"/></svg></div><figcaption>この章の地図。違いは「書き込みをどこで受けるか」です。</figcaption></figure>
+
+<p>色の約束です。<b class="ldr">琥珀</b>はリーダーと書き込み。<b class="fol">青緑</b>はフォロワーやレプリカ（コピー）と読み取り。<b class="log">藤色</b>はレプリケーションログやバージョン番号、つまりコピーを運ぶ流れ。<b class="bad">朱</b>は障害、古い値、コンフリクト。最後まで同じ意味で使います。</p>
+
+<nav class="toc" aria-label="目次">
+<p>目次</p>
+<ol>
+<li><a href="#s60"><span class="num">6.0</span>なぜコピーを持つのか</a></li>
+<li><a href="#s61"><span class="num">6.1</span>シングルリーダー</a></li>
+<li class="sub"><a href="#s611"><span class="num">6.1.1</span>同期と非同期</a></li>
+<li class="sub"><a href="#s612"><span class="num">6.1.2</span>フォロワーを増やす</a></li>
+<li class="sub"><a href="#s613"><span class="num">6.1.3</span>ノード障害</a></li>
+<li class="sub"><a href="#s614"><span class="num">6.1.4</span>ログの実装</a></li>
+<li class="sub"><a href="#s615"><span class="num">6.1.5</span>レプリケーションラグ</a></li>
+<li class="sub"><a href="#s616"><span class="num">6.1.6</span>ラグへの対策</a></li>
+<li><a href="#s62"><span class="num">6.2</span>マルチリーダー</a></li>
+<li class="sub"><a href="#s621"><span class="num">6.2.1</span>地理的に分散した運用</a></li>
+<li class="sub"><a href="#s622"><span class="num">6.2.2</span>同期エンジン</a></li>
+<li class="sub"><a href="#s623"><span class="num">6.2.3</span>コンフリクトへの対処</a></li>
+<li><a href="#s63"><span class="num">6.3</span>リーダーレス</a></li>
+<li class="sub"><a href="#s631"><span class="num">6.3.1</span>クォーラム</a></li>
+<li class="sub"><a href="#s632"><span class="num">6.3.2</span>パフォーマンス比較</a></li>
+<li class="sub"><a href="#s633"><span class="num">6.3.3</span>マルチリージョン</a></li>
+<li class="sub"><a href="#s634"><span class="num">6.3.4</span>並行書き込みの検出</a></li>
+<li><a href="#s64"><span class="num">6.4</span>まとめと確認問題</a></li>
+</ol>
+</nav>
+</header>
+
+<!-- ===================================================== 6.0 -->
+<h2 id="s60"><span class="num">6.0</span>なぜコピーを持つのか</h2>
+
+<p>データを何台ものマシンにコピーしておきたい理由を、本は3つ挙げています。</p>
+
+<figure class="fig" id="fig-why"><div class="canvas"><svg viewBox="0 0 340 310" role="img" aria-label="レプリケーションの3つの理由。ユーザーの近くに置く、1台壊れても動く、読み取りを分け合う"><text x="8" y="18" class="ts c-mute" text-anchor="start">① 近くに置く（速くなる）</text><rect x="8" y="28" width="70" height="36" rx="6" class="f-panel"/><text x="43.0" y="50.5" class="ts" text-anchor="middle">ユーザー</text><rect x="120" y="28" width="90" height="36" rx="6" class="f-fol"/><text x="165.0" y="50.5" class="ts" text-anchor="middle">近くのコピー</text><rect x="250" y="28" width="82" height="36" rx="6" class="f-panel"/><text x="291.0" y="50.5" class="ts" text-anchor="middle">遠くのコピー</text><polygon points="120.0,46.0 112.0,50.0 112.0,42.0" class="hd-fol"/><line x1="78.0" y1="46.0" x2="113.0" y2="46.0" class="ln-fol"/><text x="8" y="108" class="ts c-mute" text-anchor="start">② 1台壊れても動く</text><rect x="8" y="118" width="100" height="36" rx="6" class="f-bad"/><text x="58.0" y="140.5" class="ts" text-anchor="middle">コピー1</text><rect x="120" y="118" width="100" height="36" rx="6" class="f-fol"/><text x="170.0" y="140.5" class="ts" text-anchor="middle">コピー2</text><rect x="232" y="118" width="100" height="36" rx="6" class="f-fol"/><text x="282.0" y="140.5" class="ts" text-anchor="middle">コピー3</text><text x="58" y="172" class="ts c-bad" text-anchor="middle">ダウン</text><text x="226" y="172" class="ts c-fol" text-anchor="middle">こちらで続行</text><text x="8" y="208" class="ts c-mute" text-anchor="start">③ 読み取りを分け合う</text><polygon points="42.0,250.0 38.0,242.0 46.0,242.0" class="hd-fol"/><line x1="42.0" y1="218.0" x2="42.0" y2="243.0" class="ln-fol"/><polygon points="74.0,250.0 70.0,242.0 78.0,242.0" class="hd-fol"/><line x1="74.0" y1="218.0" x2="74.0" y2="243.0" class="ln-fol"/><rect x="8" y="250" width="100" height="34" rx="6" class="f-fol"/><text x="58.0" y="271.5" class="ts" text-anchor="middle">コピー1</text><polygon points="154.0,250.0 150.0,242.0 158.0,242.0" class="hd-fol"/><line x1="154.0" y1="218.0" x2="154.0" y2="243.0" class="ln-fol"/><polygon points="186.0,250.0 182.0,242.0 190.0,242.0" class="hd-fol"/><line x1="186.0" y1="218.0" x2="186.0" y2="243.0" class="ln-fol"/><rect x="120" y="250" width="100" height="34" rx="6" class="f-fol"/><text x="170.0" y="271.5" class="ts" text-anchor="middle">コピー2</text><polygon points="266.0,250.0 262.0,242.0 270.0,242.0" class="hd-fol"/><line x1="266.0" y1="218.0" x2="266.0" y2="243.0" class="ln-fol"/><polygon points="298.0,250.0 294.0,242.0 302.0,242.0" class="hd-fol"/><line x1="298.0" y1="218.0" x2="298.0" y2="243.0" class="ln-fol"/><rect x="232" y="250" width="100" height="34" rx="6" class="f-fol"/><text x="282.0" y="271.5" class="ts" text-anchor="middle">コピー3</text><text x="170" y="302" class="ts c-mute" text-anchor="middle">読み取りクエリを3台に分散</text></svg></div><figcaption>コピーを持つ理由は3つ。速さ、止まらなさ、読み取りの量です。</figcaption></figure>
+
+<ul>
+<li><b>近くに置く。</b>データをユーザーの近くに置けば、アクセスが速くなります。</li>
+<li><b>壊れても動く。</b>一部のマシンが止まっても、システム全体は動き続けます。データも失いません。</li>
+<li><b>読み取りを分け合う。</b>読み取りクエリを受けるマシンを増やせます。</li>
+</ul>
+
+<p>この章には前提が1つあります。<b>データは十分小さくて、どのマシンも全部のコピーを持てる</b>、という前提です。1台に入りきらないほど大きいデータを分割する話（シャーディング）は7章です。</p>
+
+<h3>難しいのは「変更」</h3>
+<p>変更をすべてのコピーに伝えるアルゴリズムは、大きく3系統あります。<b>シングルリーダー</b>、<b>マルチリーダー</b>、<b>リーダーレス</b>。ほぼすべての分散データベースが、このどれかを使っています。</p>
+<p>レプリケーションは古いテーマです。原則は1970年代に研究されてから、ほとんど変わっていません。ネットワークの根本的な制約が変わっていないからです。</p>
+
+<div class="box extra">
+<span class="lab">補足（たとえ話。本にはない）</span>
+<p>クラス全員が同じノートを持つ場面を想像してください。</p>
+<ul>
+<li><b>シングルリーダー：</b>書くのは先生だけ。全員が先生の板書を写す。</li>
+<li><b>マルチリーダー：</b>何人かがそれぞれ自分のノートに書き、あとで見せ合って合わせる。</li>
+<li><b>リーダーレス：</b>書きたい人が全員に声をかける。決めた人数が「書いたよ」と言えばOK。</li>
+</ul>
+</div>
+
+<h3>レプリカがあればバックアップはいらない？</h3>
+<p>答えはノーです。目的が違います。</p>
+
+<figure class="fig" id="fig-backup"><div class="canvas"><svg viewBox="0 0 340 164" role="img" aria-label="うっかり削除するとレプリカにもすぐ伝わって消える。バックアップは過去の時点を残しているので戻せる"><text x="8" y="18" class="ts c-mute" text-anchor="start">うっかり DELETE してしまった</text><rect x="8" y="28" width="150" height="44" rx="6" class="f-bad"/><text x="83.0" y="45.5" class="ts" text-anchor="middle">リーダー</text><text x="83.0" y="63.5" class="ts c-bad" text-anchor="middle">行が消えた</text><polygon points="182.0,50.0 174.0,54.0 174.0,46.0" class="hd-bad"/><line x1="158.0" y1="50.0" x2="175.0" y2="50.0" class="ln-bad"/><rect x="182" y="28" width="150" height="44" rx="6" class="f-bad"/><text x="257.0" y="45.5" class="ts" text-anchor="middle">フォロワー</text><text x="257.0" y="63.5" class="ts c-bad" text-anchor="middle">ここもすぐ消える</text><text x="8" y="100" class="ts c-mute" text-anchor="start">バックアップは過去の時点を残している</text><rect x="8" y="110" width="324" height="44" rx="6" class="f-fol"/><text x="170.0" y="127.5" class="ts" text-anchor="middle">昨日のスナップショット</text><text x="170.0" y="145.5" class="ts c-fol" text-anchor="middle">行はまだある → 戻せる</text></svg></div><figcaption>レプリカは「今」を写します。間違いも写します。過去に戻れるのはバックアップだけです。</figcaption></figure>
+
+<p>レプリカは、あるノードへの書き込みをすぐに他のノードへ写します。うっかり消したら、その「消した」もすぐ伝わります。バックアップは古い時点のスナップショットを残すもので、過去に戻れます。</p>
+<p>実際には、この2つは助け合います。バックアップがレプリケーションの準備に使われることがあります（<a href="#s612">6.1.2</a>）。逆に、レプリケーションログの保管がバックアップの一部になることもあります。</p>
+<p>データベースの中に過去のスナップショットを持つ製品もあります。ただ、古いデータを今のデータと同じ高いストレージに置くことになります。データが多いなら、古いバックアップは安いオブジェクトストアに置くほうが安上がりです。</p>
+
+<!-- ===================================================== 6.1 -->
+<h2 id="s61"><span class="num">6.1</span>シングルリーダーレプリケーション</h2>
+
+<p>データベースのコピーを持つノード1つ1つを、<b>レプリカ</b>と呼びます。</p>
+<p>書き込みは、すべてのレプリカに反映されなければなりません。そうでないとレプリカ同士の中身がずれます。これを実現する、いちばん一般的なやり方が<b>リーダーベース</b>のレプリケーションです。</p>
+
+<figure class="fig" id="fig-leader"><div class="canvas"><svg viewBox="0 0 340 250" role="img" aria-label="クライアントは書き込みをリーダーに送る。リーダーはレプリケーションログを2つのフォロワーに送る。読み取りはどのレプリカからでもできる"><text x="240" y="13" class="ts c-ldr" text-anchor="middle">書き込みはここだけ</text><rect x="8" y="20" width="96" height="40" rx="6" class="f-panel"/><text x="56.0" y="35.5" class="ts" text-anchor="middle">クライアント</text><text x="56.0" y="53.5" class="ts c-mute" text-anchor="middle">書き込む</text><rect x="150" y="20" width="180" height="40" rx="6" class="f-ldr"/><text x="240.0" y="44.5" class="tb" text-anchor="middle">リーダー</text><polygon points="150.0,40.0 142.0,44.0 142.0,36.0" class="hd-ldr"/><line x1="104.0" y1="40.0" x2="143.0" y2="40.0" class="ln-ldr"/><rect x="150" y="130" width="84" height="40" rx="6" class="f-fol"/><text x="192.0" y="154.5" class="ts" text-anchor="middle">フォロワー1</text><rect x="246" y="130" width="84" height="40" rx="6" class="f-fol"/><text x="288.0" y="154.5" class="ts" text-anchor="middle">フォロワー2</text><polygon points="192.0,130.0 188.0,122.0 196.0,122.0" class="hd-log"/><line x1="192.0" y1="60.0" x2="192.0" y2="123.0" class="ln-log"/><polygon points="288.0,130.0 284.0,122.0 292.0,122.0" class="hd-log"/><line x1="288.0" y1="60.0" x2="288.0" y2="123.0" class="ln-log"/><text x="140" y="100" class="ts c-log" text-anchor="end">レプリケーションログ</text><rect x="8" y="200" width="96" height="40" rx="6" class="f-panel"/><text x="56.0" y="215.5" class="ts" text-anchor="middle">クライアント</text><text x="56.0" y="233.5" class="ts c-mute" text-anchor="middle">読み取る</text><line x1="192.0" y1="170.0" x2="192.0" y2="220.0" class="ln-fol"/><polygon points="104.0,220.0 112.0,216.0 112.0,224.0" class="hd-fol"/><line x1="192.0" y1="220.0" x2="111.0" y2="220.0" class="ln-fol"/><text x="266" y="206" class="ts c-mute" text-anchor="middle">読み取りは</text><text x="266" y="224" class="ts c-mute" text-anchor="middle">どのレプリカでも可</text></svg></div><figcaption>本の図6-1にあたる図です。書き込みはリーダーへ。リーダーが変更をフォロワーへ流します。</figcaption></figure>
+
+<ol>
+<li>レプリカの1つを<b class="ldr">リーダー</b>に決めます。書き込みたいクライアントは、必ずリーダーに送ります。リーダーはまず自分のストレージに書きます。</li>
+<li>残りのレプリカは<b class="fol">フォロワー</b>です。リーダーは書き込むたびに、その変更を<b class="log">レプリケーションログ</b>（変更ストリーム）としてフォロワー全員に送ります。フォロワーは、<b>リーダーが処理したのと同じ順番で</b>書き込みを適用します。</li>
+<li>読み取りは、リーダーでもフォロワーでもできます。書き込みを受けるのはリーダーだけです。</li>
+</ol>
+
+<div class="box">
+<span class="lab">用語：呼び名がたくさんある</span>
+<p>この方式は、<b>プライマリバックアップ</b>、<b>アクティブ/パッシブ</b>とも呼ばれます。</p>
+<p>リーダーは、プライマリ、ソースとも。フォロワーは、リードレプリカ、セカンダリ、ホットスタンバイとも呼ばれます。</p>
+<p>古い文献の「マスター/スレーブ」も同じ意味です。この言い方は不適切だと広く見なされているので、使わないほうがよい、と本は言っています。</p>
+</div>
+
+<p>シングルリーダーはとても広く使われています。</p>
+<ul>
+<li>リレーショナルデータベース：PostgreSQL、MySQL、Oracle Data Guard、SQL ServerのAlways On可用性グループ</li>
+<li>ドキュメントデータベース：MongoDB、DynamoDB</li>
+<li>メッセージブローカー：Kafka</li>
+<li>合意アルゴリズム：Raft（CockroachDB、TiDB、etcdなどが使う）。古いリーダーが壊れたら、自動で新しいリーダーを選びます（10章）</li>
+</ul>
+<p>データベースをシャーディングしている場合は、シャードごとにリーダーが1つずついます。</p>
+
+<div class="box extra">
+<span class="lab">補足（本にはない例）</span>
+<p>Amazon RDSの「リードレプリカ」は、ここでいうフォロワーにあたります。</p>
+</div>
+
+<!-- ----------------------------------------------------- 6.1.1 -->
+<h3 id="s611"><span class="num">6.1.1</span>同期レプリケーションと非同期レプリケーション</h3>
+<p>リーダーは、フォロワーに変更を送ったあと、<b>返事を待つか、待たないか</b>。これが大事な分かれ目です。待つのが<b>同期</b>、待たないのが<b>非同期</b>です。</p>
+<p>ユーザーがプロフィール画像を変える場面で見てみます。</p>
+
+<figure class="fig" id="fig-sync"><div class="canvas"><svg viewBox="0 0 340 292" role="img" aria-label="リーダーは同期フォロワー1の返事を待ってからクライアントに成功を返す。非同期フォロワー2の返事は待たず、フォロワー2にはだいぶ遅れて届く"><rect x="3.0" y="8" width="82" height="42" rx="6" class="f-panel"/><text x="44.0" y="33.5" class="ts" text-anchor="middle">クライアント</text><line x1="44.0" y1="50.0" x2="44.0" y2="258.0" class="ln dash thin"/><rect x="87.0" y="8" width="82" height="42" rx="6" class="f-ldr"/><text x="128.0" y="33.5" class="ts" text-anchor="middle">リーダー</text><line x1="128.0" y1="50.0" x2="128.0" y2="258.0" class="ln dash thin"/><rect x="171.0" y="8" width="82" height="42" rx="6" class="f-fol"/><text x="212.0" y="24.5" class="ts" text-anchor="middle">フォロワー1</text><text x="212.0" y="42.5" class="ts c-fol" text-anchor="middle">同期</text><line x1="212.0" y1="50.0" x2="212.0" y2="258.0" class="ln dash thin"/><rect x="255.0" y="8" width="82" height="42" rx="6" class="f-panel"/><text x="296.0" y="24.5" class="ts" text-anchor="middle">フォロワー2</text><text x="296.0" y="42.5" class="ts c-mute" text-anchor="middle">非同期</text><line x1="296.0" y1="50.0" x2="296.0" y2="258.0" class="ln dash thin"/><text x="86" y="70" class="ts" text-anchor="middle">書き込み</text><polygon points="128.0,90.0 119.5,92.6 120.8,84.7" class="hd-ldr"/><line x1="44.0" y1="76.0" x2="121.1" y2="88.8" class="ln-ldr"/><polygon points="212.0,116.0 203.5,118.6 204.8,110.7" class="hd-log"/><line x1="128.0" y1="102.0" x2="205.1" y2="114.8" class="ln-log"/><polygon points="296.0,250.0 287.4,247.7 292.6,241.7" class="hd-log"/><line x1="128.0" y1="102.0" x2="290.7" y2="245.4" class="ln-log dash"/><polygon points="128.0,142.0 135.2,136.7 136.5,144.6" class="hd-fol"/><line x1="212.0" y1="128.0" x2="134.9" y2="140.8" class="ln-fol"/><text x="120" y="128" class="ts c-ldr" text-anchor="end">待つ</text><polygon points="44.0,168.0 51.2,162.7 52.5,170.6" class="hd-tx"/><line x1="128.0" y1="154.0" x2="50.9" y2="166.8" class="ln-tx"/><text x="86" y="182" class="ts" text-anchor="middle">成功</text><text x="332" y="280" class="ts c-bad" text-anchor="end">だいぶ遅れて届く</text></svg></div><figcaption>本の図6-2にあたる図です。上から下へ時間が流れます。リーダーはフォロワー1だけを待ちます。</figcaption></figure>
+
+<p>フォロワー1は<b>同期</b>です。リーダーは、フォロワー1が受け取ったと確認してから、ユーザーに「成功」を返します。フォロワー2は<b>非同期</b>です。リーダーは送るだけ送って、返事を待ちません。</p>
+<p>ふつう、レプリケーションはとても速く、1秒以内にフォロワーへ反映されます。でも「何秒以内」という保証はありません。フォロワーが障害から回復している途中のとき、システムが限界近くで動いているとき、ネットワークに問題があるときは、数分以上遅れることもあります。</p>
+
+<div class="cmp">
+<div class="side fol">
+<span class="tag">同期</span>
+<ul>
+<li>フォロワーは、リーダーと同じ最新のコピーを必ず持っている。</li>
+<li>リーダーが突然壊れても、データはフォロワーに残っている。</li>
+<li><b class="bad">弱点：</b>フォロワーが返事をしないと、書き込みが全部止まる。</li>
+</ul>
+</div>
+<div class="side ldr">
+<span class="tag">非同期</span>
+<ul>
+<li>フォロワーが全員遅れていても、リーダーは書き込みを受け続けられる。</li>
+<li><b class="bad">弱点：</b>リーダーが壊れて戻らないと、まだ届いていなかった書き込みは消える。「成功」と返した書き込みでも消える。</li>
+</ul>
+</div>
+</div>
+
+<h4>落としどころ：1台だけ待つ</h4>
+<p>全部のフォロワーを同期にするのは現実的ではありません。1台止まっただけで全体が止まるからです。そこで、同期にするのは<b>1台だけ</b>、残りは非同期、という構成がよく使われます。<b>準同期</b>と呼ばれることもあります。</p>
+
+<figure class="fig" id="fig-semisync"><div class="canvas"><svg viewBox="0 0 340 190" role="img" aria-label="リーダーはフォロワー1の返事だけを待ち、フォロワー2と3は待たない。リーダーとフォロワー1には必ず最新のコピーがある"><rect x="120" y="10" width="100" height="36" rx="6" class="f-ldr"/><text x="170.0" y="32.5" class="tb" text-anchor="middle">リーダー</text><rect x="8" y="110" width="100" height="44" rx="6" class="f-fol"/><text x="58.0" y="127.5" class="ts" text-anchor="middle">フォロワー1</text><text x="58.0" y="145.5" class="ts c-fol" text-anchor="middle">同期</text><rect x="120" y="110" width="100" height="44" rx="6" class="f-panel"/><text x="170.0" y="127.5" class="ts" text-anchor="middle">フォロワー2</text><text x="170.0" y="145.5" class="ts c-mute" text-anchor="middle">非同期</text><rect x="232" y="110" width="100" height="44" rx="6" class="f-panel"/><text x="282.0" y="127.5" class="ts" text-anchor="middle">フォロワー3</text><text x="282.0" y="145.5" class="ts c-mute" text-anchor="middle">非同期</text><polygon points="70.0,110.0 73.7,101.9 78.7,108.1" class="hd-fol"/><line x1="150.0" y1="46.0" x2="75.5" y2="105.6" class="ln-fol"/><polygon points="170.0,110.0 166.0,102.0 174.0,102.0" class="hd"/><line x1="170.0" y1="46.0" x2="170.0" y2="103.0" class="ln dash"/><polygon points="270.0,110.0 261.3,108.1 266.3,101.9" class="hd"/><line x1="190.0" y1="46.0" x2="264.5" y2="105.6" class="ln dash"/><text x="66" y="76" class="ts c-fol" text-anchor="middle">返事を待つ</text><text x="290" y="76" class="ts c-mute" text-anchor="middle">待たない</text><text x="170" y="180" class="ts" text-anchor="middle">リーダーとフォロワー1には必ず最新がある</text></svg></div><figcaption>準同期。待つのは1台だけにして、止まりにくさと安全のあいだを取ります。</figcaption></figure>
+
+<p>同期のフォロワーが遅くなったり止まったりしたら、非同期のどれか1台を同期に切り替えます。これで「最新のコピーが少なくとも2台にある」状態を保てます。</p>
+<p>レプリカの<b>過半数</b>（たとえば5台中3台、リーダーを含む）を同期にするシステムもあります。これは<b>クォーラム</b>の一例で、<a href="#s631">6.3.1</a>と10章でまた出てきます。</p>
+<p>完全に非同期にする構成も、広く使われています。永続性は弱くなりますが、フォロワーが多いときや、地理的に離れているときにはよく選ばれます。</p>
+
+<!-- ----------------------------------------------------- 6.1.2 -->
+<h3 id="s612"><span class="num">6.1.2</span>新しいフォロワーのセットアップ</h3>
+<p>レプリカを増やしたい。壊れたノードを入れ替えたい。そういうとき、新しいフォロワーにリーダーと同じデータを持たせる必要があります。</p>
+<p>データファイルをそのままコピーするだけでは、たいていダメです。コピーしている間もデータは書き換わり続けるので、ファイルの場所ごとに別々の時点を写してしまいます。かといって、データベースをロックして書き込みを止めるのは、高可用性の目的に反します。</p>
+<p>幸い、止めずにできます。</p>
+
+<figure class="fig" id="fig-setup"><div class="canvas"><svg viewBox="0 0 340 274" role="img" aria-label="新しいフォロワーの作り方。ログの位置5でスナップショットを取り、新フォロワーにコピーし、位置5より後の変更をもらって適用し、追いつく"><text x="8" y="18" class="ts c-mute" text-anchor="start">リーダーのログ（書き込みは止めない）</text><rect x="8" y="28" width="36" height="30" rx="4" class="f-panel"/><text x="26.0" y="47.5" class="tm" text-anchor="middle">1</text><rect x="48" y="28" width="36" height="30" rx="4" class="f-panel"/><text x="66.0" y="47.5" class="tm" text-anchor="middle">2</text><rect x="88" y="28" width="36" height="30" rx="4" class="f-panel"/><text x="106.0" y="47.5" class="tm" text-anchor="middle">3</text><rect x="128" y="28" width="36" height="30" rx="4" class="f-panel"/><text x="146.0" y="47.5" class="tm" text-anchor="middle">4</text><rect x="168" y="28" width="36" height="30" rx="4" class="f-panel"/><text x="186.0" y="47.5" class="tm" text-anchor="middle">5</text><rect x="208" y="28" width="36" height="30" rx="4" class="f-log"/><text x="226.0" y="47.5" class="tm" text-anchor="middle">6</text><rect x="248" y="28" width="36" height="30" rx="4" class="f-log"/><text x="266.0" y="47.5" class="tm" text-anchor="middle">7</text><rect x="288" y="28" width="36" height="30" rx="4" class="f-log"/><text x="306.0" y="47.5" class="tm" text-anchor="middle">8</text><line x1="206.0" y1="24.0" x2="206.0" y2="66.0" class="ln-ldr"/><text x="206" y="84" class="ts c-ldr" text-anchor="middle">① ここでスナップショット</text><text x="8" y="114" class="ts c-mute" text-anchor="start">② スナップショットをコピー</text><rect x="8" y="124" width="120" height="40" rx="6" class="f-ldr"/><text x="68.0" y="139.5" class="ts" text-anchor="middle">スナップショット</text><text x="68.0" y="157.5" class="ts c-mute" text-anchor="middle">位置5まで</text><polygon points="212.0,144.0 204.0,148.0 204.0,140.0" class="hd"/><line x1="128.0" y1="144.0" x2="205.0" y2="144.0" class="ln"/><rect x="212" y="124" width="120" height="40" rx="6" class="f-fol"/><text x="272.0" y="139.5" class="ts" text-anchor="middle">新フォロワー</text><text x="272.0" y="157.5" class="ts c-mute" text-anchor="middle">位置5まで</text><text x="8" y="192" class="ts c-mute" text-anchor="start">③ 「位置5より後をください」</text><rect x="8" y="202" width="36" height="30" rx="4" class="f-log"/><text x="26.0" y="221.5" class="tm" text-anchor="middle">6</text><rect x="48" y="202" width="36" height="30" rx="4" class="f-log"/><text x="66.0" y="221.5" class="tm" text-anchor="middle">7</text><rect x="88" y="202" width="36" height="30" rx="4" class="f-log"/><text x="106.0" y="221.5" class="tm" text-anchor="middle">8</text><polygon points="212.0,217.0 204.0,221.0 204.0,213.0" class="hd-log"/><line x1="128.0" y1="217.0" x2="205.0" y2="217.0" class="ln-log"/><rect x="212" y="202" width="120" height="30" rx="6" class="f-fol"/><text x="272.0" y="221.5" class="ts" text-anchor="middle">順に適用</text><text x="8" y="262" class="ts c-fol" text-anchor="start">④ 追いついた。あとはリアルタイムで受け取る</text></svg></div><figcaption>止めずにフォロワーを増やす手順。ログの「位置」が目印になります。位置の数字は説明用です。</figcaption></figure>
+
+<ol>
+<li>リーダーの<b>一貫したスナップショット</b>を取ります。できればデータベース全体をロックせずに。バックアップにも必要な機能なので、ほとんどのデータベースが持っています。</li>
+<li>スナップショットを新しいフォロワーにコピーします。</li>
+<li>フォロワーはリーダーにつなぎ、<b>スナップショット以降の変更を全部</b>もらいます。そのために、スナップショットがログのどの位置にあたるかがわかっている必要があります。</li>
+<li>たまっていた変更を処理し終えたら、<b>追いついた</b>状態です。あとはリーダーの変更をリアルタイムで受け取り続けます。</li>
+</ol>
+
+<div class="box">
+<span class="lab">用語：ログの「位置」の呼び名</span>
+<p>PostgreSQLでは<b>ログシーケンス番号</b>（LSN）。MySQLには<b>binlog座標</b>と<b>グローバルトランザクション識別子</b>（GTID）の2つのしくみがあります。</p>
+</div>
+
+<p>実際の手順はデータベースによって大きく違います。全自動のものもあれば、管理者が何段階も手で進めるものもあります。</p>
+<p>レプリケーションログをオブジェクトストアに保管し、定期的なスナップショットと一緒に置いておく、というやり方もあります。バックアップと災害復旧の良い実装になります。上の手順の1と2は、そこからファイルをダウンロードするだけで済みます。PostgreSQL、MySQL、SQL Server向けのWAL-G、SQLite向けのLitestreamがこれをやります。</p>
+
+<div class="box">
+<span class="lab">本のコラム：オブジェクトストレージを基盤としたデータベース</span>
+<p>オブジェクトストレージ（Amazon S3、Google Cloud Storage、Azure Blob Storageなど）は、保管だけでなく、動いているデータベースの本体置き場としても使われ始めています。</p>
+<p>利点は4つです。</p>
+<ul>
+<li><b>安い。</b>あまり使わないデータを安いストレージに置き、よく使う分だけメモリやSSDから出せます。</li>
+<li><b>最初から複製されている。</b>複数ゾーン、複数リージョンへのレプリケーションを、とても高い永続性つきで提供してくれます。</li>
+<li><b>条件付き書き込みが使える。</b>「値が期待どおりなら書き換える」を1回で行う操作（CAS）です。これでトランザクションやリーダーの選出を実装できます。</li>
+<li><b>データをつなぎやすい。</b>複数のデータベースのデータを同じ場所に置けます。ParquetやIcebergのようなオープンな形式なら、なおさらです。</li>
+</ul>
+<p>トランザクション、リーダーの選出、レプリケーションの責任をオブジェクトストレージに任せられるので、データベースの作りがとても簡単になります。</p>
+<p>もちろん弱点もあります。</p>
+<ul>
+<li>ローカルディスクやAmazon EBSに比べて、読み書きがずっと遅い。</li>
+<li>APIを呼ぶたびに課金されることが多い。まとめて読み書きすることになり、さらに遅くなる。</li>
+<li>オブジェクトは書き換えられないことが多い。大きなオブジェクトの一部だけを変えるのは高くつく。</li>
+<li>ふつうのファイルシステムとして使えない。FUSEでマウントする手もあるが、必要な機能が欠けていることが多い。</li>
+</ul>
+
+<figure class="fig" id="fig-objstore"><div class="canvas"><svg viewBox="0 0 340 150" role="img" aria-label="階層化ストレージは新しいデータをSSDに、古いデータをオブジェクトストアに置く。ゼロディスクはすべてをオブジェクトストアに置き、ディスクとメモリはキャッシュだけに使う"><text x="87" y="20" class="ts" text-anchor="middle">階層化ストレージ</text><text x="253" y="20" class="ts" text-anchor="middle">ゼロディスク</text><rect x="8" y="30" width="158" height="40" rx="6" class="f-ldr"/><text x="87.0" y="45.5" class="ts" text-anchor="middle">SSD・NVMe</text><text x="87.0" y="63.5" class="ts c-mute" text-anchor="middle">新しい・よく使うデータ</text><rect x="8" y="78" width="158" height="40" rx="6" class="f-fol"/><text x="87.0" y="93.5" class="ts" text-anchor="middle">オブジェクトストア</text><text x="87.0" y="111.5" class="ts c-mute" text-anchor="middle">あまり使わないデータ</text><rect x="174" y="30" width="158" height="40" rx="6" class="pg-off"/><text x="253.0" y="45.5" class="ts" text-anchor="middle">ディスクとメモリ</text><text x="253.0" y="63.5" class="ts c-mute" text-anchor="middle">キャッシュだけ</text><rect x="174" y="78" width="158" height="40" rx="6" class="f-fol"/><text x="253.0" y="93.5" class="ts" text-anchor="middle">オブジェクトストア</text><text x="253.0" y="111.5" class="ts c-mute" text-anchor="middle">すべてのデータ</text><text x="8" y="140" class="ts c-mute" text-anchor="start">右：ノードが状態を持たないので運用が楽</text></svg></div><figcaption>オブジェクトストレージの使い方2つ。右はディスクを「なくしてもいいもの」にします。</figcaption></figure>
+
+<p>対処のしかたはいろいろです。<b>階層化ストレージ</b>は、古いデータだけをオブジェクトストレージに置きます。オブジェクトストレージを本体にしつつ、WALだけは別の速いストレージ（Amazon EBSや、NeonのSafekeepers）に置くシステムもあります。</p>
+<p><b>ゼロディスクアーキテクチャ</b>（ZDA）はさらに進んで、全部をオブジェクトストレージに置きます。ディスクとメモリはキャッシュにしか使いません。ノードが「消えたら困る状態」を持たなくなるので、運用がとても楽になります。Kafka互換のWarpStream、Confluent Freight、Bufstream、Redpanda Serverlessがこの作りです。最近のクラウドデータウェアハウスのほとんど、Turbopuffer、SlateDBも同じです。</p>
+</div>
+
+<!-- ----------------------------------------------------- 6.1.3 -->
+<h3 id="s613"><span class="num">6.1.3</span>ノード障害への対応</h3>
+<p>ノードは突然止まることがあります。計画的に止めることもあります（セキュリティパッチを当てて再起動するなど）。どちらの場合も、<b>1台止まっても全体は動き続ける</b>ようにしたい。止めずにノードを1台ずつ再起動できると、運用がとても楽になります。</p>
+
+<h4 id="s6131"><span class="num">6.1.3.1</span>フォロワーが止まったら：キャッチアップリカバリ</h4>
+<p>こちらは簡単です。フォロワーは、リーダーから受け取った変更のログを自分のディスクに持っています。だから再起動したあと、「最後に処理したのはどこか」がわかります。</p>
+
+<figure class="fig" id="fig-catchup"><div class="canvas"><svg viewBox="0 0 340 160" role="img" aria-label="フォロワーは5まで処理したところで止まった。再起動後、リーダーに5の次から送ってもらって追いつく"><text x="8" y="18" class="ts c-mute" text-anchor="start">リーダーのログ</text><rect x="8" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="26.0" y="45.5" class="tm" text-anchor="middle">1</text><rect x="48" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="66.0" y="45.5" class="tm" text-anchor="middle">2</text><rect x="88" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="106.0" y="45.5" class="tm" text-anchor="middle">3</text><rect x="128" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="146.0" y="45.5" class="tm" text-anchor="middle">4</text><rect x="168" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="186.0" y="45.5" class="tm" text-anchor="middle">5</text><rect x="208" y="26" width="36" height="30" rx="4" class="f-log"/><text x="226.0" y="45.5" class="tm" text-anchor="middle">6</text><rect x="248" y="26" width="36" height="30" rx="4" class="f-log"/><text x="266.0" y="45.5" class="tm" text-anchor="middle">7</text><rect x="288" y="26" width="36" height="30" rx="4" class="f-log"/><text x="306.0" y="45.5" class="tm" text-anchor="middle">8</text><text x="8" y="86" class="ts c-mute" text-anchor="start">フォロワーのログ（5で停止）</text><rect x="8" y="94" width="36" height="30" rx="4" class="f-fol"/><text x="26.0" y="113.5" class="tm" text-anchor="middle">1</text><rect x="48" y="94" width="36" height="30" rx="4" class="f-fol"/><text x="66.0" y="113.5" class="tm" text-anchor="middle">2</text><rect x="88" y="94" width="36" height="30" rx="4" class="f-fol"/><text x="106.0" y="113.5" class="tm" text-anchor="middle">3</text><rect x="128" y="94" width="36" height="30" rx="4" class="f-fol"/><text x="146.0" y="113.5" class="tm" text-anchor="middle">4</text><rect x="168" y="94" width="36" height="30" rx="4" class="f-fol"/><text x="186.0" y="113.5" class="tm" text-anchor="middle">5</text><rect x="208" y="94" width="36" height="30" rx="4" class="pg-off"/><rect x="248" y="94" width="36" height="30" rx="4" class="pg-off"/><rect x="288" y="94" width="36" height="30" rx="4" class="pg-off"/><polygon points="226.0,94.0 222.0,86.0 230.0,86.0" class="hd-log"/><line x1="226.0" y1="56.0" x2="226.0" y2="87.0" class="ln-log"/><polygon points="266.0,94.0 262.0,86.0 270.0,86.0" class="hd-log"/><line x1="266.0" y1="56.0" x2="266.0" y2="87.0" class="ln-log"/><polygon points="306.0,94.0 302.0,86.0 310.0,86.0" class="hd-log"/><line x1="306.0" y1="56.0" x2="306.0" y2="87.0" class="ln-log"/><text x="8" y="150" class="ts" text-anchor="start">再起動後：「5の次からください」と頼む</text></svg></div><figcaption>フォロワーの復旧。自分がどこまで処理したかをログで覚えているので、続きを頼むだけです。</figcaption></figure>
+
+<p>考え方はシンプルですが、性能の面では大変なことがあります。書き込みが多いデータベースや、長く止まっていたフォロワーでは、追いつくべき量が大きくなります。その間、フォロワーにもリーダーにも重い負荷がかかります。</p>
+<p>リーダーは、全フォロワーが処理し終えたログを消せます。でもフォロワーが長いあいだ戻ってこないとき、リーダーは選ばなければなりません。</p>
+
+<div class="cmp">
+<div class="side ldr">
+<span class="tag">ログを残して待つ</span>
+<p>フォロワーは戻ってきたらログから追いつける。<b class="bad">でも</b>、リーダーのディスクがいっぱいになるおそれがある。</p>
+</div>
+<div class="side bad">
+<span class="tag">ログを消す</span>
+<p>ディスクは守れる。<b class="bad">でも</b>、そのフォロワーはログから追いつけなくなる。戻ってきたらバックアップから作り直し。</p>
+</div>
+</div>
+
+<h4 id="s6132"><span class="num">6.1.3.2</span>リーダーが止まったら：フェイルオーバー</h4>
+<p>こちらは厄介です。やることが3つあります。フォロワーのどれかを新しいリーダーに昇格させる。クライアントの書き込み先を新しいリーダーに変える。残りのフォロワーが新しいリーダーから変更を受け取るようにする。この一連を<b>フェイルオーバー</b>と呼びます。</p>
+<p>管理者が手でやることも、自動でやることもできます。自動の場合の流れはこうです。</p>
+
+<figure class="fig" id="fig-failover"><div class="canvas"><svg viewBox="0 0 340 244" role="img" aria-label="フェイルオーバーの3段階。リーダーの無応答をタイムアウトで検知し、最新のデータを持つフォロワーを新リーダーに選び、クライアントと残りのフォロワーの接続先を切り替える"><text x="8" y="18" class="ts c-mute" text-anchor="start">① 検知：返事がない（タイムアウト）</text><rect x="8" y="28" width="100" height="36" rx="6" class="f-bad"/><text x="58.0" y="41.5" class="ts" text-anchor="middle">リーダー</text><text x="58.0" y="59.5" class="ts c-bad" text-anchor="middle">応答なし</text><rect x="120" y="28" width="100" height="36" rx="6" class="f-fol"/><text x="170.0" y="50.5" class="ts" text-anchor="middle">フォロワー1</text><rect x="232" y="28" width="100" height="36" rx="6" class="f-fol"/><text x="282.0" y="50.5" class="ts" text-anchor="middle">フォロワー2</text><text x="8" y="94" class="ts c-mute" text-anchor="start">② 選出：最新のデータを持つフォロワーを昇格</text><rect x="8" y="104" width="100" height="36" rx="6" class="pg-off"/><text x="58.0" y="126.5" class="ts c-mute" text-anchor="middle">旧リーダー</text><rect x="120" y="104" width="100" height="36" rx="6" class="f-ldr"/><text x="170.0" y="126.5" class="tb" text-anchor="middle">新リーダー</text><rect x="232" y="104" width="100" height="36" rx="6" class="f-fol"/><text x="282.0" y="126.5" class="ts" text-anchor="middle">フォロワー2</text><text x="8" y="186" class="ts c-mute" text-anchor="start">③ 再設定：つなぎ先を新リーダーに変える</text><rect x="8" y="196" width="96" height="36" rx="6" class="f-panel"/><text x="56.0" y="218.5" class="ts" text-anchor="middle">クライアント</text><rect x="122" y="196" width="96" height="36" rx="6" class="f-ldr"/><text x="170.0" y="218.5" class="tb" text-anchor="middle">新リーダー</text><rect x="236" y="196" width="96" height="36" rx="6" class="f-fol"/><text x="284.0" y="218.5" class="ts" text-anchor="middle">フォロワー2</text><polygon points="122.0,214.0 114.0,218.0 114.0,210.0" class="hd-ldr"/><line x1="104.0" y1="214.0" x2="115.0" y2="214.0" class="ln-ldr"/><polygon points="236.0,214.0 228.0,218.0 228.0,210.0" class="hd-log"/><line x1="218.0" y1="214.0" x2="229.0" y2="214.0" class="ln-log"/></svg></div><figcaption>フェイルオーバーの3段階。検知、選出、再設定です。</figcaption></figure>
+
+<ol>
+<li><b>検知する。</b>クラッシュ、停電、ネットワーク障害。原因はいろいろあり、何が起きたかを確実に知る方法はありません。だから、ほとんどのシステムは<b>タイムアウト</b>を使います。ノード同士がこまめにメッセージを送り合い、一定時間（たとえば30秒）返事がなければ「死んだ」とみなします。</li>
+<li><b>新しいリーダーを選ぶ。</b>残ったレプリカの過半数で選挙をするか、あらかじめ決めておいた<b>コントローラーノード</b>が任命します。いちばんの候補は、古いリーダーの変更をいちばん新しいところまで持っているレプリカです。</li>
+<li><b>つなぎ直す。</b>クライアントは新しいリーダーに書き込みを送るようにします。古いリーダーが戻ってきたら、自分がもうリーダーではないことに気づかせて、フォロワーにします。</li>
+</ol>
+
+<p>ここには落とし穴がたくさんあります。本は4つ挙げています。</p>
+
+<h4>落とし穴1：成功したはずの書き込みが消える</h4>
+
+<figure class="fig" id="fig-lost"><div class="canvas"><svg viewBox="0 0 340 160" role="img" aria-label="旧リーダーは8まで書き込みを受け付けたが、新リーダーは6までしか受け取っていなかった。7と8は成功と返したのに消える"><text x="8" y="18" class="ts c-mute" text-anchor="start">旧リーダー（ダウン）が受け付けた書き込み</text><rect x="8" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="26.0" y="45.5" class="tm" text-anchor="middle">1</text><rect x="48" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="66.0" y="45.5" class="tm" text-anchor="middle">2</text><rect x="88" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="106.0" y="45.5" class="tm" text-anchor="middle">3</text><rect x="128" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="146.0" y="45.5" class="tm" text-anchor="middle">4</text><rect x="168" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="186.0" y="45.5" class="tm" text-anchor="middle">5</text><rect x="208" y="26" width="36" height="30" rx="4" class="f-panel"/><text x="226.0" y="45.5" class="tm" text-anchor="middle">6</text><rect x="248" y="26" width="36" height="30" rx="4" class="f-bad"/><text x="266.0" y="45.5" class="tm" text-anchor="middle">7</text><rect x="288" y="26" width="36" height="30" rx="4" class="f-bad"/><text x="306.0" y="45.5" class="tm" text-anchor="middle">8</text><text x="8" y="86" class="ts c-mute" text-anchor="start">新リーダー（もとフォロワー）が持っていた分</text><rect x="8" y="94" width="36" height="30" rx="4" class="f-ldr"/><text x="26.0" y="113.5" class="tm" text-anchor="middle">1</text><rect x="48" y="94" width="36" height="30" rx="4" class="f-ldr"/><text x="66.0" y="113.5" class="tm" text-anchor="middle">2</text><rect x="88" y="94" width="36" height="30" rx="4" class="f-ldr"/><text x="106.0" y="113.5" class="tm" text-anchor="middle">3</text><rect x="128" y="94" width="36" height="30" rx="4" class="f-ldr"/><text x="146.0" y="113.5" class="tm" text-anchor="middle">4</text><rect x="168" y="94" width="36" height="30" rx="4" class="f-ldr"/><text x="186.0" y="113.5" class="tm" text-anchor="middle">5</text><rect x="208" y="94" width="36" height="30" rx="4" class="f-ldr"/><text x="226.0" y="113.5" class="tm" text-anchor="middle">6</text><rect x="248" y="94" width="36" height="30" rx="4" class="pg-off"/><rect x="288" y="94" width="36" height="30" rx="4" class="pg-off"/><text x="170" y="150" class="ts c-bad" text-anchor="middle">7と8は「成功」と返したのに消える</text></svg></div><figcaption>非同期レプリケーションでのフェイルオーバー。まだ届いていなかった書き込みは捨てられます。</figcaption></figure>
+
+<p>非同期レプリケーションだと、新しいリーダーは古いリーダーの書き込みを全部は受け取っていないかもしれません。あとで古いリーダーが戻ってきたとき、その書き込みをどうするか。その間に新しいリーダーは、矛盾する書き込みを受けているかもしれません。</p>
+<p>いちばんよくある対処は、<b>古いリーダーにしかなかった書き込みを捨てる</b>ことです。つまり、コミット済みだと思っていた書き込みが、実は残らなかったことになります。</p>
+
+<h4>落とし穴2：外のシステムとずれる</h4>
+<p>捨てるのがとくに危ないのは、データベースの外にも関連するデータがあるときです。本はGitHubで起きた事故を紹介しています。</p>
+
+<figure class="fig" id="fig-github"><div class="canvas"><svg viewBox="0 0 340 212" role="img" aria-label="旧リーダーはIDを105まで発行していたが、昇格した新リーダーは102までしか知らず、103から105を別の行に再発行した。Redisには古い103から105のデータが残っていて食い違った"><text x="8" y="18" class="ts c-mute" text-anchor="start">旧リーダー：IDを105まで発行ずみ</text><rect x="8" y="26" width="60" height="30" rx="4" class="f-panel"/><text x="38.0" y="45.5" class="tm" text-anchor="middle">101</text><rect x="74" y="26" width="60" height="30" rx="4" class="f-panel"/><text x="104.0" y="45.5" class="tm" text-anchor="middle">102</text><rect x="140" y="26" width="60" height="30" rx="4" class="f-panel"/><text x="170.0" y="45.5" class="tm" text-anchor="middle">103</text><rect x="206" y="26" width="60" height="30" rx="4" class="f-panel"/><text x="236.0" y="45.5" class="tm" text-anchor="middle">104</text><rect x="272" y="26" width="60" height="30" rx="4" class="f-panel"/><text x="302.0" y="45.5" class="tm" text-anchor="middle">105</text><text x="8" y="86" class="ts c-mute" text-anchor="start">昇格した新リーダー：102までしか知らない</text><rect x="8" y="94" width="60" height="30" rx="4" class="f-panel"/><text x="38.0" y="113.5" class="tm" text-anchor="middle">101</text><rect x="74" y="94" width="60" height="30" rx="4" class="f-panel"/><text x="104.0" y="113.5" class="tm" text-anchor="middle">102</text><rect x="140" y="94" width="60" height="30" rx="4" class="f-bad"/><text x="170.0" y="113.5" class="tm" text-anchor="middle">103</text><rect x="206" y="94" width="60" height="30" rx="4" class="f-bad"/><text x="236.0" y="113.5" class="tm" text-anchor="middle">104</text><rect x="272" y="94" width="60" height="30" rx="4" class="f-bad"/><text x="302.0" y="113.5" class="tm" text-anchor="middle">105</text><text x="239" y="140" class="ts c-bad" text-anchor="middle">別の行に、もう一度発行</text><rect x="8" y="162" width="324" height="42" rx="6" class="f-bad"/><text x="170.0" y="178.5" class="ts" text-anchor="middle">Redis には古い103〜105のデータが残っている</text><text x="170.0" y="196.5" class="ts c-bad" text-anchor="middle">→ 他人の非公開データが見えた</text></svg></div><figcaption>GitHubで起きた事故のしくみ。IDの数字は説明用です。</figcaption></figure>
+
+<p>遅れていたMySQLのフォロワーがリーダーに昇格しました。このデータベースは、自動増分のカウンタで新しい行の主キーを決めていました。新しいリーダーのカウンタは古いリーダーより遅れていたので、<b>すでに使われた主キーをもう一度使ってしまいました</b>。その主キーはRedisでも使われていたので、MySQLとRedisが食い違い、一部の非公開データが別のユーザーに見えてしまいました。</p>
+
+<h4>落とし穴3：スプリットブレイン</h4>
+
+<figure class="fig" id="fig-splitbrain"><div class="canvas"><svg viewBox="0 0 340 124" role="img" aria-label="旧リーダーと新リーダーの両方が自分をリーダーだと思い、両方が書き込みを受け付けてデータが食い違う"><text x="84" y="14" class="ts c-mute" text-anchor="middle">書き込み</text><text x="256" y="14" class="ts c-mute" text-anchor="middle">書き込み</text><polygon points="84.0,40.0 80.0,32.0 88.0,32.0" class="hd-bad"/><line x1="84.0" y1="20.0" x2="84.0" y2="33.0" class="ln-bad"/><polygon points="256.0,40.0 252.0,32.0 260.0,32.0" class="hd-ldr"/><line x1="256.0" y1="20.0" x2="256.0" y2="33.0" class="ln-ldr"/><rect x="8" y="40" width="152" height="44" rx="6" class="f-bad"/><text x="84.0" y="57.5" class="ts" text-anchor="middle">旧リーダー</text><text x="84.0" y="75.5" class="ts c-bad" text-anchor="middle">「まだ自分がリーダー」</text><rect x="180" y="40" width="152" height="44" rx="6" class="f-ldr"/><text x="256.0" y="57.5" class="ts" text-anchor="middle">新リーダー</text><text x="256.0" y="75.5" class="ts c-mute" text-anchor="middle">「自分がリーダー」</text><text x="170" y="112" class="ts c-bad" text-anchor="middle">両方が書き込みを受ける → データが食い違う</text></svg></div><figcaption>スプリットブレイン。頭が2つに割れた状態です。</figcaption></figure>
+
+<p>障害の起こり方によっては、2つのノードが両方とも「自分がリーダーだ」と思い込みます。これを<b>スプリットブレイン</b>と呼びます。両方が書き込みを受け、それを突き合わせるしくみがなければ、データが消えたり壊れたりします。</p>
+<p>安全策として、リーダーが2つ見つかったら片方を止めるシステムもあります。でも設計を誤ると、<b>両方とも止まってしまう</b>ことがあります。それに、見つけて止めたころにはもう手遅れ、ということもあります。</p>
+<p>古いリーダーを締め出してスプリットブレインを防ぐことを、<b>フェンシング</b>と呼びます（9章でくわしく）。</p>
+
+<h4>落とし穴4：タイムアウトの長さ</h4>
+
+<div class="cmp">
+<div class="side bad">
+<span class="tag">長すぎる</span>
+<p>リーダーが本当に壊れたとき、復旧までの時間が長くなる。</p>
+</div>
+<div class="side bad">
+<span class="tag">短すぎる</span>
+<p>いらないフェイルオーバーが起きる。一時的に負荷が上がって返事が遅れただけ、パケットが少し遅れただけ、でも切り替わってしまう。すでに苦しいシステムでこれをやると、状況はたいてい悪くなる。</p>
+</div>
+</div>
+
+<p>これらに簡単な解決策はありません。だから、自動フェイルオーバーの機能があっても、<b>あえて手動でやる</b>運用チームもあります。</p>
+
+<div class="box key">
+<span class="lab">いちばん大事なこと</span>
+<p>フェイルオーバーでは、<b>いちばん新しいデータを持つフォロワー</b>を新しいリーダーに選ぶこと。同期や準同期なら、古いリーダーが返事を待っていたフォロワーです。非同期なら、ログシーケンス番号がいちばん大きいフォロワーです。</p>
+<p>1秒ぶんの書き込みを失うのは許せるかもしれません。でも、数日遅れたフォロワーを選んでしまったら壊滅的です。</p>
+</div>
+
+<p>ノードは壊れる。ネットワークは信用できない。一貫性、永続性、可用性、レイテンシは引き換えになる。これは分散システムの根っこにある問題で、9章と10章で深く扱います。</p>
+
+<!-- ----------------------------------------------------- 6.1.4 -->
+<h3 id="s614"><span class="num">6.1.4</span>レプリケーションログの実装</h3>
+<p>リーダーはフォロワーに「何を」送っているのでしょうか。実際に使われている方式は3つあります。</p>
+
+<h4 id="s6141"><span class="num">6.1.4.1</span>ステートメントベース：文をそのまま送る</h4>
+<p>いちばん単純な方式です。リーダーは、実行した書き込みの文（INSERT、UPDATE、DELETE）をそのままログに書いて送ります。フォロワーは、クライアントから受け取ったかのようにそのSQLを解析して実行します。</p>
+<p>よさそうに見えますが、いろいろなところで壊れます。</p>
+
+<figure class="fig" id="fig-stmt"><div class="canvas"><svg viewBox="0 0 340 174" role="img" aria-label="NOW関数を含むINSERT文をそのまま送ると、リーダーとフォロワーで実行した時刻が違うので、入る値が違ってしまう"><text x="8" y="18" class="ts c-mute" text-anchor="start">リーダーが実行した文をそのまま送る</text><rect x="8" y="26" width="324" height="34" rx="6" class="f-log"/><text x="170.0" y="47.5" class="tm" text-anchor="middle">INSERT … VALUES (NOW())</text><polygon points="87.0,96.0 83.0,88.0 91.0,88.0" class="hd"/><line x1="87.0" y1="60.0" x2="87.0" y2="89.0" class="ln"/><polygon points="253.0,96.0 249.0,88.0 257.0,88.0" class="hd"/><line x1="253.0" y1="60.0" x2="253.0" y2="89.0" class="ln"/><rect x="8" y="96" width="158" height="44" rx="6" class="f-ldr"/><text x="87.0" y="113.5" class="ts" text-anchor="middle">リーダーで実行</text><text x="87.0" y="131.5" class="tm c-ldr" text-anchor="middle">12:00:00.120</text><rect x="174" y="96" width="158" height="44" rx="6" class="f-bad"/><text x="253.0" y="113.5" class="ts" text-anchor="middle">フォロワーで実行</text><text x="253.0" y="131.5" class="tm c-bad" text-anchor="middle">12:00:00.870</text><text x="170" y="164" class="ts c-bad" text-anchor="middle">同じ文なのに、入る値が違う</text></svg></div><figcaption>ステートメントベースの弱点。時刻は説明用です。</figcaption></figure>
+
+<ul>
+<li><b>実行するたびに結果が変わる関数。</b><code>NOW()</code>（今の日時）や <code>RAND()</code>（乱数）は、レプリカごとに違う値になります。</li>
+<li><b>順番に左右される文。</b>自動増分の列を使う文や、今あるデータに左右される文（<code>UPDATE … WHERE 条件</code>）は、全レプリカでまったく同じ順番で実行しないと結果が変わります。複数のトランザクションが並行して動いていると、これが足かせになります。</li>
+<li><b>副作用のある文。</b>トリガー、ストアドプロシージャ、ユーザー定義関数は、レプリカごとに違う副作用を起こすことがあります。</li>
+</ul>
+
+<p>対策はあります。たとえばリーダーがログに書くとき、<code>NOW()</code> を実際に得た値に置き換えておけば、全フォロワーが同じ値を使います。「結果が1つに決まる操作を、決まった順番で実行する」という考え方は、<b>ステートマシンレプリケーション</b>と呼ばれます（10章）。3章のイベントソーシングにも似ています。</p>
+<p>この方式はMySQLのバージョン5.1以前で使われていました。とてもコンパクトなので今も使われることはありますが、今のMySQLは、文に結果が定まらない要素があると、既定で行ベース（後述）に切り替えます。VoltDBはこの方式を使っていて、トランザクションに「結果が1つに決まること」を求めて安全にしています。ただ、それを保証するのは実際には難しいので、多くのデータベースは別の方式を選びます。</p>
+
+<h4 id="s6142"><span class="num">6.1.4.2</span>WALシッピング：ディスクの書き換え記録を送る</h4>
+<p>4章で見たように、Bツリーのストレージエンジンは、変更をまず<b>先行書き込みログ</b>（WAL）に書きます。クラッシュしてもWALから元に戻せるようにするためです。</p>
+<p>WALには、データを復元するのに必要な情報が全部入っています。ならば、まったく同じログを別のノードに送れば、そこに同じコピーを作れます。リーダーはWALをディスクに書くだけでなく、ネットワークでフォロワーにも送ります。PostgreSQLやOracleなどが使っている方式です。</p>
+
+<figure class="fig" id="fig-wal"><div class="canvas"><svg viewBox="0 0 340 174" role="img" aria-label="WALはディスクのどのブロックのどのバイトを書き換えたかの記録。リーダーとフォロワーでソフトウェアのバージョンが違うと、ディスク形式が違って読めないことが多い"><text x="8" y="18" class="ts c-mute" text-anchor="start">WAL：ディスクのどこを書き換えたかの記録</text><rect x="8" y="26" width="324" height="34" rx="6" class="f-log"/><text x="170.0" y="47.5" class="ts" text-anchor="middle">ブロック812の40バイト目を書き換え</text><rect x="8" y="96" width="150" height="44" rx="6" class="f-ldr"/><text x="83.0" y="113.5" class="ts" text-anchor="middle">リーダー</text><text x="83.0" y="131.5" class="tm" text-anchor="middle">v15</text><polygon points="182.0,118.0 174.0,122.0 174.0,114.0" class="hd-bad"/><line x1="158.0" y1="118.0" x2="175.0" y2="118.0" class="ln-bad"/><rect x="182" y="96" width="150" height="44" rx="6" class="f-bad"/><text x="257.0" y="113.5" class="ts" text-anchor="middle">フォロワー</text><text x="257.0" y="131.5" class="tm c-bad" text-anchor="middle">v16</text><text x="170" y="164" class="ts c-bad" text-anchor="middle">ディスク形式が違うと読めないことが多い</text></svg></div><figcaption>WALシッピングの弱点。ストレージエンジンの中身と一体なので、バージョン違いに弱い。値は説明用です。</figcaption></figure>
+
+<p>弱点は、ログが<b>とても低レベル</b>なことです。「どのディスクブロックの、どのバイトを変えたか」まで書いてあります。つまりレプリケーションがストレージエンジンの中身と一体になっています。データベースのバージョンが変わってディスク上の形式が変わると、リーダーとフォロワーで別のバージョンを動かすことは、ふつうできません。</p>
+<p>細かい話に見えますが、運用には大きく効きます。</p>
+
+<div class="cmp">
+<div class="side fol">
+<span class="tag">バージョン違いを許す方式なら</span>
+<p>先にフォロワーを新しいバージョンにする。次にフェイルオーバーで、そのフォロワーをリーダーにする。これで<b>止めずにアップグレード</b>できる。</p>
+</div>
+<div class="side bad">
+<span class="tag">許さない方式だと</span>
+<p>WALシッピングはこちらが多い。アップグレードには<b>ダウンタイム</b>が要る。</p>
+</div>
+</div>
+
+<h4 id="s6143"><span class="num">6.1.4.3</span>論理（行ベース）ログ：行の変更を送る</h4>
+<p>3つ目は、レプリケーション用のログと、ストレージエンジン用のログを<b>別の形式にする</b>方式です。レプリケーション用のほうを、ディスク上の（物理的な）表現と区別して<b>論理ログ</b>と呼びます。</p>
+<p>リレーショナルデータベースの論理ログは、ふつう行単位です。</p>
+<ul>
+<li><b>挿入した行：</b>全部の列の新しい値。</li>
+<li><b>削除した行：</b>その行を特定できる情報。ふつうは主キー。主キーがないテーブルなら、全部の列の古い値。</li>
+<li><b>更新した行：</b>その行を特定できる情報と、全部の列（少なくとも変わった列）の新しい値。</li>
+</ul>
+<p>何行も変えるトランザクションは、こういうレコードをいくつも出し、最後に「コミットした」というレコードが付きます。</p>
+
+<figure class="fig" id="fig-logical"><div class="canvas"><svg viewBox="0 0 340 254" role="img" aria-label="論理ログは行単位でINSERT、UPDATE、DELETEとCOMMITを記録する。フォロワーのほか、データウェアハウスやインデックス、キャッシュにも送れる"><text x="8" y="18" class="ts c-mute" text-anchor="start">論理ログ：行単位で「何が変わったか」</text><rect x="8" y="26" width="324" height="30" rx="6" class="f-log"/><text x="170.0" y="45.5" class="tm" text-anchor="middle">INSERT users  id=7 name=Aiko</text><rect x="8" y="60" width="324" height="30" rx="6" class="f-log"/><text x="170.0" y="79.5" class="tm" text-anchor="middle">UPDATE users  id=7 name=Aiko T.</text><rect x="8" y="94" width="324" height="30" rx="6" class="f-log"/><text x="170.0" y="113.5" class="tm" text-anchor="middle">DELETE users  id=3</text><rect x="8" y="128" width="324" height="30" rx="6" class="f-panel"/><text x="170.0" y="147.5" class="tm" text-anchor="middle">COMMIT</text><polygon points="60.0,196.0 56.0,188.0 64.0,188.0" class="hd-log"/><line x1="60.0" y1="158.0" x2="60.0" y2="189.0" class="ln-log"/><polygon points="170.0,196.0 166.0,188.0 174.0,188.0" class="hd-log"/><line x1="170.0" y1="158.0" x2="170.0" y2="189.0" class="ln-log"/><polygon points="280.0,196.0 276.0,188.0 284.0,188.0" class="hd-log"/><line x1="280.0" y1="158.0" x2="280.0" y2="189.0" class="ln-log"/><text x="225" y="181" class="ts c-log" text-anchor="middle">CDC（12章）</text><rect x="8" y="196" width="104" height="48" rx="6" class="f-fol"/><text x="60.0" y="215.5" class="ts" text-anchor="middle">フォロワー</text><text x="60.0" y="233.5" class="ts c-mute" text-anchor="middle">別バージョン可</text><rect x="118" y="196" width="104" height="48" rx="6" class="f-panel"/><text x="170.0" y="215.5" class="ts" text-anchor="middle">DWH</text><text x="170.0" y="233.5" class="ts c-mute" text-anchor="middle">分析用</text><rect x="228" y="196" width="104" height="48" rx="6" class="f-panel"/><text x="280.0" y="215.5" class="ts" text-anchor="middle">インデックス</text><text x="280.0" y="233.5" class="ts c-mute" text-anchor="middle">キャッシュ</text></svg></div><figcaption>論理（行ベース）ログ。中身がわかりやすいので、外のシステムにも流せます。値は説明用です。</figcaption></figure>
+
+<p>MySQLは、行ベースの設定にすると、WALとは別に<b>binlog</b>という論理ログを持ちます。PostgreSQLは、物理的なWALを行の挿入・更新・削除のイベントに読み解くことで、論理レプリケーションを実現しています。</p>
+<p>利点は2つです。</p>
+<ul>
+<li><b>バージョン違いに強い。</b>ストレージエンジンの中身と切り離されているので、リーダーとフォロワーで別のバージョンを動かせます。少ないダウンタイムでアップグレードできます。</li>
+<li><b>外のシステムが読みやすい。</b>データウェアハウス、専用のインデックス、キャッシュなどにデータベースの変更を流せます。これを<b>チェンジデータキャプチャ</b>（CDC）と呼びます（12章）。</li>
+</ul>
+
+<div class="cmp three">
+<div class="side log">
+<span class="tag">ステートメントベース</span>
+<p>送るもの：実行した文。小さい。でも、同じ結果になる保証が難しい。</p>
+</div>
+<div class="side log">
+<span class="tag">WALシッピング</span>
+<p>送るもの：ディスクの書き換え記録。正確。でも、バージョン違いに弱い。</p>
+</div>
+<div class="side log">
+<span class="tag">論理（行ベース）ログ</span>
+<p>送るもの：行ごとの変更。バージョン違いに強く、外にも流せる。</p>
+</div>
+</div>
+
+<!-- ----------------------------------------------------- 6.1.5 -->
+<h3 id="s615"><span class="num">6.1.5</span>レプリケーションラグに起因する問題</h3>
+<p>オンラインサービスは、たいてい書き込みが少なく、読み取りが多い。そういうときに魅力的なのが、フォロワーをたくさん作って読み取りを分散させる構成です。<b>リードスケーリング</b>と呼びます。</p>
+
+<figure class="fig" id="fig-readscale"><div class="canvas"><svg viewBox="0 0 340 210" role="img" aria-label="書き込みは少なくリーダー1台が受ける。読み取りは多く、4台のフォロワーに分散する"><text x="60" y="32" class="ts c-ldr" text-anchor="middle">書き込み（少）</text><rect x="120" y="10" width="100" height="34" rx="6" class="f-ldr"/><text x="170.0" y="31.5" class="tb" text-anchor="middle">リーダー</text><polygon points="120.0,27.0 112.0,31.0 112.0,23.0" class="hd-ldr"/><line x1="106.0" y1="27.0" x2="113.0" y2="27.0" class="ln-ldr"/><rect x="8" y="90" width="72" height="34" rx="6" class="f-fol"/><text x="44.0" y="111.5" class="ts" text-anchor="middle">フォロワー</text><polygon points="44.0,90.0 50.1,83.5 52.9,91.0" class="hd-log"/><line x1="170.0" y1="44.0" x2="50.6" y2="87.6" class="ln-log dash"/><polygon points="30.0,124.0 34.0,132.0 26.0,132.0" class="hd-fol"/><line x1="30.0" y1="160.0" x2="30.0" y2="131.0" class="ln-fol"/><polygon points="58.0,124.0 62.0,132.0 54.0,132.0" class="hd-fol"/><line x1="58.0" y1="160.0" x2="58.0" y2="131.0" class="ln-fol"/><rect x="92" y="90" width="72" height="34" rx="6" class="f-fol"/><text x="128.0" y="111.5" class="ts" text-anchor="middle">フォロワー</text><polygon points="128.0,90.0 130.4,81.4 136.3,86.8" class="hd-log"/><line x1="170.0" y1="44.0" x2="132.7" y2="84.8" class="ln-log dash"/><polygon points="114.0,124.0 118.0,132.0 110.0,132.0" class="hd-fol"/><line x1="114.0" y1="160.0" x2="114.0" y2="131.0" class="ln-fol"/><polygon points="142.0,124.0 146.0,132.0 138.0,132.0" class="hd-fol"/><line x1="142.0" y1="160.0" x2="142.0" y2="131.0" class="ln-fol"/><rect x="176" y="90" width="72" height="34" rx="6" class="f-fol"/><text x="212.0" y="111.5" class="ts" text-anchor="middle">フォロワー</text><polygon points="212.0,90.0 203.7,86.8 209.6,81.4" class="hd-log"/><line x1="170.0" y1="44.0" x2="207.3" y2="84.8" class="ln-log dash"/><polygon points="198.0,124.0 202.0,132.0 194.0,132.0" class="hd-fol"/><line x1="198.0" y1="160.0" x2="198.0" y2="131.0" class="ln-fol"/><polygon points="226.0,124.0 230.0,132.0 222.0,132.0" class="hd-fol"/><line x1="226.0" y1="160.0" x2="226.0" y2="131.0" class="ln-fol"/><rect x="260" y="90" width="72" height="34" rx="6" class="f-fol"/><text x="296.0" y="111.5" class="ts" text-anchor="middle">フォロワー</text><polygon points="296.0,90.0 287.1,91.0 289.9,83.5" class="hd-log"/><line x1="170.0" y1="44.0" x2="289.4" y2="87.6" class="ln-log dash"/><polygon points="282.0,124.0 286.0,132.0 278.0,132.0" class="hd-fol"/><line x1="282.0" y1="160.0" x2="282.0" y2="131.0" class="ln-fol"/><polygon points="310.0,124.0 314.0,132.0 306.0,132.0" class="hd-fol"/><line x1="310.0" y1="160.0" x2="310.0" y2="131.0" class="ln-fol"/><text x="170" y="180" class="ts c-fol" text-anchor="middle">読み取り（多）を分散</text><text x="170" y="200" class="ts c-mute" text-anchor="middle">フォロワーを足せば読み取りをさばける量が増える</text></svg></div><figcaption>リードスケーリング。読み取りが多いサービスでよく使う形です。</figcaption></figure>
+
+<p>ただし、これが現実に成り立つのは<b>非同期レプリケーションのときだけ</b>です。全フォロワーを同期にすると、1台の障害で全体が書き込めなくなります。そしてノードが増えるほど、どれかが止まっている確率は上がります。</p>
+<p>非同期のフォロワーから読むと、フォロワーが遅れているときに<b>古い情報</b>が見えます。同じクエリをリーダーとフォロワーに同時に投げると、違う結果が返ることがあります。</p>
+<p>この食い違いは一時的です。書き込みを止めてしばらく待てば、フォロワーはいずれ追いつき、リーダーと同じになります。だからこの性質を<b>結果整合性</b>（eventual consistency）と呼びます。</p>
+
+<div class="box">
+<span class="lab">用語：結果整合性</span>
+<p>Douglas Terryたちが提唱し、Werner Vogelsが広めた言葉です。多くのNoSQLプロジェクトの合言葉になりました。でもNoSQLだけの話ではありません。非同期レプリケーションを使うリレーショナルデータベースのフォロワーにも、同じ性質があります。</p>
+</div>
+
+<p>「いずれ」は、わざと曖昧にしてあります。どれだけ遅れうるかに上限はありません。リーダーの書き込みがフォロワーに届くまでの遅れを<b>レプリケーションラグ</b>と呼びます。ふだんは1秒未満で、気になりません。でもシステムが限界近くで動いていたり、ネットワークに問題があったりすると、数秒から数分に広がります。</p>
+<p>ここまで広がると、理屈の上の話ではなく、アプリにとって本物の問題になります。本は例を3つ挙げています。</p>
+
+<h4 id="s6151"><span class="num">6.1.5.1</span>自分の書き込みが読めない</h4>
+
+<figure class="fig" id="fig-ryw"><div class="canvas"><svg viewBox="0 0 340 270" role="img" aria-label="ユーザーがコメントをリーダーに投稿して成功が返る。直後にフォロワーから読むと、まだ届いていないので投稿がない。フォロワーにはその後で届く"><rect x="5.0" y="8" width="90" height="30" rx="6" class="f-panel"/><text x="50.0" y="27.5" class="ts" text-anchor="middle">ユーザー</text><line x1="50.0" y1="38.0" x2="50.0" y2="246.0" class="ln dash thin"/><rect x="125.0" y="8" width="90" height="30" rx="6" class="f-ldr"/><text x="170.0" y="27.5" class="ts" text-anchor="middle">リーダー</text><line x1="170.0" y1="38.0" x2="170.0" y2="246.0" class="ln dash thin"/><rect x="245.0" y="8" width="90" height="30" rx="6" class="f-fol"/><text x="290.0" y="27.5" class="ts" text-anchor="middle">フォロワー</text><line x1="290.0" y1="38.0" x2="290.0" y2="246.0" class="ln dash thin"/><text x="110" y="58" class="ts" text-anchor="middle">コメント投稿</text><polygon points="170.0,78.0 161.6,81.0 162.5,73.1" class="hd-ldr"/><line x1="50.0" y1="64.0" x2="163.0" y2="77.2" class="ln-ldr"/><polygon points="50.0,104.0 57.5,99.1 58.4,107.0" class="hd-tx"/><line x1="170.0" y1="90.0" x2="57.0" y2="103.2" class="ln-tx"/><text x="110" y="118" class="ts c-mute" text-anchor="middle">成功</text><polygon points="290.0,236.0 281.8,232.4 288.0,227.3" class="hd-log"/><line x1="170.0" y1="90.0" x2="285.6" y2="230.6" class="ln-log dash"/><text x="110" y="146" class="ts" text-anchor="middle">読み取り</text><polygon points="290.0,172.0 281.7,175.3 282.4,167.3" class="hd-fol"/><line x1="50.0" y1="152.0" x2="283.0" y2="171.4" class="ln-fol"/><polygon points="50.0,204.0 57.6,199.3 58.3,207.3" class="hd-bad"/><line x1="290.0" y1="184.0" x2="57.0" y2="203.4" class="ln-bad"/><text x="110" y="220" class="ts c-bad" text-anchor="middle">投稿がない！</text><text x="332" y="262" class="ts c-log" text-anchor="end">ここでやっと届く</text></svg></div><figcaption>本の図6-3にあたる図です。書いた直後に、遅れているフォロワーから読むと「消えた」ように見えます。</figcaption></figure>
+
+<p>ユーザーから見ると、送ったデータが消えたように見えます。当然、不満です。</p>
+<p>ここで必要なのが<b>リードアフターライト整合性</b>（read-your-writes）です。「<b>自分が</b>送った更新は、リロードしたら必ず見える」という保証です。他のユーザーの更新については何も約束しません。</p>
+<p>実現する方法はいくつかあります。</p>
+
+<figure class="fig" id="fig-rywfix"><div class="canvas"><svg viewBox="0 0 340 156" role="img" aria-label="自分のプロフィールはリーダーから読み、他人のプロフィールはフォロワーから読む"><text x="8" y="18" class="ts c-mute" text-anchor="start">読み取り先を使い分ける</text><rect x="8" y="30" width="150" height="44" rx="6" class="f-panel"/><text x="83.0" y="47.5" class="ts" text-anchor="middle">自分のプロフィール</text><text x="83.0" y="65.5" class="ts c-mute" text-anchor="middle">自分が変えたかも</text><polygon points="222.0,52.0 214.0,56.0 214.0,48.0" class="hd-ldr"/><line x1="158.0" y1="52.0" x2="215.0" y2="52.0" class="ln-ldr"/><rect x="222" y="30" width="110" height="44" rx="6" class="f-ldr"/><text x="277.0" y="56.5" class="tb" text-anchor="middle">リーダー</text><rect x="8" y="100" width="150" height="44" rx="6" class="f-panel"/><text x="83.0" y="117.5" class="ts" text-anchor="middle">他人のプロフィール</text><text x="83.0" y="135.5" class="ts c-mute" text-anchor="middle">自分は変えられない</text><polygon points="222.0,122.0 214.0,126.0 214.0,118.0" class="hd-fol"/><line x1="158.0" y1="122.0" x2="215.0" y2="122.0" class="ln-fol"/><rect x="222" y="100" width="110" height="44" rx="6" class="f-fol"/><text x="277.0" y="126.5" class="ts" text-anchor="middle">フォロワー</text></svg></div><figcaption>リードアフターライト整合性の実現例。自分が変えたかもしれないものだけ、リーダーから読みます。</figcaption></figure>
+
+<ul>
+<li><b>自分が変えたかもしれないものは、リーダーから読む。</b>たとえばSNSのプロフィールは本人しか編集できません。だから「自分のプロフィールはリーダーから、他人のプロフィールはフォロワーから」と決められます。</li>
+<li><b>時間で区切る。</b>ほとんどのデータを本人が編集できるアプリでは、上の方法だと大半をリーダーから読むことになり、リードスケーリングの意味がなくなります。かわりに、「最後の更新から1分間は、リーダーから読む」とします。あるいは、リーダーから1分以上遅れているフォロワーには聞かないようにします。</li>
+<li><b>タイムスタンプを覚えておく。</b>クライアントが「自分の最後の書き込みの時刻」を覚えておきます。その時刻までの更新を反映したレプリカだけが、そのユーザーの読み取りに答えます。まだ追いついていなければ、別のレプリカに回すか、追いつくまで待ちます。時刻は、ログシーケンス番号のような<b>論理タイムスタンプ</b>でも、実際の時計でもかまいません（時計を使うなら、時計合わせが重要になります。9章）。</li>
+</ul>
+<p>レプリカが複数のリージョンに散らばっていると、もう一段ややこしくなります。リーダーが答えるべきリクエストは、リーダーがいるリージョンまで運ばなければなりません。</p>
+
+<h4>別のデバイスからでも見えるべき</h4>
+<p>PCで入力して、スマホで見る。このときも入力した内容が見えてほしい。<b>デバイスをまたぐ</b>リードアフターライト整合性です。考えることが増えます。</p>
+<ul>
+<li>「最後の更新時刻」を覚える方法は、そのままでは使えません。スマホのコードは、PCでの更新を知らないからです。この情報を1か所で管理する必要があります。</li>
+<li>デバイスが違えば、ネットワークの経路も違います（家の回線と携帯の回線）。同じリージョンにつながるとは限りません。リーダーから読む方式なら、そのユーザーの全デバイスからのリクエストを、まず同じリージョンに集める必要があるかもしれません。</li>
+</ul>
+
+<div class="box">
+<span class="lab">本のコラム：リージョンとアベイラビリティゾーン</span>
+<p><b>リージョン</b>は、1つの地理的な場所にある、1つ以上のデータセンターのまとまりです。クラウド事業者は、同じリージョンの中に複数のデータセンターを置きます。その1つ1つが<b>アベイラビリティゾーン</b>（ゾーン）です。ゾーンは、電力や冷却設備を別々に持つ、独立した施設です。</p>
+
+<figure class="fig" id="fig-region"><div class="canvas"><svg viewBox="0 0 340 186" role="img" aria-label="1つのリージョンの中に3つのゾーンがあり、ゾーンはそれぞれ別のデータセンター。ゾーン障害には耐えるが、リージョン全体の障害には耐えられない"><rect x="8" y="26" width="324" height="104" rx="10" class="zone"/><text x="20" y="46" class="ts c-mute" text-anchor="start">リージョン（1つの地理的な場所）</text><rect x="20" y="56" width="96" height="62" rx="6" class="f-panel"/><text x="68.0" y="82.5" class="ts" text-anchor="middle">ゾーンa</text><text x="68.0" y="100.5" class="ts c-mute" text-anchor="middle">データセンター</text><rect x="122" y="56" width="96" height="62" rx="6" class="f-panel"/><text x="170.0" y="82.5" class="ts" text-anchor="middle">ゾーンb</text><text x="170.0" y="100.5" class="ts c-mute" text-anchor="middle">データセンター</text><rect x="224" y="56" width="96" height="62" rx="6" class="f-panel"/><text x="272.0" y="82.5" class="ts" text-anchor="middle">ゾーンc</text><text x="272.0" y="100.5" class="ts c-mute" text-anchor="middle">データセンター</text><text x="170" y="152" class="ts c-mute" text-anchor="middle">ゾーン間は高速な回線。1つのゾーン障害には耐える</text><text x="170" y="174" class="ts c-bad" text-anchor="middle">リージョンごと落ちると耐えられない</text></svg></div><figcaption>リージョンとゾーンの関係。</figcaption></figure>
+
+<p>同じリージョンのゾーン同士は、とても速い回線でつながっています。遅延が小さいので、ほとんどの分散システムは、複数のゾーンにノードを散らしても、1つのゾーンの中にいるかのように動かせます。</p>
+<p>リージョン全体の障害に耐えるには、複数のリージョンに配置する必要があります。そのかわり、レイテンシが増え、スループットが下がり、通信の費用が増えるかもしれません。</p>
+</div>
+
+<h4 id="s6152"><span class="num">6.1.5.2</span>時間が巻き戻る</h4>
+<p>2つ目は、ユーザーから見て<b>時間が逆行する</b>現象です。同じユーザーが、別々のレプリカから何度か読むと起こります。リロードのたびにランダムなサーバーにつながる構成では、よくあります。</p>
+
+<figure class="fig" id="fig-mono"><div class="canvas"><svg viewBox="0 0 340 226" role="img" aria-label="ユーザー2345が1回目はラグの小さいフォロワー1から読んでコメントが見えた。2回目はラグの大きいフォロワー2から読んでコメントが消えた"><rect x="8" y="70" width="80" height="44" rx="6" class="f-panel"/><text x="48.0" y="87.5" class="ts" text-anchor="middle">ユーザー</text><text x="48.0" y="105.5" class="tm" text-anchor="middle">2345</text><rect x="196" y="20" width="136" height="48" rx="6" class="f-fol"/><text x="264.0" y="39.5" class="ts" text-anchor="middle">フォロワー1</text><text x="264.0" y="57.5" class="ts c-fol" text-anchor="middle">ラグ小・コメントあり</text><rect x="196" y="120" width="136" height="48" rx="6" class="f-bad"/><text x="264.0" y="139.5" class="ts" text-anchor="middle">フォロワー2</text><text x="264.0" y="157.5" class="ts c-bad" text-anchor="middle">ラグ大・まだ空</text><polygon points="196.0,44.0 189.8,50.4 187.1,42.9" class="hd-fol"/><line x1="88.0" y1="82.0" x2="189.4" y2="46.3" class="ln-fol"/><polygon points="196.0,144.0 187.1,144.8 190.0,137.4" class="hd-bad"/><line x1="88.0" y1="102.0" x2="189.5" y2="141.5" class="ln-bad"/><text x="134" y="48" class="ts" text-anchor="middle">1回目</text><text x="134" y="148" class="ts" text-anchor="middle">2回目</text><text x="8" y="196" class="ts c-fol" text-anchor="start">1回目：コメントが見えた</text><text x="8" y="216" class="ts c-bad" text-anchor="start">2回目：コメントが消えた（時間が巻き戻った）</text></svg></div><figcaption>本の図6-4にあたる図です。リロードのたびに別のフォロワーに当たると、時間が戻って見えます。</figcaption></figure>
+
+<p>2回目の読み取りは、1回目よりも<b>前の時点</b>のデータベースを見ています。1回目も空だったなら、たいした問題ではありません。でも、いったん見えたコメントが消えるのは、とても混乱します。</p>
+<p><b>モノトニックリード</b>（逆行しない読み取り）は、これが起きないことを保証します。古い値が見えることはありえます。保証するのは「<b>新しいデータを見たあとで、それより古いデータを見ることはない</b>」という一点だけです。強い一貫性よりは弱く、結果整合性よりは強い保証です。</p>
+
+<figure class="fig" id="fig-monofix"><div class="canvas"><svg viewBox="0 0 340 100" role="img" aria-label="ユーザーIDのハッシュでフォロワーを決めると、同じユーザーはいつも同じフォロワーから読む"><rect x="8" y="30" width="110" height="36" rx="6" class="f-panel"/><text x="63.0" y="52.5" class="ts" text-anchor="middle">ユーザー2345</text><polygon points="140.0,48.0 132.0,52.0 132.0,44.0" class="hd"/><line x1="118.0" y1="48.0" x2="133.0" y2="48.0" class="ln"/><rect x="140" y="30" width="70" height="36" rx="6" class="f-log"/><text x="175.0" y="52.5" class="tm" text-anchor="middle">hash</text><polygon points="232.0,48.0 224.0,52.0 224.0,44.0" class="hd-fol"/><line x1="210.0" y1="48.0" x2="225.0" y2="48.0" class="ln-fol"/><rect x="232" y="30" width="100" height="36" rx="6" class="f-fol"/><text x="282.0" y="52.5" class="ts" text-anchor="middle">フォロワー1</text><text x="170" y="90" class="ts c-mute" text-anchor="middle">いつも同じフォロワーに行く → 逆戻りしない</text></svg></div><figcaption>モノトニックリードの実現例。ユーザーごとに読むフォロワーを固定します。</figcaption></figure>
+
+<p>実現する方法の1つは、ユーザーごとに<b>いつも同じレプリカ</b>から読ませることです。ランダムに選ぶのではなく、ユーザーIDのハッシュで決めます。ただし、そのレプリカが壊れたら、別のレプリカに回し直す必要があります。</p>
+
+<h4 id="s6153"><span class="num">6.1.5.3</span>順番が入れ替わる</h4>
+<p>3つ目は、<b>原因と結果の順番</b>が入れ替わる現象です。本は短い会話を例にしています。</p>
+<ul>
+<li>プーンズ氏：「ケーキさん、未来はどこまで見えますか？」</li>
+<li>ケーキ夫人：「だいたい10秒ですよ、プーンズさん。」</li>
+</ul>
+<p>ケーキ夫人は、質問を聞いてから答えています。ここで、第三者がフォロワーを通じてこの会話を聞いているとします。</p>
+
+<figure class="fig" id="fig-prefix"><div class="canvas"><svg viewBox="0 0 340 266" role="img" aria-label="プーンズ氏の質問はラグの大きいシャード1、ケーキ夫人の答えはラグの小さいシャード2を通る。観察者には答えが先、質問が後に届く"><text x="8" y="18" class="ts c-mute" text-anchor="start">書いた順</text><rect x="8" y="26" width="158" height="40" rx="6" class="f-panel"/><text x="87.0" y="41.5" class="ts" text-anchor="middle">① プーンズ氏</text><text x="87.0" y="59.5" class="ts c-mute" text-anchor="middle">質問</text><rect x="174" y="26" width="158" height="40" rx="6" class="f-panel"/><text x="253.0" y="41.5" class="ts" text-anchor="middle">② ケーキ夫人</text><text x="253.0" y="59.5" class="ts c-mute" text-anchor="middle">答え</text><polygon points="87.0,104.0 83.0,96.0 91.0,96.0" class="hd"/><line x1="87.0" y1="66.0" x2="87.0" y2="97.0" class="ln"/><polygon points="253.0,104.0 249.0,96.0 257.0,96.0" class="hd"/><line x1="253.0" y1="66.0" x2="253.0" y2="97.0" class="ln"/><rect x="8" y="104" width="158" height="40" rx="6" class="f-bad"/><text x="87.0" y="119.5" class="ts" text-anchor="middle">シャード1</text><text x="87.0" y="137.5" class="ts c-bad" text-anchor="middle">ラグ大（遅い）</text><rect x="174" y="104" width="158" height="40" rx="6" class="f-fol"/><text x="253.0" y="119.5" class="ts" text-anchor="middle">シャード2</text><text x="253.0" y="137.5" class="ts c-fol" text-anchor="middle">ラグ小（速い）</text><polygon points="253.0,196.0 244.2,197.4 246.6,189.8" class="hd-bad"/><line x1="87.0" y1="144.0" x2="246.3" y2="193.9" class="ln-bad"/><polygon points="87.0,196.0 93.4,189.8 95.8,197.4" class="hd-fol"/><line x1="253.0" y1="144.0" x2="93.7" y2="193.9" class="ln-fol"/><rect x="8" y="196" width="158" height="40" rx="6" class="f-fol"/><text x="87.0" y="211.5" class="ts" text-anchor="middle">先に届く</text><text x="87.0" y="229.5" class="ts c-fol" text-anchor="middle">答え</text><rect x="174" y="196" width="158" height="40" rx="6" class="f-bad"/><text x="253.0" y="211.5" class="ts" text-anchor="middle">あとから届く</text><text x="253.0" y="229.5" class="ts c-bad" text-anchor="middle">質問</text><text x="170" y="256" class="ts c-bad" text-anchor="middle">観察者には、質問の前に答えが聞こえる</text></svg></div><figcaption>本の図6-5にあたる図です。シャードごとにラグが違うと、順番が入れ替わります。</figcaption></figure>
+
+<p>まるでケーキ夫人が、質問される前に答えているように聞こえます。</p>
+<p>これを防ぐ保証が、<b>一貫した順序での読み取り</b>（consistent prefix reads）です。「ある順番で書かれたものは、読む人にも同じ順番で見える」という保証です。</p>
+<p>これは、シャーディングされたデータベースでとくに問題になります。データベースがいつも同じ順番で書き込みを適用するなら起きません。でも多くの分散データベースでは、シャードがそれぞれ独立に動いていて、<b>全体を通した書き込みの順番がありません</b>。</p>
+<p>対策の1つは、因果関係のある書き込みを同じシャードに書くことです。ただ、アプリによっては効率よくできません。因果関係をはっきり追跡するアルゴリズムもあります（<a href="#s634">6.3.4</a>）。</p>
+
+<div class="box key">
+<span class="lab">ラグが起こす3つの問題と、それを防ぐ保証</span>
+<dl class="pick">
+<div><dt>自分の書き込みが見えない</dt><dd>リードアフターライト整合性</dd></div>
+<div><dt>時間が巻き戻る</dt><dd>モノトニックリード</dd></div>
+<div><dt>順番が入れ替わる</dt><dd>一貫した順序での読み取り</dd></div>
+</dl>
+</div>
+
+<!-- ----------------------------------------------------- 6.1.6 -->
+<h3 id="s616"><span class="num">6.1.6</span>レプリケーションラグへの対策</h3>
+<p>結果整合性のシステムを使うなら、「<b>ラグが数分、数時間になったら、アプリはどうなるか</b>」を考えておく価値があります。答えが「問題ない」なら、それで十分です。ユーザーに悪い体験をさせるなら、リードアフターライト整合性のような、もっと強い保証を持つように設計します。</p>
+<p>本当は非同期なのに、同期であるかのように扱う。これは、あとで問題のもとになります。</p>
+<p>アプリの側で工夫して、データベースより強い保証を出すことはできます（特定の読み取りだけリーダーに送る、など）。でも、アプリのコードでこれをやるのは複雑で、間違えやすい。</p>
+<p>開発者にとっていちばん簡単なのは、<b>強い一貫性</b>（線形化可能性。10章）と<b>ACIDトランザクション</b>（8章）を備えたデータベースを選ぶことです。そうすれば、レプリケーションの面倒をほとんど忘れて、1台のデータベースのように扱えます。</p>
+<p>2010年代の初め、NoSQLの流れは「そういう機能はスケーラビリティのじゃまになる。大規模なら結果整合性を受け入れるしかない」という見方を広めました。でもその後、分散データベースの利点（壊れにくい、止まりにくい、スケールする）を持ちながら、強い一貫性とトランザクションも提供するデータベースがたくさん出てきました。この流れは<b>NewSQL</b>と呼ばれます。</p>
+<p>それでも、あえて弱い一貫性の方式を選ぶ理由はあります。<b>ネットワークが切れても動き続けやすい</b>こと、そして<b>余計な負担が小さい</b>ことです。章の残りは、そういう方式の話です。</p>
+
+<!-- ===================================================== 6.2 -->
+<h2 id="s62"><span class="num">6.2</span>マルチリーダーレプリケーション</h2>
+
+<p>シングルリーダーには大きな弱点が1つあります。<b>書き込みは全部、1つのリーダーを通る</b>ことです。自分とリーダーの間のネットワークが切れたら、もう書き込めません。</p>
+<p>そこで、書き込みを受けるノードを複数にします。これが<b>マルチリーダー</b>です（<b>アクティブ/アクティブ</b>、<b>双方向</b>レプリケーションとも呼ばれます）。しくみは同じで、書き込みを受けたノードが、その変更を他の全ノードに送ります。つまり、<b>各リーダーは、他のリーダーにとってのフォロワーでもあります</b>。</p>
+<p>同期にするとどうなるか。リーダーAとBがあって、AからBへ同期で送るなら、AとBの間が切れた時点でAに書き込めなくなります。これではシングルリーダーとほぼ同じです。だから本は、ここから先<b>非同期のマルチリーダー</b>だけを扱います。非同期なら、他のリーダーとつながっていなくても、どのリーダーも書き込みを受けられます。</p>
+
+<!-- ----------------------------------------------------- 6.2.1 -->
+<h3 id="s621"><span class="num">6.2.1</span>地理的に分散した運用</h3>
+<p>1つのリージョンの中でマルチリーダーを使う意味は、ほとんどありません。得るものより複雑さのほうが大きいからです。意味が出てくるのは、<b>複数のリージョン</b>にレプリカを置くとき（<b>地理分散</b>）です。</p>
+<p>シングルリーダーだと、リーダーはどこか1つのリージョンにしか置けません。すべての書き込みがそのリージョンを通ります。マルチリーダーなら、リージョンごとにリーダーを置けます。</p>
+
+<figure class="fig" id="fig-multiregion"><div class="canvas"><svg viewBox="0 0 340 226" role="img" aria-label="2つのリージョンにそれぞれリーダーと2つのフォロワーがある。リーダー同士が非同期で互いにレプリケートする"><text x="170" y="16" class="ts c-log" text-anchor="middle">リーダー同士が非同期でレプリケート</text><rect x="8" y="26" width="150" height="170" rx="10" class="zone"/><text x="83" y="46" class="ts c-mute" text-anchor="middle">リージョンA</text><rect x="33" y="56" width="100" height="36" rx="6" class="f-ldr"/><text x="83.0" y="78.5" class="tb" text-anchor="middle">リーダー</text><rect x="12" y="142" width="70" height="36" rx="6" class="f-fol"/><text x="47.0" y="164.5" class="ts" text-anchor="middle">フォロワー</text><rect x="84" y="142" width="70" height="36" rx="6" class="f-fol"/><text x="119.0" y="164.5" class="ts" text-anchor="middle">フォロワー</text><polygon points="48.0,142.0 47.6,133.1 54.9,136.3" class="hd-log"/><line x1="70.0" y1="92.0" x2="50.8" y2="135.6" class="ln-log"/><polygon points="120.0,142.0 112.9,136.5 120.1,133.1" class="hd-log"/><line x1="96.0" y1="92.0" x2="117.0" y2="135.7" class="ln-log"/><rect x="182" y="26" width="150" height="170" rx="10" class="zone"/><text x="257" y="46" class="ts c-mute" text-anchor="middle">リージョンB</text><rect x="207" y="56" width="100" height="36" rx="6" class="f-ldr"/><text x="257.0" y="78.5" class="tb" text-anchor="middle">リーダー</text><rect x="186" y="142" width="70" height="36" rx="6" class="f-fol"/><text x="221.0" y="164.5" class="ts" text-anchor="middle">フォロワー</text><rect x="258" y="142" width="70" height="36" rx="6" class="f-fol"/><text x="293.0" y="164.5" class="ts" text-anchor="middle">フォロワー</text><polygon points="222.0,142.0 221.6,133.1 228.9,136.3" class="hd-log"/><line x1="244.0" y1="92.0" x2="224.8" y2="135.6" class="ln-log"/><polygon points="294.0,142.0 286.9,136.5 294.1,133.1" class="hd-log"/><line x1="270.0" y1="92.0" x2="291.0" y2="135.7" class="ln-log"/><polygon points="207.0,66.0 199.0,70.0 199.0,62.0" class="hd-log"/><line x1="133.0" y1="66.0" x2="200.0" y2="66.0" class="ln-log"/><polygon points="133.0,82.0 141.0,78.0 141.0,86.0" class="hd-log"/><line x1="207.0" y1="82.0" x2="140.0" y2="82.0" class="ln-log"/><text x="170" y="216" class="ts c-mute" text-anchor="middle">書き込みは近くのリーダーが受ける</text></svg></div><figcaption>本の図6-6にあたる図です。リージョンの中はふつうのリーダーとフォロワー。リージョンの間はリーダー同士です。</figcaption></figure>
+
+<p>複数リージョンの環境で、2つの方式を比べます。</p>
+
+<h4>パフォーマンス</h4>
+<div class="cmp">
+<div class="side ldr">
+<span class="tag">シングルリーダー</span>
+<p>すべての書き込みが、リーダーのいるリージョンまでインターネットを渡る。書き込みがかなり遅くなる。</p>
+</div>
+<div class="side fol">
+<span class="tag">マルチリーダー</span>
+<p>書き込みは近くのリージョンで済ませ、他のリージョンには非同期で送る。リージョン間の遅れがユーザーから見えなくなる。</p>
+</div>
+</div>
+
+<h4>リージョン障害への強さ</h4>
+<div class="cmp">
+<div class="side ldr">
+<span class="tag">シングルリーダー</span>
+<p>リーダーのいるリージョンが落ちたら、別のリージョンのフォロワーを昇格させる（フェイルオーバー）。</p>
+</div>
+<div class="side fol">
+<span class="tag">マルチリーダー</span>
+<p>各リージョンが、他と関係なく動き続ける。落ちていたリージョンは、戻ってきたら追いつく。</p>
+</div>
+</div>
+
+<h4>ネットワークの問題への強さ</h4>
+<div class="cmp">
+<div class="side ldr">
+<span class="tag">シングルリーダー</span>
+<p>リージョン間の回線は、リージョンの中の回線より不安定。別リージョンのリーダーに書くには、その回線でリクエストを送って返事を待つしかない。回線の不調がそのまま響く。</p>
+</div>
+<div class="side fol">
+<span class="tag">マルチリーダー</span>
+<p>回線が一時的に切れても、各リージョンのリーダーは書き込みを受け続けられる。</p>
+</div>
+</div>
+
+<h4>一貫性</h4>
+<div class="cmp">
+<div class="side ldr">
+<span class="tag">シングルリーダー</span>
+<p>シリアライザブルなトランザクション（8章）のような、強い一貫性の保証を出せる。</p>
+</div>
+<div class="side bad">
+<span class="tag">マルチリーダー</span>
+<p>出せる一貫性がずっと弱い。これが最大の欠点。</p>
+</div>
+</div>
+
+<p>たとえば、「銀行口座の残高がマイナスにならない」「ユーザー名が重複しない」を保証できません。</p>
+
+<figure class="fig" id="fig-uniq"><div class="canvas"><svg viewBox="0 0 340 172" role="img" aria-label="同じユーザー名の登録が別々のリーダーに届き、どちらも成功する。あとで突き合わせると同じ名前が2人いる"><text x="8" y="18" class="ts c-mute" text-anchor="start">同じころ、別々のリーダーに届いた</text><rect x="8" y="30" width="150" height="48" rx="6" class="f-ldr"/><text x="83.0" y="49.5" class="ts" text-anchor="middle">リーダー1</text><text x="83.0" y="67.5" class="ts c-fol" text-anchor="middle">taro を登録：OK</text><rect x="182" y="30" width="150" height="48" rx="6" class="f-ldr"/><text x="257.0" y="49.5" class="ts" text-anchor="middle">リーダー2</text><text x="257.0" y="67.5" class="ts c-fol" text-anchor="middle">taro を登録：OK</text><polygon points="140.0,118.0 131.2,116.7 135.7,110.1" class="hd-bad"/><line x1="83.0" y1="78.0" x2="134.3" y2="114.0" class="ln-bad"/><polygon points="200.0,118.0 204.3,110.1 208.8,116.7" class="hd-bad"/><line x1="257.0" y1="78.0" x2="205.7" y2="114.0" class="ln-bad"/><rect x="70" y="118" width="200" height="44" rx="6" class="f-bad"/><text x="170.0" y="135.5" class="ts" text-anchor="middle">あとで突き合わせると</text><text x="170.0" y="153.5" class="ts c-bad" text-anchor="middle">taro が2人いる</text></svg></div><figcaption>マルチリーダーの最大の弱点。1つずつは正しい書き込みが、合わせると約束を破ります。名前は説明用です。</figcaption></figure>
+
+<p>それぞれのリーダーが受けた書き込みは、単独では問題ありません。でも別のリーダーの書き込みと合わせると、約束を破ることがありえます。これは分散システムの根本的な制約です。こういう約束を必ず守らなければならないなら、シングルリーダーを使うほうが適切です。ただ、そういう約束がいらないアプリも多くあります。</p>
+
+<div class="box bad">
+<span class="lab">注意：できれば避けたい危険地帯</span>
+<p>マルチリーダーは、MySQL、Oracle、SQL Server、YugabyteDBなどが対応しています。Redis Enterprise、EDB Postgres Distributed、pglogicalのように、外付けの機能として提供されることもあります。</p>
+<p>でも多くのデータベースでは<b>後付けの機能</b>です。設定の細かい落とし穴や、他の機能（自動増分のキー、トリガー、整合性制約など）との思わぬ相互作用が起きます。だから「できれば避けるべき危険な領域」と見られることが多いのです。</p>
+</div>
+
+<h4 id="s6211"><span class="num">6.2.1.1</span>トポロジー：書き込みの通り道</h4>
+<p>書き込みがノードからノードへ伝わる通り道を、<b>レプリケーショントポロジー</b>と呼びます。リーダーが2つなら1通りしかありません。3つ以上だと、いろいろな形がありえます。</p>
+
+<figure class="fig" id="fig-topo"><div class="canvas"><svg viewBox="0 0 340 150" role="img" aria-label="マルチリーダーの3つのトポロジー。循環は輪になって一方向に回す。スターは中心の1台が全員に配る。全対全は全員が全員に送る"><text x="57" y="20" class="ts" text-anchor="middle">循環</text><polygon points="74.0,52.0 66.0,56.0 66.0,48.0" class="hd-log"/><line x1="40.0" y1="52.0" x2="67.0" y2="52.0" class="ln-log"/><polygon points="87.0,99.0 83.0,91.0 91.0,91.0" class="hd-log"/><line x1="87.0" y1="65.0" x2="87.0" y2="92.0" class="ln-log"/><polygon points="40.0,112.0 48.0,108.0 48.0,116.0" class="hd-log"/><line x1="74.0" y1="112.0" x2="47.0" y2="112.0" class="ln-log"/><polygon points="27.0,65.0 31.0,73.0 23.0,73.0" class="hd-log"/><line x1="27.0" y1="99.0" x2="27.0" y2="72.0" class="ln-log"/><circle cx="27" cy="52" r="11" class="f-ldr"/><circle cx="87" cy="52" r="11" class="f-ldr"/><circle cx="87" cy="112" r="11" class="f-ldr"/><circle cx="27" cy="112" r="11" class="f-ldr"/><text x="170" y="20" class="ts" text-anchor="middle">スター</text><polygon points="145.5,58.9 154.0,61.5 148.6,67.3" class="hd-log"/><line x1="160.5" y1="73.1" x2="150.6" y2="63.7" class="ln-log"/><polygon points="160.5,73.1 152.0,70.5 157.4,64.7" class="hd-log"/><line x1="145.5" y1="58.9" x2="155.4" y2="68.3" class="ln-log"/><polygon points="194.5,58.9 191.4,67.3 186.0,61.5" class="hd-log"/><line x1="179.5" y1="73.1" x2="189.4" y2="63.7" class="ln-log"/><polygon points="179.5,73.1 182.6,64.7 188.0,70.5" class="hd-log"/><line x1="194.5" y1="58.9" x2="184.6" y2="68.3" class="ln-log"/><polygon points="145.5,105.1 148.6,96.7 154.0,102.5" class="hd-log"/><line x1="160.5" y1="90.9" x2="150.6" y2="100.3" class="ln-log"/><polygon points="160.5,90.9 157.4,99.3 152.0,93.5" class="hd-log"/><line x1="145.5" y1="105.1" x2="155.4" y2="95.7" class="ln-log"/><polygon points="194.5,105.1 186.0,102.5 191.4,96.7" class="hd-log"/><line x1="179.5" y1="90.9" x2="189.4" y2="100.3" class="ln-log"/><polygon points="179.5,90.9 188.0,93.5 182.6,99.3" class="hd-log"/><line x1="194.5" y1="105.1" x2="184.6" y2="95.7" class="ln-log"/><circle cx="170" cy="82" r="11" class="f-ldr"/><circle cx="136" cy="50" r="11" class="f-ldr"/><circle cx="204" cy="50" r="11" class="f-ldr"/><circle cx="136" cy="114" r="11" class="f-ldr"/><circle cx="204" cy="114" r="11" class="f-ldr"/><text x="283" y="20" class="ts" text-anchor="middle">全対全</text><line x1="266.0" y1="52.0" x2="300.0" y2="52.0" class="ln-log"/><line x1="262.2" y1="61.2" x2="303.8" y2="102.8" class="ln-log"/><line x1="253.0" y1="65.0" x2="253.0" y2="99.0" class="ln-log"/><line x1="313.0" y1="65.0" x2="313.0" y2="99.0" class="ln-log"/><line x1="303.8" y1="61.2" x2="262.2" y2="102.8" class="ln-log"/><line x1="300.0" y1="112.0" x2="266.0" y2="112.0" class="ln-log"/><circle cx="253" cy="52" r="11" class="f-ldr"/><circle cx="313" cy="52" r="11" class="f-ldr"/><circle cx="313" cy="112" r="11" class="f-ldr"/><circle cx="253" cy="112" r="11" class="f-ldr"/><text x="283" y="142" class="ts c-mute" text-anchor="middle">線は双方向</text></svg></div><figcaption>本の図6-7にあたる図です。丸がリーダー、線が書き込みの通り道。</figcaption></figure>
+
+<ul>
+<li><b>全対全：</b>各リーダーが、他の全リーダーに書き込みを送る。いちばん一般的。</li>
+<li><b>循環：</b>各ノードが1つのノードから受け取り、それ（と自分の書き込み）を別の1つのノードに回す。</li>
+<li><b>スター：</b>中心の1つのノードが、他の全ノードに書き込みを配る。ツリーの形に広げることもできる。</li>
+</ul>
+
+<p>循環とスターでは、書き込みが全員に届くまでに、いくつかのノードを経由します。そこで心配になるのが、同じ書き込みがぐるぐる回り続けることです。これを防ぐために、各ノードに固有のIDを付け、書き込みに「<b>通ってきたノードのID</b>」を全部タグ付けします。自分のIDが付いた変更が来たら、もう処理済みなので無視します。</p>
+
+<h4 id="s6212"><span class="num">6.2.1.2</span>トポロジーごとの問題</h4>
+<p><b>循環とスター</b>の問題は、<b>たった1つのノードが壊れただけで、流れが止まる</b>ことです。壊れたノードを避けるように組み直すことはできますが、多くの場合は手作業です。つながりが密なトポロジー（全対全など）のほうが、壊れにくい。別の道を通れるからです。</p>
+<p><b>全対全</b>にも問題があります。回線ごとに速さが違うと、あるメッセージが別のメッセージを<b>追い越す</b>ことがあります。</p>
+
+<figure class="fig" id="fig-overtake"><div class="canvas"><svg viewBox="0 0 340 262" role="img" aria-label="クライアントAがリーダー1に行を挿入し、それを受け取ったリーダー3でクライアントBが更新する。リーダー2には更新が先に届き、挿入が後から届く"><rect x="4.0" y="8" width="92" height="30" rx="6" class="f-ldr"/><text x="50.0" y="27.5" class="ts" text-anchor="middle">リーダー1</text><line x1="50.0" y1="38.0" x2="50.0" y2="232.0" class="ln dash thin"/><rect x="104.0" y="8" width="92" height="30" rx="6" class="f-ldr"/><text x="150.0" y="27.5" class="ts" text-anchor="middle">リーダー3</text><line x1="150.0" y1="38.0" x2="150.0" y2="232.0" class="ln dash thin"/><rect x="204.0" y="8" width="92" height="30" rx="6" class="f-ldr"/><text x="250.0" y="27.5" class="ts" text-anchor="middle">リーダー2</text><line x1="250.0" y1="38.0" x2="250.0" y2="232.0" class="ln dash thin"/><text x="56" y="64" class="ts c-ldr" text-anchor="start">① Aが挿入</text><polygon points="150.0,96.0 141.4,98.4 142.9,90.5" class="hd-ldr"/><line x1="50.0" y1="76.0" x2="143.1" y2="94.6" class="ln-ldr"/><polygon points="250.0,216.0 241.2,214.7 245.7,208.1" class="hd-ldr"/><line x1="50.0" y1="76.0" x2="244.3" y2="212.0" class="ln-ldr dash"/><text x="156" y="106" class="ts c-log" text-anchor="start">② Bが更新</text><polygon points="250.0,136.0 241.3,138.0 243.2,130.2" class="hd-log"/><line x1="150.0" y1="112.0" x2="243.2" y2="134.4" class="ln-log"/><text x="258" y="140" class="ts c-bad" text-anchor="start">先に更新</text><text x="258" y="220" class="ts c-bad" text-anchor="start">後から挿入</text><text x="170" y="254" class="ts c-bad" text-anchor="middle">リーダー2から見ると、存在しない行への更新</text></svg></div><figcaption>本の図6-8にあたる図です。回線の速さが違うと、後の書き込みが前の書き込みを追い越します。</figcaption></figure>
+
+<p>リーダー2から見ると、「まだ存在しない行を更新しろ」と言われ、そのあとで「その行を挿入しろ」と言われます。</p>
+<p>これは因果関係の問題です。<a href="#s6153">6.1.5.3</a>の「順番が入れ替わる」と似ています。更新は挿入に依存しているので、どのノードでも、挿入が先、更新が後でなければなりません。</p>
+<p>「全部の書き込みにタイムスタンプを付ければいい」と思うかもしれません。それでは足りません。ノードの時計は、正しく順序を付けられるほどには合っていないからです（9章）。</p>
+<p>正しく順序付けるには、<b>バージョンベクター</b>という手法が使えます（<a href="#s634">6.3.4</a>）。でも多くのマルチリーダーのシステムは、適切な手法を使っておらず、この問題に弱いままです。</p>
+
+<div class="box key">
+<span class="lab">本の助言</span>
+<p>マルチリーダーを使うなら、こういう問題があると知っておくこと。ドキュメントをよく読むこと。データベースが本当に期待どおりの保証を出しているか、十分にテストすること。</p>
+</div>
+
+<!-- ----------------------------------------------------- 6.2.2 -->
+<h3 id="s622"><span class="num">6.2.2</span>同期エンジンとローカルファーストソフトウェア</h3>
+<p>マルチリーダーが合う場面がもう1つあります。<b>インターネットにつながっていなくても動き続けるアプリ</b>です。</p>
+<p>スマホやノートPCのカレンダーアプリを考えてください。つながっていてもいなくても、予定を見られるし（読み取り）、予定を入れられる（書き込み）。オフラインで入れた変更は、次につながったときに、サーバーや他のデバイスと同期します。</p>
+
+<figure class="fig" id="fig-devices"><div class="canvas"><svg viewBox="0 0 340 150" role="img" aria-label="スマホとノートPCがそれぞれローカルデータベースを持ち、リーダーとして書き込みを受ける。つながったときにサーバー経由で同期する"><rect x="8" y="28" width="96" height="64" rx="6" class="f-ldr"/><text x="56.0" y="46.5" class="ts" text-anchor="middle">スマホ</text><text x="56.0" y="64.5" class="ts c-mute" text-anchor="middle">ローカルDB</text><text x="56.0" y="82.5" class="ts c-ldr" text-anchor="middle">（リーダー）</text><rect x="122" y="28" width="96" height="64" rx="6" class="f-panel"/><text x="170.0" y="55.5" class="ts" text-anchor="middle">サーバー</text><text x="170.0" y="73.5" class="ts c-mute" text-anchor="middle">同期の中継</text><rect x="236" y="28" width="96" height="64" rx="6" class="f-ldr"/><text x="284.0" y="46.5" class="ts" text-anchor="middle">ノートPC</text><text x="284.0" y="64.5" class="ts c-mute" text-anchor="middle">ローカルDB</text><text x="284.0" y="82.5" class="ts c-ldr" text-anchor="middle">（リーダー）</text><polygon points="122.0,52.0 114.0,56.0 114.0,48.0" class="hd-log"/><line x1="104.0" y1="52.0" x2="115.0" y2="52.0" class="ln-log dash"/><polygon points="104.0,70.0 112.0,66.0 112.0,74.0" class="hd-log"/><line x1="122.0" y1="70.0" x2="111.0" y2="70.0" class="ln-log dash"/><polygon points="236.0,52.0 228.0,56.0 228.0,48.0" class="hd-log"/><line x1="218.0" y1="52.0" x2="229.0" y2="52.0" class="ln-log dash"/><polygon points="218.0,70.0 226.0,66.0 226.0,74.0" class="hd-log"/><line x1="236.0" y1="70.0" x2="225.0" y2="70.0" class="ln-log dash"/><text x="170" y="118" class="ts c-mute" text-anchor="middle">オフライン中も読み書きできる。つながったら同期</text><text x="170" y="140" class="ts c-bad" text-anchor="middle">ラグは数時間〜数日になることも</text></svg></div><figcaption>カレンダーアプリの例。デバイス1台1台が「リージョン」で、回線がとても不安定なマルチリーダーです。</figcaption></figure>
+
+<p>各デバイスが、書き込みを受けるローカルのデータベースを持っています。つまり各デバイスがリーダーです。デバイス同士の同期は、非同期のマルチリーダーレプリケーションです。</p>
+<p>これは、リージョン間のマルチリーダーを極端にした形です。<b>デバイス1台1台が「リージョン」で、その間の回線がきわめて不安定</b>、というわけです。</p>
+
+<h4 id="s6221"><span class="num">6.2.2.1</span>リアルタイムコラボレーションも同じ形</h4>
+<p>Google DocsやSheets、Figma、Linear。こういうアプリは、複数人が同時に編集でき、反応がとても速い。入力した内容が、サーバーとの往復を待たずに、すぐ画面に出るからです。他の人の編集も、ほとんど遅れなく見えます。</p>
+<p>これもマルチリーダーです。共有ファイルを開いている<b>ブラウザのタブ1つ1つがレプリカ</b>で、そこでの更新は、他の人のデバイスに非同期で送られます。オフライン編集を許していなくても、「サーバーの返事を待たずに、複数人が編集できる」時点で、もうマルチリーダーなのです。</p>
+<p>オフライン編集とリアルタイムコラボレーションは、同じような土台を必要とします。</p>
+<ul>
+<li>ユーザーの変更をつかまえる。オンラインならすぐ送る。オフラインなら、あとで送るためにローカルに保存する。</li>
+<li>他の人からの変更を受け取り、ローカルのコピーに混ぜ（マージし）、画面を更新する。</li>
+<li>複数人が並行して同じファイルを変えたら、それを混ぜるための<b>コンフリクト解決</b>が要る。</li>
+</ul>
+
+<div class="box">
+<span class="lab">用語：3つの言葉</span>
+<p><b>同期エンジン</b>（sync engine）：上のしくみを引き受けるライブラリ。考え方は昔からありますが、この言葉は最近よく使われるようになりました。</p>
+<p><b>オフラインファースト</b>：オフラインの間もファイルを編集し続けられるアプリ。</p>
+<p><b>ローカルファースト</b>：オフラインファーストなだけでなく、<b>開発元がオンラインサービスを全部やめても動き続ける</b>ように作られた共同編集アプリ。オープンな同期プロトコルを使い、同期を引き受ける事業者を複数から選べるようにすることで実現します。</p>
+<p>たとえばGitは、ローカルファーストのコラボレーションシステムです（リアルタイムではありませんが）。GitHubでもGitLabでも、他のサービスでも同期できるからです。</p>
+</div>
+
+<h4 id="s6222"><span class="num">6.2.2.2</span>同期エンジンの長所と短所</h4>
+<p>今のWebアプリの主流は、クライアント側にはなるべく状態を持たず、必要になるたびにサーバーに聞く作りです。同期エンジンは逆で、<b>クライアント側にデータを持ち続け</b>、サーバーとのやりとりは裏でやります。</p>
+
+<figure class="fig" id="fig-syncarch"><div class="canvas"><svg viewBox="0 0 340 184" role="img" aria-label="従来のWebアプリはUIが毎回サーバーにリクエストして待つ。同期エンジンではUIはローカルデータベースをすぐ読み書きし、サーバーとは裏で同期する"><text x="8" y="18" class="ts c-mute" text-anchor="start">従来：UIがサーバーに聞く</text><rect x="8" y="28" width="70" height="40" rx="6" class="f-panel"/><text x="43.0" y="52.5" class="ts" text-anchor="middle">UI</text><rect x="232" y="28" width="100" height="40" rx="6" class="f-panel"/><text x="282.0" y="52.5" class="ts" text-anchor="middle">サーバー</text><polygon points="232.0,40.0 224.0,44.0 224.0,36.0" class="hd"/><line x1="78.0" y1="40.0" x2="225.0" y2="40.0" class="ln"/><polygon points="78.0,56.0 86.0,52.0 86.0,60.0" class="hd"/><line x1="232.0" y1="56.0" x2="85.0" y2="56.0" class="ln"/><text x="155" y="86" class="ts c-bad" text-anchor="middle">毎回待つ。エラー処理も要る</text><text x="8" y="116" class="ts c-mute" text-anchor="start">同期エンジン：UIはローカルに聞く</text><rect x="8" y="126" width="70" height="40" rx="6" class="f-panel"/><text x="43.0" y="150.5" class="ts" text-anchor="middle">UI</text><rect x="104" y="126" width="90" height="40" rx="6" class="f-ldr"/><text x="149.0" y="150.5" class="ts" text-anchor="middle">ローカルDB</text><rect x="242" y="126" width="90" height="40" rx="6" class="f-panel"/><text x="287.0" y="150.5" class="ts" text-anchor="middle">サーバー</text><polygon points="104.0,138.0 96.0,142.0 96.0,134.0" class="hd-fol"/><line x1="78.0" y1="138.0" x2="97.0" y2="138.0" class="ln-fol"/><polygon points="78.0,154.0 86.0,150.0 86.0,158.0" class="hd-fol"/><line x1="104.0" y1="154.0" x2="85.0" y2="154.0" class="ln-fol"/><polygon points="242.0,138.0 234.0,142.0 234.0,134.0" class="hd-log"/><line x1="194.0" y1="138.0" x2="235.0" y2="138.0" class="ln-log dash"/><polygon points="194.0,154.0 202.0,150.0 202.0,158.0" class="hd-log"/><line x1="242.0" y1="154.0" x2="201.0" y2="154.0" class="ln-log dash"/><text x="91" y="182" class="ts c-fol" text-anchor="middle">すぐ読み書き</text><text x="218" y="182" class="ts c-log" text-anchor="middle">裏で同期</text></svg></div><figcaption>従来の作り方と、同期エンジンの作り方。</figcaption></figure>
+
+<p>利点は4つです。</p>
+<ul>
+<li><b>速い。</b>データが手元にあるので、サーバーの返事を待ちません。<b>次のフレーム</b>までに反応することを目指すアプリもあります。60Hzの画面なら16ms以内です。</li>
+<li><b>オフラインでも使える。</b>専用の「オフラインモード」を作る必要がありません。オフラインは、「ネットワークの遅れがものすごく大きい状態」と同じだからです。</li>
+<li><b>コードが簡単になる。</b>サービスを呼ぶたびに、エラー処理が要ります。同期エンジンなら、アプリはローカルのデータを読み書きするだけです。これはほとんど失敗しないので、より宣言的に書けます。</li>
+<li><b>他の人の編集をリアルタイムに出しやすい。</b>同期エンジンと<b>リアクティブプログラミング</b>を組み合わせるのが、良いやり方です。</li>
+</ul>
+
+<p>向かない場面もあります。同期エンジンは、ユーザーが必要としそうなデータを<b>あらかじめ全部ダウンロードして</b>手元に置くときに、いちばん力を出します。1人のユーザーが作ったファイルを全部落とすのは、たぶん問題ありません。でも、ECサイトのカタログ全体を落とすのは、たぶん無理があります。</p>
+
+<p>同期エンジンの先駆けは、1980年代のLotus Notesです。今は汎用のものがたくさんあります。</p>
+<ul>
+<li>独自のバックエンドを使うもの：Google Firestore、Realm、Ditto</li>
+<li>オープンソースのバックエンドがあり、ローカルファーストに向くもの：PouchDB/CouchDB、Automerge、Yjs</li>
+</ul>
+<p>マルチプレイヤーのゲームにも似た必要があります。ゲーム開発では、同期エンジンにあたるものを<b>ネットコード</b>と呼びます。ゲームに特化した手法なので、本はこれ以上扱いません。</p>
+
+<!-- ----------------------------------------------------- 6.2.3 -->
+<h3 id="s623"><span class="num">6.2.3</span>コンフリクトのある書き込みへの対処</h3>
+<p>マルチリーダーの最大の問題は、<b>別々のリーダーへの並行した書き込みが、ぶつかる</b>ことです。サーバー側の地理分散データベースでも、ユーザーのデバイス上の同期エンジンでも同じです。</p>
+<p>2人のユーザーが、同じWikiページを並行して編集する例です。</p>
+
+<figure class="fig" id="fig-conflict"><div class="canvas"><svg viewBox="0 0 340 220" role="img" aria-label="ユーザー1がリーダー1でタイトルをAからBに変え、ユーザー2がリーダー2でAからCに変える。どちらも成功するが、互いにレプリケートした時点でコンフリクトがわかる"><rect x="4.0" y="8" width="76" height="30" rx="6" class="f-panel"/><text x="42.0" y="27.5" class="ts" text-anchor="middle">ユーザー1</text><line x1="42.0" y1="38.0" x2="42.0" y2="168.0" class="ln dash thin"/><rect x="92.0" y="8" width="76" height="30" rx="6" class="f-ldr"/><text x="130.0" y="27.5" class="ts" text-anchor="middle">リーダー1</text><line x1="130.0" y1="38.0" x2="130.0" y2="168.0" class="ln dash thin"/><rect x="172.0" y="8" width="76" height="30" rx="6" class="f-ldr"/><text x="210.0" y="27.5" class="ts" text-anchor="middle">リーダー2</text><line x1="210.0" y1="38.0" x2="210.0" y2="168.0" class="ln dash thin"/><rect x="260.0" y="8" width="76" height="30" rx="6" class="f-panel"/><text x="298.0" y="27.5" class="ts" text-anchor="middle">ユーザー2</text><line x1="298.0" y1="38.0" x2="298.0" y2="168.0" class="ln dash thin"/><text x="86" y="60" class="tm" text-anchor="middle">A→B</text><polygon points="130.0,80.0 121.5,82.7 122.7,74.8" class="hd-ldr"/><line x1="42.0" y1="66.0" x2="123.1" y2="78.9" class="ln-ldr"/><polygon points="42.0,106.0 49.3,100.8 50.5,108.7" class="hd-tx"/><line x1="130.0" y1="92.0" x2="48.9" y2="104.9" class="ln-tx"/><text x="86" y="120" class="tm c-mute" text-anchor="middle">ok</text><text x="254" y="60" class="tm" text-anchor="middle">A→C</text><polygon points="210.0,80.0 217.3,74.8 218.5,82.7" class="hd-ldr"/><line x1="298.0" y1="66.0" x2="216.9" y2="78.9" class="ln-ldr"/><polygon points="298.0,106.0 289.5,108.7 290.7,100.8" class="hd-tx"/><line x1="210.0" y1="92.0" x2="291.1" y2="104.9" class="ln-tx"/><text x="254" y="120" class="tm c-mute" text-anchor="middle">ok</text><polygon points="210.0,158.0 201.2,159.5 203.5,151.9" class="hd-log"/><line x1="130.0" y1="134.0" x2="203.3" y2="156.0" class="ln-log dash"/><polygon points="130.0,158.0 136.5,151.9 138.8,159.5" class="hd-log"/><line x1="210.0" y1="134.0" x2="136.7" y2="156.0" class="ln-log dash"/><text x="170" y="190" class="ts c-bad" text-anchor="middle">コンフリクト！</text><text x="170" y="210" class="ts c-bad" text-anchor="middle">タイトルは B？ C？</text></svg></div><figcaption>本の図6-9にあたる図です。2人とも自分のリーダーでは成功しています。ぶつかるのは、そのあとです。</figcaption></figure>
+
+<p>この問題は、シングルリーダーでは起きません。</p>
+
+<div class="box">
+<span class="lab">用語：「並行」は「同時刻」ではない</span>
+<p>2つの書き込みが<b>並行</b>（concurrent）だというのは、どちらも、書いた時点で<b>相手の書き込みを知らなかった</b>という意味です。文字どおり同じ時刻かどうかは関係ありません。オフライン中の書き込みなら、時間的にはかなり離れていることもあります。</p>
+<p>大事なのは、片方の書き込みが、もう片方がすでに適用された状態の上で行われたかどうかです。</p>
+</div>
+
+<p>データベースが「2つの書き込みが並行かどうか」をどう見分けるかは、<a href="#s634">6.3.4</a>で扱います。ここでは、見分けられるものとして、<b>どう解決するか</b>を考えます。</p>
+
+<h4 id="s6231"><span class="num">6.2.3.1</span>方法1：そもそも起こさない</h4>
+<p>あるレコードへの書き込みが、いつも同じリーダーを通るなら、コンフリクトは起きません。</p>
+
+<figure class="fig" id="fig-avoid"><div class="canvas"><svg viewBox="0 0 340 196" role="img" aria-label="コンフリクトを避ける2つの例。ユーザーごとにいつも同じリージョンのリーダーを使う。自動採番のIDを奇数と偶数に分ける"><text x="8" y="18" class="ts c-mute" text-anchor="start">ユーザーごとに「ホーム」のリーダーを決める</text><rect x="8" y="28" width="100" height="36" rx="6" class="f-panel"/><text x="58.0" y="50.5" class="ts" text-anchor="middle">ユーザーX</text><polygon points="150.0,46.0 142.0,50.0 142.0,42.0" class="hd-ldr"/><line x1="108.0" y1="46.0" x2="143.0" y2="46.0" class="ln-ldr"/><rect x="150" y="28" width="182" height="36" rx="6" class="f-ldr"/><text x="241.0" y="50.5" class="ts" text-anchor="middle">リージョンAのリーダー</text><rect x="8" y="72" width="100" height="36" rx="6" class="f-panel"/><text x="58.0" y="94.5" class="ts" text-anchor="middle">ユーザーY</text><polygon points="150.0,90.0 142.0,94.0 142.0,86.0" class="hd-ldr"/><line x1="108.0" y1="90.0" x2="143.0" y2="90.0" class="ln-ldr"/><rect x="150" y="72" width="182" height="36" rx="6" class="f-ldr"/><text x="241.0" y="94.5" class="ts" text-anchor="middle">リージョンBのリーダー</text><text x="8" y="136" class="ts c-mute" text-anchor="start">IDの自動採番：奇数と偶数で分ける</text><rect x="8" y="146" width="158" height="42" rx="6" class="f-ldr"/><text x="87.0" y="162.5" class="ts" text-anchor="middle">リーダー1</text><text x="87.0" y="180.5" class="tm" text-anchor="middle">1, 3, 5, 7 …</text><rect x="174" y="146" width="158" height="42" rx="6" class="f-ldr"/><text x="253.0" y="162.5" class="ts" text-anchor="middle">リーダー2</text><text x="253.0" y="180.5" class="tm" text-anchor="middle">2, 4, 6, 8 …</text></svg></div><figcaption>そもそもぶつからないようにする工夫の例。</figcaption></figure>
+
+<p>ユーザーが自分のデータしか編集できないアプリなら、そのユーザーのリクエストをいつも同じリージョンに送り、そのリージョンのリーダーで読み書きさせます。ユーザーごとに「ホーム」のリージョンは違うかもしれません。でも1人のユーザーから見れば、これは実質シングルリーダーです。</p>
+<p>ただし、弱点があります。レコードのリーダーを変えたくなることがあります。リージョンが落ちて別のリージョンに回すとき。ユーザーが引っ越して別のリージョンが近くなったとき。<b>切り替えの最中に書き込みが来ると、コンフリクトが起きます</b>。リーダーの変更を許した時点で、回避は破れます。</p>
+<p>もう1つの例が、自動増分のIDです。リーダーが2つあるなら、片方は奇数だけ、もう片方は偶数だけを出すようにします。これで同じIDが別々のレコードに付くことはありません。</p>
+<p>なお、オフラインで更新する同期エンジンのクライアントでは、この「回避」はできません。</p>
+
+<h4 id="s6232"><span class="num">6.2.3.2</span>方法2：最終書き込み優先（LWW）</h4>
+<p>避けられないなら、いちばん単純な解決はこれです。書き込みごとにタイムスタンプを付け、<b>いつもタイムスタンプがいちばん大きい値を使う</b>。<b>最終書き込み優先</b>（last write wins、LWW）と呼びます。</p>
+
+<figure class="fig" id="fig-lww"><div class="canvas"><svg viewBox="0 0 340 182" role="img" aria-label="並行した2つの書き込みのうち、タイムスタンプが大きいBが残り、Cは黙って捨てられる。Cを書いた人には成功と返っている"><text x="8" y="18" class="ts c-mute" text-anchor="start">並行した2つの書き込み</text><rect x="8" y="28" width="158" height="44" rx="6" class="f-fol"/><text x="87.0" y="45.5" class="ts" text-anchor="middle">タイトル = B</text><text x="87.0" y="63.5" class="ts c-mute" text-anchor="middle">タイムスタンプ 105</text><rect x="174" y="28" width="158" height="44" rx="6" class="f-bad"/><text x="253.0" y="45.5" class="ts" text-anchor="middle">タイトル = C</text><text x="253.0" y="63.5" class="ts c-mute" text-anchor="middle">タイムスタンプ 103</text><polygon points="87.0,112.0 83.0,104.0 91.0,104.0" class="hd-fol"/><line x1="87.0" y1="72.0" x2="87.0" y2="105.0" class="ln-fol"/><polygon points="253.0,112.0 249.0,104.0 257.0,104.0" class="hd-bad"/><line x1="253.0" y1="72.0" x2="253.0" y2="105.0" class="ln-bad"/><rect x="8" y="112" width="158" height="36" rx="6" class="f-fol"/><text x="87.0" y="134.5" class="tb" text-anchor="middle">B が残る</text><rect x="174" y="112" width="158" height="36" rx="6" class="f-bad"/><text x="253.0" y="134.5" class="ts" text-anchor="middle">C は黙って捨てる</text><text x="170" y="172" class="ts c-bad" text-anchor="middle">Cを書いた人には「成功」と返っている</text></svg></div><figcaption>最終書き込み優先（LWW）。タイムスタンプが大きいほうだけを残します。数字は説明用です。</figcaption></figure>
+
+<p>タイムスタンプがたまたま同じなら、値を比べて勝者を決めます（文字列ならアルファベット順で早いほう、など）。</p>
+<p>名前は誤解を招きます。並行した2つの書き込みは、「どちらが後か」がそもそも定まっていません。だからタイムスタンプの順番は、本質的に<b>ランダム</b>です。</p>
+
+<div class="box bad">
+<span class="lab">LWWの正体</span>
+<p>同じレコードが別々のリーダーで並行して書かれると、1つがランダムに勝者に選ばれます。残りは、それぞれのリーダーでは正常に処理されたのに、<b>黙って捨てられます</b>。</p>
+<p>全レプリカが同じ状態にそろう、という目標は達成されます。その代償はデータの損失です。</p>
+</div>
+
+<p>LWWで問題ないのは、コンフリクトが起きないときです。たとえば、重複しないキーのレコードを挿入するだけで、更新はしない場合。そうでないなら、「失われた更新」がアプリにとって問題かどうかを判断する必要があります。</p>
+
+<figure class="fig" id="fig-lwwclock"><div class="canvas"><svg viewBox="0 0 340 198" role="img" aria-label="ノードXの時計が進んでいると、先に書いた値のタイムスタンプが大きくなり、後から別のノードが書いた値が無視される"><text x="8" y="18" class="ts c-mute" text-anchor="start">ノードXの時計が進んでいる</text><rect x="8" y="28" width="324" height="42" rx="6" class="f-panel"/><text x="170.0" y="44.5" class="ts" text-anchor="middle">先に書いた値 v1</text><text x="170.0" y="62.5" class="ts c-bad" text-anchor="middle">タイムスタンプ 200（進んだ時計）</text><rect x="8" y="84" width="324" height="42" rx="6" class="f-panel"/><text x="170.0" y="100.5" class="ts" text-anchor="middle">後から書いた値 v2</text><text x="170.0" y="118.5" class="ts c-mute" text-anchor="middle">タイムスタンプ 150（正しい時計）</text><polygon points="170.0,152.0 166.0,144.0 174.0,144.0" class="hd-bad"/><line x1="170.0" y1="126.0" x2="170.0" y2="145.0" class="ln-bad"/><rect x="8" y="152" width="324" height="36" rx="6" class="f-bad"/><text x="170.0" y="174.5" class="ts" text-anchor="middle">v1 が勝つ。後から書いた v2 は無視される</text></svg></div><figcaption>LWWは時計のずれに弱い。数字は説明用です。</figcaption></figure>
+
+<p>もう1つ問題があります。タイムスタンプに実際の時計（Unixタイムスタンプなど）を使うと、時計のずれにとても弱くなります。あるノードの時計が進んでいると、そのノードが書いた値を上書きしようとしても、後から書いたのにタイムスタンプが小さいせいで、無視されます。これは<b>論理クロック</b>で解決できます（10章）。</p>
+
+<h4 id="s6233"><span class="num">6.2.3.3</span>方法3：手動で解決する</h4>
+<p>ランダムに捨てるのがいやなら、次の選択肢は手動の解決です。Gitでおなじみです。2つのブランチが同じファイルの同じ行を変えていると、マージのときにコンフリクトが出て、人間が直します。</p>
+<p>ただ、データベースで「人間が直すまでレプリケーションを全部止める」のは現実的ではありません。そのかわり、データベースは、並行して書かれた値を<b>全部とっておきます</b>。これらの値を<b>兄弟値</b>（siblings）と呼ぶことがあります。</p>
+
+<figure class="fig" id="fig-siblings"><div class="canvas"><svg viewBox="0 0 340 154" role="img" aria-label="データベースは並行して書かれたBとCの両方を兄弟値として保存する。読むと両方が返り、アプリか人が解決して、結果を書き戻す"><text x="8" y="18" class="ts c-mute" text-anchor="start">兄弟値（siblings）</text><rect x="8" y="28" width="150" height="44" rx="6" class="f-log"/><text x="83.0" y="45.5" class="ts" text-anchor="middle">DBの中</text><text x="83.0" y="63.5" class="tm c-log" text-anchor="middle">{ B, C }</text><polygon points="190.0,50.0 182.0,54.0 182.0,46.0" class="hd"/><line x1="158.0" y1="50.0" x2="183.0" y2="50.0" class="ln"/><rect x="190" y="28" width="142" height="44" rx="6" class="f-panel"/><text x="261.0" y="45.5" class="ts" text-anchor="middle">読むと両方返る</text><text x="261.0" y="63.5" class="ts c-mute" text-anchor="middle">B と C</text><polygon points="261.0,100.0 257.0,92.0 265.0,92.0" class="hd"/><line x1="261.0" y1="72.0" x2="261.0" y2="93.0" class="ln"/><rect x="190" y="100" width="142" height="44" rx="6" class="f-panel"/><text x="261.0" y="117.5" class="ts" text-anchor="middle">アプリか人が解決</text><text x="261.0" y="135.5" class="ts c-mute" text-anchor="middle">例：B/C</text><polygon points="158.0,122.0 166.0,118.0 166.0,126.0" class="hd-fol"/><line x1="190.0" y1="122.0" x2="165.0" y2="122.0" class="ln-fol"/><rect x="8" y="100" width="150" height="44" rx="6" class="f-fol"/><text x="83.0" y="117.5" class="ts" text-anchor="middle">解決した値を書き戻す</text><text x="83.0" y="135.5" class="tm c-fol" text-anchor="middle">B/C</text></svg></div><figcaption>手動の解決。データベースは捨てずに両方持っておき、判断はアプリに任せます。</figcaption></figure>
+
+<p>次にそのレコードを読むと、最新の1つではなく、<b>全部の値</b>が返ります。あとはアプリのコードで自動的に混ぜるか（BとCをつなげて「B/C」にする、など）、ユーザーに聞くか、好きな方法で解決します。そして解決した値を書き戻します。CouchDBなどが使っている方式です。</p>
+<p>これにも問題が4つあります。</p>
+<ul>
+<li><b>APIが変わる。</b>Wikiページのタイトルは、ただの文字列だったのが「文字列の集まり」になります。ふだんは1つですが、コンフリクトがあると複数入っています。アプリのコードが面倒になります。</li>
+<li><b>ユーザーに混ぜさせるのは負担が大きい。</b>解決用の画面を作る開発者にとっても、何を聞かれているのかわからないユーザーにとっても。たいていは、自動で混ぜるほうがよい。</li>
+<li><b>自動で混ぜても、雑にやると変なことになる。</b>下のAmazonの例です。</li>
+<li><b>解決が新しいコンフリクトを生む。</b>複数のノードが同じコンフリクトを見つけて、並行して解決するかもしれません。あるノードは「B/C」に、別のノードは「C/B」に混ぜる。それがまたぶつかって、「B/C/C/B」のような結果になりえます。</li>
+</ul>
+
+<figure class="fig" id="fig-cart"><div class="canvas"><svg viewBox="0 0 340 258" role="img" aria-label="カートにBook、DVD、Soapがある。デバイス1がBookを、デバイス2がDVDを並行して削除する。和集合でマージすると3つとも復活する。正しい結果はSoapだけ"><text x="8" y="18" class="ts c-mute" text-anchor="start">最初のカート</text><rect x="70" y="26" width="200" height="32" rx="6" class="f-panel"/><text x="170.0" y="46.5" class="tm" text-anchor="middle">Book, DVD, Soap</text><polygon points="87.0,84.0 90.8,75.9 95.8,82.2" class="hd"/><line x1="120.0" y1="58.0" x2="92.5" y2="79.7" class="ln"/><polygon points="253.0,84.0 244.2,82.2 249.2,75.9" class="hd"/><line x1="220.0" y1="58.0" x2="247.5" y2="79.7" class="ln"/><rect x="8" y="84" width="158" height="48" rx="6" class="f-panel"/><text x="87.0" y="103.5" class="ts" text-anchor="middle">デバイス1：Bookを削除</text><text x="87.0" y="121.5" class="tm" text-anchor="middle">DVD, Soap</text><rect x="174" y="84" width="158" height="48" rx="6" class="f-panel"/><text x="253.0" y="103.5" class="ts" text-anchor="middle">デバイス2：DVDを削除</text><text x="253.0" y="121.5" class="tm" text-anchor="middle">Book, Soap</text><polygon points="140.0,160.0 131.1,159.8 134.8,152.7" class="hd-bad"/><line x1="87.0" y1="132.0" x2="133.8" y2="156.7" class="ln-bad"/><polygon points="200.0,160.0 205.2,152.7 208.9,159.8" class="hd-bad"/><line x1="253.0" y1="132.0" x2="206.2" y2="156.7" class="ln-bad"/><rect x="40" y="160" width="260" height="48" rx="6" class="f-bad"/><text x="170.0" y="179.5" class="ts" text-anchor="middle">和集合でマージすると</text><text x="170.0" y="197.5" class="tm c-bad" text-anchor="middle">Book, DVD, Soap</text><text x="170" y="228" class="ts c-bad" text-anchor="middle">消したはずの Book と DVD が復活</text><text x="170" y="248" class="ts c-fol" text-anchor="middle">正しい結果は { Soap }</text></svg></div><figcaption>本の図6-10にあたる図です。「両方に入っているものを全部残す」だと、削除が取り消されます。</figcaption></figure>
+
+<p>Amazonのショッピングカートは、かつて並行した更新を許していました。そして兄弟値を、「どれかに入っている商品を全部残す」（カートの和集合を取る）方法で混ぜていました。その結果、<b>消したはずの商品がカートに戻ってくる</b>ことがありました。片方で消しても、もう片方の兄弟値にはまだ入っているからです。</p>
+
+<h4 id="s6234"><span class="num">6.2.3.4</span>方法4：自動で解決する</h4>
+<p>多くのアプリにとっていちばん良いのは、並行した書き込みを<b>自動で、つじつまの合う状態に混ぜる</b>アルゴリズムを使うことです。</p>
+<p>自動のコンフリクト解決は、全レプリカが同じ状態に<b>収束</b>することを保証します。同じ書き込みの集まりを処理したレプリカは、<b>届いた順番に関係なく</b>、同じ状態になります。</p>
+
+<div class="box">
+<span class="lab">用語：強い結果整合性</span>
+<p>結果整合性と、この「収束」の保証を合わせたものを、<b>強い結果整合性</b>（strong eventual consistency）と呼びます。</p>
+</div>
+
+<p>LWWも、自動解決アルゴリズムの単純な一例です。もっと賢いアルゴリズムは、<b>すべての更新の意図をなるべく残し、データを失わない</b>ことを目指します。データの種類ごとに見ていきます。</p>
+<ul>
+<li><b>テキスト：</b>前のバージョンから、どの文字が挿入され、どの文字が削除されたかを見つけます。混ぜた結果には、すべての挿入と削除が残ります。同じ場所に並行して挿入されたら、全ノードが同じ結果になるように、決まったルールで順番を付けます。</li>
+<li><b>コレクション</b>（ToDoリストのように順番があるもの、ショッピングカートのように順番がないもの）：挿入と削除を追跡して、テキストと同じように混ぜます。さっきのカートなら、「BookとDVDが消された」という事実を追跡するので、結果は { Soap } になります。</li>
+<li><b>カウンタ</b>（「いいね」の数など）：それぞれの側で何回増やし、何回減らしたかを見分けて、正しく足し合わせます。二重に数えたり、更新が抜けたりしません。</li>
+<li><b>キーと値のマップ：</b>同じキーへの更新は、その値に上のどれかのアルゴリズムを使って混ぜます。別々のキーへの更新は、互いに関係なく処理できます。</li>
+</ul>
+
+<figure class="fig" id="fig-counter"><div class="canvas"><svg viewBox="0 0 340 214" role="img" aria-label="いいねが10のとき、2つのレプリカで並行して1ずつ増やす。値で上書きすると11になり1つ消える。増分を合算すると12で正しい"><rect x="120" y="12" width="100" height="32" rx="6" class="f-panel"/><text x="170.0" y="32.5" class="ts" text-anchor="middle">いいね 10</text><polygon points="87.0,84.0 91.6,76.3 95.9,83.1" class="hd"/><line x1="150.0" y1="44.0" x2="92.9" y2="80.2" class="ln"/><polygon points="253.0,84.0 244.1,83.1 248.4,76.3" class="hd"/><line x1="190.0" y1="44.0" x2="247.1" y2="80.2" class="ln"/><rect x="8" y="84" width="158" height="44" rx="6" class="f-panel"/><text x="87.0" y="101.5" class="ts" text-anchor="middle">レプリカ1で +1</text><text x="87.0" y="119.5" class="tm" text-anchor="middle">11</text><rect x="174" y="84" width="158" height="44" rx="6" class="f-panel"/><text x="253.0" y="101.5" class="ts" text-anchor="middle">レプリカ2で +1</text><text x="253.0" y="119.5" class="tm" text-anchor="middle">11</text><text x="170" y="150" class="ts c-mute" text-anchor="middle">マージのしかたで結果が変わる</text><rect x="8" y="162" width="158" height="44" rx="6" class="f-bad"/><text x="87.0" y="179.5" class="ts" text-anchor="middle">値で上書き（LWW）</text><text x="87.0" y="197.5" class="ts c-bad" text-anchor="middle">11：1つ消えた</text><rect x="174" y="162" width="158" height="44" rx="6" class="f-fol"/><text x="253.0" y="179.5" class="ts" text-anchor="middle">増分を合算</text><text x="253.0" y="197.5" class="ts c-fol" text-anchor="middle">12：正しい</text></svg></div><figcaption>カウンタのマージ。「値」ではなく「何回増やしたか」を合わせます。数字は説明用です。</figcaption></figure>
+
+<p>できることには限界があります。「リストは5個まで」と決めていても、複数人が並行して足して5個を超えたら、どれかを消すしかありません。</p>
+<p>それでも、多くの役に立つアプリを作るには十分です。共同編集のオフラインファーストやローカルファーストのアプリを作りたいなら、コンフリクトの解決は避けられません。それを自動にするのが、たいてい最善です。</p>
+
+<h4 id="s6235"><span class="num">6.2.3.5</span>CRDTと操作変換（OT）</h4>
+<p>自動解決の実装によく使われるアルゴリズムは2つあります。<b>コンフリクトフリーデータ型</b>（CRDT）と<b>操作変換</b>（OT）です。考え方も性能の特性も違いますが、どちらも、上に挙げた全種類のデータを自動で混ぜられます。</p>
+<p>本の例です。2つのレプリカが、どちらも <code>ice</code> というテキストから始めます。片方は先頭に <code>n</code> を足して <code>nice</code> に。もう片方は並行して、末尾に <code>!</code> を足して <code>ice!</code> に。混ぜた結果は <code>nice!</code> になってほしい。</p>
+
+<figure class="fig" id="fig-ot"><div class="canvas"><svg viewBox="0 0 340 228" role="img" aria-label="OTの例。iceに対して、レプリカAは0番目にnを入れ、レプリカBは3番目に感嘆符を入れる。Bの操作をそのままAに当てるとnic!eになって誤り。nのぶん3を4に変換するとnice!になる"><text x="8" y="18" class="ts c-mute" text-anchor="start">OT：位置（インデックス）で記録し、ずらす</text><text x="8" y="44" class="ts" text-anchor="start">レプリカA：0番目に n</text><rect x="8" y="52" width="30" height="30" rx="4" class="f-ldr"/><text x="23.0" y="71.5" class="tm" text-anchor="middle">n</text><rect x="40" y="52" width="30" height="30" rx="4" class="f-panel"/><text x="55.0" y="71.5" class="tm" text-anchor="middle">i</text><rect x="72" y="52" width="30" height="30" rx="4" class="f-panel"/><text x="87.0" y="71.5" class="tm" text-anchor="middle">c</text><rect x="104" y="52" width="30" height="30" rx="4" class="f-panel"/><text x="119.0" y="71.5" class="tm" text-anchor="middle">e</text><text x="174" y="44" class="ts" text-anchor="start">レプリカB：3番目に !</text><rect x="174" y="52" width="30" height="30" rx="4" class="f-panel"/><text x="189.0" y="71.5" class="tm" text-anchor="middle">i</text><rect x="206" y="52" width="30" height="30" rx="4" class="f-panel"/><text x="221.0" y="71.5" class="tm" text-anchor="middle">c</text><rect x="238" y="52" width="30" height="30" rx="4" class="f-panel"/><text x="253.0" y="71.5" class="tm" text-anchor="middle">e</text><rect x="270" y="52" width="30" height="30" rx="4" class="f-log"/><text x="285.0" y="71.5" class="tm" text-anchor="middle">!</text><text x="8" y="112" class="ts c-mute" text-anchor="start">Bの「3番目に !」をAにそのまま当てると</text><rect x="8" y="120" width="30" height="30" rx="4" class="f-panel"/><text x="23.0" y="139.5" class="tm" text-anchor="middle">n</text><rect x="40" y="120" width="30" height="30" rx="4" class="f-panel"/><text x="55.0" y="139.5" class="tm" text-anchor="middle">i</text><rect x="72" y="120" width="30" height="30" rx="4" class="f-panel"/><text x="87.0" y="139.5" class="tm" text-anchor="middle">c</text><rect x="104" y="120" width="30" height="30" rx="4" class="f-bad"/><text x="119.0" y="139.5" class="tm" text-anchor="middle">!</text><rect x="136" y="120" width="30" height="30" rx="4" class="f-panel"/><text x="151.0" y="139.5" class="tm" text-anchor="middle">e</text><text x="332" y="140" class="ts c-bad" text-anchor="end">誤り</text><text x="8" y="180" class="ts c-mute" text-anchor="start">先に入った n のぶん、3 → 4 に変換する</text><rect x="8" y="188" width="30" height="30" rx="4" class="f-ldr"/><text x="23.0" y="207.5" class="tm" text-anchor="middle">n</text><rect x="40" y="188" width="30" height="30" rx="4" class="f-panel"/><text x="55.0" y="207.5" class="tm" text-anchor="middle">i</text><rect x="72" y="188" width="30" height="30" rx="4" class="f-panel"/><text x="87.0" y="207.5" class="tm" text-anchor="middle">c</text><rect x="104" y="188" width="30" height="30" rx="4" class="f-panel"/><text x="119.0" y="207.5" class="tm" text-anchor="middle">e</text><rect x="136" y="188" width="30" height="30" rx="4" class="f-fol"/><text x="151.0" y="207.5" class="tm" text-anchor="middle">!</text><text x="332" y="208" class="ts c-fol" text-anchor="end">正しい</text></svg></div><figcaption>本の図6-11のOT側にあたる図です。相手の操作を受け取るとき、位置をずらしてから当てます。</figcaption></figure>
+
+<p><b>OT</b>は、文字の挿入や削除を<b>インデックス</b>（何番目か）で記録します。<code>n</code> は0番目、<code>!</code> は3番目です。レプリカ同士で操作を送り合います。「0番目に n」はそのまま当てられます。でも「3番目に !」を <code>nice</code> に当てると、<code>nic!e</code> になってしまいます。</p>
+<p>そこで、先に適用された並行の操作を考えて、インデックスを<b>変換</b>します。前のほうに <code>n</code> が入ったぶん、<code>!</code> の位置を3から4にずらします。</p>
+
+<figure class="fig" id="fig-crdt"><div class="canvas"><svg viewBox="0 0 340 226" role="img" aria-label="CRDTの例。iにID 1A、cに2A、eに3Aが付いている。Aはnilの後ろにnを、Bは3Aの後ろに感嘆符を挿入する。IDで場所を指すので変換なしでnice!になる"><text x="8" y="18" class="ts c-mute" text-anchor="start">CRDT：文字ごとに変わらないIDを付ける</text><rect x="8" y="26" width="44" height="30" rx="4" class="f-panel"/><text x="30.0" y="45.5" class="tm" text-anchor="middle">i</text><rect x="54" y="26" width="44" height="30" rx="4" class="f-panel"/><text x="76.0" y="45.5" class="tm" text-anchor="middle">c</text><rect x="100" y="26" width="44" height="30" rx="4" class="f-panel"/><text x="122.0" y="45.5" class="tm" text-anchor="middle">e</text><text x="30" y="70" class="tn c-mute" text-anchor="middle">1A</text><text x="76" y="70" class="tn c-mute" text-anchor="middle">2A</text><text x="122" y="70" class="tn c-mute" text-anchor="middle">3A</text><rect x="8" y="84" width="158" height="44" rx="6" class="f-ldr"/><text x="87.0" y="101.5" class="ts" text-anchor="middle">A：n を挿入</text><text x="87.0" y="119.5" class="ts c-mute" text-anchor="middle">ID 4A・nil の後ろ</text><rect x="174" y="84" width="158" height="44" rx="6" class="f-log"/><text x="253.0" y="101.5" class="ts" text-anchor="middle">B：! を挿入</text><text x="253.0" y="119.5" class="ts c-mute" text-anchor="middle">ID 4B・3A の後ろ</text><rect x="56" y="148" width="44" height="30" rx="4" class="f-ldr"/><text x="78.0" y="167.5" class="tm" text-anchor="middle">n</text><rect x="102" y="148" width="44" height="30" rx="4" class="f-panel"/><text x="124.0" y="167.5" class="tm" text-anchor="middle">i</text><rect x="148" y="148" width="44" height="30" rx="4" class="f-panel"/><text x="170.0" y="167.5" class="tm" text-anchor="middle">c</text><rect x="194" y="148" width="44" height="30" rx="4" class="f-panel"/><text x="216.0" y="167.5" class="tm" text-anchor="middle">e</text><rect x="240" y="148" width="44" height="30" rx="4" class="f-log"/><text x="262.0" y="167.5" class="tm" text-anchor="middle">!</text><text x="78" y="192" class="tn c-mute" text-anchor="middle">4A</text><text x="124" y="192" class="tn c-mute" text-anchor="middle">1A</text><text x="170" y="192" class="tn c-mute" text-anchor="middle">2A</text><text x="216" y="192" class="tn c-mute" text-anchor="middle">3A</text><text x="262" y="192" class="tn c-mute" text-anchor="middle">4B</text><text x="170" y="216" class="ts c-mute" text-anchor="middle">位置ではなくIDで場所を指すので、変換がいらない</text></svg></div><figcaption>本の図6-11のCRDT側にあたる図です。n のID「4A」は説明用に付けたものです。</figcaption></figure>
+
+<p><b>CRDT</b>の多くは、インデックスのかわりに、<b>文字1つ1つに、変わらない固有のID</b>を付けます。<code>i</code> に1A、<code>c</code> に2A、という具合です。<code>!</code> を入れるときは、「新しい文字のIDは4B。3Aの文字の後ろに入れる」という操作を作ります。先頭に入れるときは、「前の文字」として nil（なし）を指定します。</p>
+<p>同じ場所への並行した挿入は、文字のIDで順番を付けます。だから、変換しなくても全レプリカが同じ結果になります。</p>
+
+<div class="cmp">
+<div class="side log">
+<span class="tag">OT が使われるところ</span>
+<p>Google Docsのような、テキストのリアルタイム共同編集。JSON向けの同期エンジンではShareDB。</p>
+</div>
+<div class="side log">
+<span class="tag">CRDT が使われるところ</span>
+<p>Redis Enterprise、Riak、Azure Cosmos DBなどの分散データベース。JSON向けの同期エンジンではAutomerge、Yjs。</p>
+</div>
+</div>
+
+<p>リストや配列も、文字のかわりに要素を使えば同じようにできます。両方の利点を1つのアルゴリズムに組み合わせることもできます。</p>
+
+<h4 id="s6236"><span class="num">6.2.3.6</span>気づきにくいコンフリクト</h4>
+<p>Wikiのタイトルの例は、わかりやすいコンフリクトでした。同じレコードの同じフィールドを、並行して別の値に変えたからです。</p>
+<p>もっと見つけにくいものもあります。会議室の予約システムです。予約のたびに、新しいレコードを挿入します。守りたい約束は「同じ部屋に、時間の重なる予約がないこと」です。</p>
+
+<figure class="fig" id="fig-room"><div class="canvas"><svg viewBox="0 0 340 208" role="img" aria-label="同じ会議室に、時間が重なる2つの予約が別々のリーダーに挿入される。同じフィールドの更新ではないが、時間が重なっている"><text x="8" y="18" class="ts c-mute" text-anchor="start">どちらも「空いている」と確認してから挿入</text><rect x="8" y="28" width="158" height="48" rx="6" class="f-panel"/><text x="87.0" y="47.5" class="ts" text-anchor="middle">予約1（リーダー1）</text><text x="87.0" y="65.5" class="ts c-mute" text-anchor="middle">会議室A 10:00〜11:00</text><rect x="174" y="28" width="158" height="48" rx="6" class="f-panel"/><text x="253.0" y="47.5" class="ts" text-anchor="middle">予約2（リーダー2）</text><text x="253.0" y="65.5" class="ts c-mute" text-anchor="middle">会議室A 10:30〜11:30</text><rect x="110" y="94" width="70" height="60" rx="4" class="f-bad"/><rect x="40" y="100" width="140" height="18" rx="4" class="f-ldr"/><rect x="110" y="130" width="140" height="18" rx="4" class="f-ldr"/><line x1="40.0" y1="160.0" x2="320.0" y2="160.0" class="ln thin"/><text x="40" y="176" class="tn c-mute" text-anchor="middle">10:00</text><text x="180" y="176" class="tn c-mute" text-anchor="middle">11:00</text><text x="318" y="176" class="tn c-mute" text-anchor="end">12:00</text><text x="170" y="198" class="ts c-bad" text-anchor="middle">同じフィールドの更新ではないが、時間が重なる</text></svg></div><figcaption>気づきにくいコンフリクト。どちらも新しい行を足しただけです。時刻は説明用です。</figcaption></figure>
+
+<p>予約の前にアプリが空きを確認していても、2つの予約がほぼ同じころに行われると、どちらも「空いている」と判断して挿入してしまいます。</p>
+<p>これに、すぐ使えるお決まりの答えはありません。8章でコンフリクトの例をさらに見て、13章で検出と解決のスケーラブルな方法を扱います。</p>
+
+<!-- ===================================================== 6.3 -->
+<h2 id="s63"><span class="num">6.3</span>リーダーレスレプリケーション</h2>
+
+<p>ここまでの2つの方式は、「クライアントは1つのノード（リーダー）に書き込みを送り、データベースがそれを他のレプリカに写す」という考え方でした。リーダーが書き込みの順番を決め、フォロワーは同じ順番で適用します。</p>
+<p><b>リーダーレス</b>は、リーダーという考え方を捨てます。<b>どのレプリカも、クライアントからの書き込みを直接受けます</b>。</p>
+<p>いちばん初期のレプリケーションシステムにはリーダーレスのものがありました。でもリレーショナルデータベースの全盛期には、ほとんど忘れられていました。2007年にAmazonが社内システムの<b>Dynamo</b>で使ったことで、ふたたび注目されます。Riak、Cassandra、ScyllaDBは、Dynamoに影響を受けたオープンソースのデータストアです。この種類を<b>Dynamoスタイル</b>と呼びます。</p>
+
+<div class="box bad">
+<span class="lab">注意：Dynamo と DynamoDB は別物</span>
+<p>もとのDynamoは論文で発表されましたが、Amazonの外には出ていません。名前が似ている<b>DynamoDB</b>は、もっと新しいクラウドデータベースで、作りがまったく違います。DynamoDBは、Multi-Paxosという合意アルゴリズムにもとづく<b>シングルリーダー</b>レプリケーションを使っています。</p>
+</div>
+
+<p>実装には2種類あります。クライアントが直接、複数のレプリカに書き込みを送るもの。<b>コーディネーターノード</b>が、クライアントのかわりに送るもの。ただしコーディネーターは、リーダーと違って、<b>書き込みの順番を決めません</b>。この違いが、データベースの使い方に深く影響します。</p>
+
+<!-- ----------------------------------------------------- 6.3.1 -->
+<h3 id="s631"><span class="num">6.3.1</span>ノードがダウンしているときの書き込み</h3>
+<p>レプリカが3つあり、1つが止まっているとします（アップデートのために再起動中、など）。シングルリーダーで、それがリーダーなら、フェイルオーバーが要るかもしれません。</p>
+<p>リーダーレスでは、全レプリカが対等です。リーダーがいないので、<b>フェイルオーバーという考え方がありません</b>。</p>
+
+<figure class="fig" id="fig-lwrite"><div class="canvas"><svg viewBox="0 0 340 180" role="img" aria-label="ユーザー1234が3つのレプリカすべてに書き込みを送る。レプリカ1と2は保存してokを返す。レプリカ3はダウン中で受け取れない。3台中2台がokなので成功とみなす"><rect x="8" y="70" width="90" height="44" rx="6" class="f-panel"/><text x="53.0" y="87.5" class="ts" text-anchor="middle">ユーザー1234</text><text x="53.0" y="105.5" class="ts c-mute" text-anchor="middle">書き込み</text><rect x="214" y="14" width="118" height="40" rx="6" class="f-fol"/><text x="273.0" y="29.5" class="ts" text-anchor="middle">レプリカ1</text><text x="273.0" y="47.5" class="ts c-fol" text-anchor="middle">保存 → ok</text><rect x="214" y="72" width="118" height="40" rx="6" class="f-fol"/><text x="273.0" y="87.5" class="ts" text-anchor="middle">レプリカ2</text><text x="273.0" y="105.5" class="ts c-fol" text-anchor="middle">保存 → ok</text><rect x="214" y="130" width="118" height="40" rx="6" class="f-bad"/><text x="273.0" y="145.5" class="ts" text-anchor="middle">レプリカ3</text><text x="273.0" y="163.5" class="ts c-bad" text-anchor="middle">ダウン中</text><polygon points="214.0,34.0 208.1,40.8 205.1,33.4" class="hd-ldr"/><line x1="98.0" y1="82.0" x2="207.5" y2="36.7" class="ln-ldr"/><polygon points="214.0,92.0 206.0,96.0 206.0,88.0" class="hd-ldr"/><line x1="98.0" y1="92.0" x2="207.0" y2="92.0" class="ln-ldr"/><polygon points="214.0,150.0 205.1,150.6 208.1,143.2" class="hd-bad"/><line x1="98.0" y1="102.0" x2="207.5" y2="147.3" class="ln-bad dash"/><text x="8" y="150" class="ts" text-anchor="start">3台中2台が ok</text><text x="8" y="170" class="ts c-fol" text-anchor="start">→ 成功とみなす</text></svg></div><figcaption>本の図6-12の前半にあたる図です。全員に送って、決めた数だけ ok が返れば成功です。</figcaption></figure>
+
+<p>クライアントは、3つのレプリカ全部に並列で書き込みを送ります。「3つのうち2つが ok と言えば十分」と決めてあるとします。2つの ok を受け取ったら、書き込みは成功です。1つが受け取れなかったことは、単に無視します。</p>
+<p>さて、止まっていたノードが戻ってきました。このノードには、止まっていた間の書き込みが抜けています。ここから読むと、<b>古い値</b>（stale な値）が返るかもしれません。</p>
+
+<figure class="fig" id="fig-lread"><div class="canvas"><svg viewBox="0 0 340 180" role="img" aria-label="ユーザー2345が3つのレプリカから読む。レプリカ1と2はバージョン7、復帰したレプリカ3は古いバージョン6を返す。いちばん新しいバージョン7を使う"><rect x="8" y="70" width="90" height="44" rx="6" class="f-panel"/><text x="53.0" y="87.5" class="ts" text-anchor="middle">ユーザー2345</text><text x="53.0" y="105.5" class="ts c-mute" text-anchor="middle">読み取り</text><rect x="200" y="14" width="132" height="40" rx="6" class="f-fol"/><text x="266.0" y="29.5" class="ts" text-anchor="middle">レプリカ1</text><text x="266.0" y="47.5" class="ts c-fol" text-anchor="middle">バージョン7</text><rect x="200" y="72" width="132" height="40" rx="6" class="f-fol"/><text x="266.0" y="87.5" class="ts" text-anchor="middle">レプリカ2</text><text x="266.0" y="105.5" class="ts c-fol" text-anchor="middle">バージョン7</text><rect x="200" y="130" width="132" height="40" rx="6" class="f-bad"/><text x="266.0" y="145.5" class="ts" text-anchor="middle">レプリカ3</text><text x="266.0" y="163.5" class="ts c-bad" text-anchor="middle">バージョン6：古い</text><polygon points="98.0,82.0 103.5,75.0 106.9,82.2" class="hd-fol"/><line x1="200.0" y1="34.0" x2="104.3" y2="79.0" class="ln-fol"/><polygon points="98.0,92.0 106.0,88.0 106.0,96.0" class="hd-fol"/><line x1="200.0" y1="92.0" x2="105.0" y2="92.0" class="ln-fol"/><polygon points="98.0,102.0 106.9,101.8 103.5,109.0" class="hd-bad"/><line x1="200.0" y1="150.0" x2="104.3" y2="105.0" class="ln-bad"/><text x="8" y="150" class="ts" text-anchor="start">いちばん新しい</text><text x="8" y="170" class="ts c-fol" text-anchor="start">バージョン7を使う</text></svg></div><figcaption>本の図6-12の後半にあたる図です。読むときも全員に聞いて、いちばん新しいものを採用します。</figcaption></figure>
+
+<p>そこで、<b>読むときも複数のノードに並列で聞きます</b>。ノードによって返事が違うかもしれません。どれが新しいかを見分けるために、書き込む値には全部、<b>バージョン番号かタイムスタンプ</b>を付けておきます。クライアントは、いちばん新しいものを使います。たとえそれを返したのが1つだけで、他の複数が古い値を返していてもです。</p>
+
+<h4 id="s6311"><span class="num">6.3.1.1</span>書き漏れを埋める</h4>
+<p>最終的には、全部のデータが全部のレプリカに行き渡らなければなりません。止まっていたノードは、どうやって追いつくのでしょうか。Dynamoスタイルのデータストアは、3つのしくみを使います。</p>
+
+<figure class="fig" id="fig-repair"><div class="canvas"><svg viewBox="0 0 340 232" role="img" aria-label="書き漏れを埋める3つのしくみ。リードリペアは読んだクライアントが古いレプリカに新しい値を書く。ヒント付きハンドオフは代わりのレプリカが預かって復帰後に渡す。アンチエントロピーは裏で定期的にレプリカ同士を比べる"><text x="8" y="18" class="ts c-mute" text-anchor="start">リードリペア：読んだついでに直す</text><rect x="8" y="26" width="100" height="36" rx="6" class="f-panel"/><text x="58.0" y="48.5" class="ts" text-anchor="middle">クライアント</text><rect x="214" y="26" width="118" height="36" rx="6" class="f-bad"/><text x="273.0" y="48.5" class="ts" text-anchor="middle">古いレプリカ</text><text x="161" y="38" class="ts c-fol" text-anchor="middle">新しい値を書く</text><polygon points="214.0,46.0 206.0,50.0 206.0,42.0" class="hd-fol"/><line x1="108.0" y1="46.0" x2="207.0" y2="46.0" class="ln-fol"/><text x="8" y="90" class="ts c-mute" text-anchor="start">ヒント付きハンドオフ：預かって、あとで渡す</text><rect x="8" y="98" width="130" height="36" rx="6" class="f-panel"/><text x="73.0" y="120.5" class="ts" text-anchor="middle">代わりのレプリカ</text><rect x="214" y="98" width="118" height="36" rx="6" class="f-fol"/><text x="273.0" y="120.5" class="ts" text-anchor="middle">復帰したレプリカ</text><text x="176" y="110" class="ts c-log" text-anchor="middle">ヒント</text><polygon points="214.0,118.0 206.0,122.0 206.0,114.0" class="hd-log"/><line x1="138.0" y1="118.0" x2="207.0" y2="118.0" class="ln-log"/><text x="8" y="162" class="ts c-mute" text-anchor="start">アンチエントロピー：裏で差分を探して埋める</text><rect x="8" y="170" width="130" height="36" rx="6" class="f-panel"/><text x="73.0" y="192.5" class="ts" text-anchor="middle">レプリカ1</text><rect x="214" y="170" width="118" height="36" rx="6" class="f-panel"/><text x="273.0" y="192.5" class="ts" text-anchor="middle">レプリカ2</text><polygon points="214.0,181.0 206.0,185.0 206.0,177.0" class="hd"/><line x1="138.0" y1="181.0" x2="207.0" y2="181.0" class="ln dash"/><polygon points="138.0,195.0 146.0,191.0 146.0,199.0" class="hd"/><line x1="214.0" y1="195.0" x2="145.0" y2="195.0" class="ln dash"/><text x="170" y="224" class="ts c-mute" text-anchor="middle">定期的に比べる（順序は気にしない）</text></svg></div><figcaption>遅れたレプリカを追いつかせる3つのしくみ。</figcaption></figure>
+
+<ul>
+<li><b>リードリペア</b>（read repair）：複数のノードから並列に読むと、古い返事に気づけます。さっきの図なら、レプリカ3だけバージョン6を返しました。クライアントはレプリカ3に新しい値を書き戻します。<b>よく読まれる値</b>にはうまく働きます。</li>
+<li><b>ヒント付きハンドオフ</b>（hinted handoff）：あるレプリカが止まっているとき、別のレプリカが、そのレプリカ宛ての書き込みを<b>ヒント</b>として預かります。止まっていたレプリカが戻ったら、預かっていた分を渡して、ヒントを消します。読まれない値はリードリペアでは直りませんが、これなら直せます。</li>
+<li><b>アンチエントロピー</b>（anti-entropy）：裏で動く処理が、定期的にレプリカ同士の違いを探して、足りないデータをコピーします。レプリケーションログと違って、書き込みを決まった順番で写すわけではありません。写されるまで、かなり時間がかかることもあります。</li>
+</ul>
+
+<h4 id="s6312"><span class="num">6.3.1.2</span>読み取りと書き込みのクォーラム</h4>
+<p>さっきは「3つのうち2つ」で成功にしました。では1つでもよいのでしょうか。どこまで減らせるでしょうか。</p>
+<p>こう考えます。成功した書き込みが、3つのうち少なくとも2つにあるなら、古いままのレプリカは多くても1つです。だから、少なくとも2つから読めば、そのうち少なくとも1つは最新です。</p>
+<p>一般化します。</p>
+
+<dl class="pick">
+<div><dt>n</dt><dd>その値を持つレプリカの数</dd></div>
+<div><dt>w</dt><dd>書き込みの成功に必要な ok の数</dd></div>
+<div><dt>r</dt><dd>読み取りで返事を待つノードの数</dd></div>
+</dl>
+
+<div class="box key">
+<span class="lab">クォーラム条件</span>
+<p><b>w + r &gt; n</b> なら、読み取りで最新の値が手に入ると期待できます。読んだ r 個のうち、少なくとも1つは最新のはずだからです。</p>
+</div>
+
+<figure class="fig" id="fig-quorum"><div class="canvas"><svg viewBox="0 0 340 212" role="img" aria-label="レプリカが5つ。書き込みはレプリカ1から3の3つに届いた。読み取りはレプリカ3から5の3つから行う。レプリカ3が重なるので、新しい値が必ず1つ入る"><text x="104" y="22" class="ts c-ldr" text-anchor="middle">書き込みが届いた w = 3</text><line x1="8.0" y1="34.0" x2="200.0" y2="34.0" class="ln-ldr"/><rect x="8" y="46" width="60" height="46" rx="6" class="f-ldr"/><text x="38.0" y="64.5" class="tm" text-anchor="middle">1</text><text x="38.0" y="82.5" class="ts c-ldr" text-anchor="middle">新</text><rect x="74" y="46" width="60" height="46" rx="6" class="f-ldr"/><text x="104.0" y="64.5" class="tm" text-anchor="middle">2</text><text x="104.0" y="82.5" class="ts c-ldr" text-anchor="middle">新</text><rect x="140" y="46" width="60" height="46" rx="6" class="f-log"/><text x="170.0" y="64.5" class="tm" text-anchor="middle">3</text><text x="170.0" y="82.5" class="ts c-ldr" text-anchor="middle">新</text><rect x="206" y="46" width="60" height="46" rx="6" class="f-panel"/><text x="236.0" y="64.5" class="tm" text-anchor="middle">4</text><text x="236.0" y="82.5" class="ts c-mute" text-anchor="middle">旧</text><rect x="272" y="46" width="60" height="46" rx="6" class="f-panel"/><text x="302.0" y="64.5" class="tm" text-anchor="middle">5</text><text x="302.0" y="82.5" class="ts c-mute" text-anchor="middle">旧</text><line x1="140.0" y1="104.0" x2="332.0" y2="104.0" class="ln-fol"/><text x="236" y="126" class="ts c-fol" text-anchor="middle">読み取った r = 3</text><text x="170" y="164" class="ts" text-anchor="middle">レプリカ3が重なる → 新しい値が必ず1つ入る</text><text x="170" y="194" class="tm c-log" text-anchor="middle">w + r &gt; n  （3 + 3 &gt; 5）</text></svg></div><figcaption>本の図6-13にあたる図です。w + r &gt; n なら、書いた集合と読む集合が必ず1台は重なります。</figcaption></figure>
+
+<p>この条件を満たす読み書きを、<b>クォーラム</b>読み取り・書き込みと呼びます。r と w は、読み書きが有効になるための「最低の票数」だと思えばよいです。</p>
+<p>Dynamoスタイルのデータベースでは、n、w、r はふつう設定できます。よくある選び方は、n を奇数（3か5）にして、w と r を過半数（(n + 1) / 2 の切り上げ）にすることです。</p>
+
+<dl class="pick">
+<div><dt>n = 3、w = 2、r = 2</dt><dd>1台止まっても読み書きできる</dd></div>
+<div><dt>n = 5、w = 3、r = 3</dt><dd>2台止まっても読み書きできる</dd></div>
+<div><dt>w = n、r = 1</dt><dd>読み取りは速い。でも1台止まると、書き込みが全部失敗する</dd></div>
+</dl>
+
+<p>知っておくとよい細かい点が3つあります。</p>
+<ul>
+<li>読み書きは、ふつう<b>いつも n 個全部に並列で送ります</b>。w と r は「いくつの返事を待つか」を決めるだけです。</li>
+<li>必要な数のノードから返事が来なければ、読み書きはエラーになります。ノードがなぜ返事をしないか（クラッシュ、ディスク満杯、ネットワーク障害など）は区別しません。大事なのは、成功の返事が来たかどうかだけです。</li>
+<li>クラスタには n 個より多くのノードがあってかまいません。ある1つの値が n 個のノードに置かれる、というだけです。これでシャーディングができます（7章）。</li>
+</ul>
+
+<h4 id="s6313"><span class="num">6.3.1.3</span>クォーラムの限界</h4>
+<p>w と r は過半数にすることが多いですが、必ずしも過半数でなくてかまいません。大事なのは、<b>書いたノードの集まりと、読むノードの集まりが、少なくとも1つ重なる</b>ことです。</p>
+<p>逆に、w と r を小さくして、w + r ≦ n にすることもできます。</p>
+
+<figure class="fig" id="fig-noquorum"><div class="canvas"><svg viewBox="0 0 340 180" role="img" aria-label="レプリカ3つでwもrも1にすると、書き込みはレプリカ1にだけ届き、読み取りがレプリカ3に当たって古い値が返ることがある"><text x="70" y="30" class="tm c-ldr" text-anchor="start">w = 1</text><polygon points="58.0,50.0 54.0,42.0 62.0,42.0" class="hd-ldr"/><line x1="58.0" y1="14.0" x2="58.0" y2="43.0" class="ln-ldr"/><rect x="8" y="50" width="100" height="40" rx="6" class="f-ldr"/><text x="58.0" y="65.5" class="ts" text-anchor="middle">レプリカ1</text><text x="58.0" y="83.5" class="ts c-ldr" text-anchor="middle">新</text><rect x="120" y="50" width="100" height="40" rx="6" class="f-panel"/><text x="170.0" y="65.5" class="ts" text-anchor="middle">レプリカ2</text><text x="170.0" y="83.5" class="ts c-mute" text-anchor="middle">旧</text><rect x="232" y="50" width="100" height="40" rx="6" class="f-panel"/><text x="282.0" y="65.5" class="ts" text-anchor="middle">レプリカ3</text><text x="282.0" y="83.5" class="ts c-mute" text-anchor="middle">旧</text><polygon points="282.0,124.0 278.0,116.0 286.0,116.0" class="hd-bad"/><line x1="282.0" y1="90.0" x2="282.0" y2="117.0" class="ln-bad"/><text x="294" y="110" class="tm c-bad" text-anchor="start">r = 1</text><text x="282" y="142" class="ts c-bad" text-anchor="middle">古い値が返る</text><text x="8" y="170" class="ts c-mute" text-anchor="start">w + r ≦ n だと、読み書きが重ならないことがある</text></svg></div><figcaption>クォーラム条件を満たさない設定。速くて止まりにくいかわりに、古い値を読みやすくなります。</figcaption></figure>
+
+<p>こうすると、古い値を読みやすくなります。そのかわり、待つ返事が少ないので速くなり、多くのレプリカにつながらなくなっても動き続けられます。</p>
+<p>では、w + r &gt; n なら絶対に安心かというと、そうでもありません。本は、ややこしいことになる場合を6つ挙げています。</p>
+<ul>
+<li><b>新しい値を持つノードが壊れた。</b>そのノードのデータを、古い値を持つレプリカから復元すると、新しい値を持つレプリカが w 個を下回ります。クォーラム条件が崩れます。</li>
+<li><b>リバランシングの最中。</b>データをノードからノードへ移している途中（7章）は、「どの n 個がこの値を持つべきか」の認識がノード間でずれることがあります。読むクォーラムと書くクォーラムが重ならなくなります。</li>
+<li><b>読み取りと書き込みが並行した。</b>書き込み中の値が読み取りに入るかどうかは、決まっていません。ある読み取りで新しい値が見え、次の読み取りで古い値が見えることもあります。</li>
+<li><b>書き込みが一部だけ成功した。</b>成功が w 個に届かず「失敗」と報告されても、成功したレプリカでは<b>取り消されません</b>。あとの読み取りで、その値が返ることも返らないこともあります。</li>
+<li><b>時計でどちらが新しいかを決めている。</b>CassandraやScyllaDBがそうです。時計が進んだ別のノードが同じキーに書いていると、こちらの書き込みが黙って捨てられます。LWWの問題です。</li>
+<li><b>2つの書き込みが並行した。</b>あるレプリカでは片方が先、別のレプリカではもう片方が先に処理されます。マルチリーダーと同じコンフリクトです（<a href="#s634">6.3.4</a>）。</li>
+</ul>
+
+<div class="box key">
+<span class="lab">本の結論</span>
+<p>クォーラムは「読み取りが最新の書き込みを返す」と保証するように見えますが、実際はそう単純ではありません。Dynamoスタイルのデータベースは、ふつう<b>結果整合性でかまわない用途</b>に向けて作られています。w と r は、古い値を読む<b>確率を調整するつまみ</b>です。絶対の保証だと思わないほうが賢明です。</p>
+</div>
+
+<h4 id="s6314"><span class="num">6.3.1.4</span>古さのモニタリング</h4>
+<p>運用する側は、データベースが新しい結果を返しているかを見張っておく必要があります。古い読み取りを許せるアプリでも、レプリケーションが健康かどうかは知っておくべきです。大きく遅れているなら、アラートを出して原因を調べます。</p>
+
+<figure class="fig" id="fig-lagmetric"><div class="canvas"><svg viewBox="0 0 340 188" role="img" aria-label="リーダーベースではリーダーの位置からフォロワーの位置を引けばラグがわかる。リーダーレスでは決まった順序がないので1つの数で言えない"><text x="8" y="18" class="ts c-mute" text-anchor="start">リーダーベース：引き算でラグがわかる</text><rect x="8" y="28" width="158" height="44" rx="6" class="f-ldr"/><text x="87.0" y="45.5" class="ts" text-anchor="middle">リーダーの位置</text><text x="87.0" y="63.5" class="tm c-ldr" text-anchor="middle">1250</text><rect x="174" y="28" width="158" height="44" rx="6" class="f-fol"/><text x="253.0" y="45.5" class="ts" text-anchor="middle">フォロワーの位置</text><text x="253.0" y="63.5" class="tm c-fol" text-anchor="middle">1180</text><text x="170" y="96" class="ts" text-anchor="middle">1250 − 1180 = 70件ぶん遅れている</text><text x="8" y="132" class="ts c-mute" text-anchor="start">リーダーレス：決まった順序がない</text><rect x="8" y="142" width="324" height="36" rx="6" class="f-bad"/><text x="170.0" y="164.5" class="ts" text-anchor="middle">「どれだけ遅れているか」を1つの数で言えない</text></svg></div><figcaption>遅れの測りやすさの違い。数字は説明用です。</figcaption></figure>
+
+<p>リーダーベースなら、たいていレプリケーションラグのメトリクスが出ています。書き込みがリーダーとフォロワーに同じ順番で適用され、各ノードが「ログのどこまで進んだか」を持っているからです。</p>
+<p>リーダーレスでは、書き込みに決まった順番がないので、見張るのが難しくなります。ハンドオフのために預かっているヒントの数は、健康の目安の1つになります。でも、それを役に立つ形で読み解くのは難しい。</p>
+<p>結果整合性は、わざと曖昧な保証です。でも運用のためには、「いずれ」を<b>数字にできる</b>ことが大事です。</p>
+
+<!-- ----------------------------------------------------- 6.3.2 -->
+<h3 id="s632"><span class="num">6.3.2</span>シングルリーダーとリーダーレスのパフォーマンス比較</h3>
+<p>シングルリーダーは、リーダーレスでは難しい（または不可能な）強い一貫性の保証を出せます。でも、非同期のフォロワーから読めば、古い値が返ることがあるのは同じです。</p>
+<p>「じゃあリーダーから読めばいい」。たしかに最新が返ります。でも性能の問題が3つあります。</p>
+<ul>
+<li><b>読み取りの量がリーダー1台の力で頭打ちになる。</b></li>
+<li><b>リーダーが壊れると、検知してフェイルオーバーが終わるまで止まる。</b>とても速いフェイルオーバーでも、一時的に遅くなるのでユーザーは気づきます。</li>
+<li><b>リーダーの調子がそのまま響く。</b>リーダーが遅ければ（過負荷など）、その遅さがそのままユーザーに届きます。</li>
+</ul>
+<p>リーダーレスは、こういう問題に強い。フェイルオーバーがいりません。リクエストはどうせ複数のレプリカに並列で送っているので、1台が遅くても止まっても、ほとんど影響がありません。速く返ってきたものを使うだけです。</p>
+
+<figure class="fig" id="fig-hedge"><div class="canvas"><svg viewBox="0 0 340 206" role="img" aria-label="クライアントが3つのレプリカに並列でリクエストを送る。12ミリ秒と15ミリ秒で返った2つがそろった時点で応答し、900ミリ秒かかる不調のレプリカは待たない"><rect x="8" y="58" width="86" height="42" rx="6" class="f-panel"/><text x="51.0" y="83.5" class="ts" text-anchor="middle">クライアント</text><rect x="214" y="8" width="118" height="42" rx="6" class="f-fol"/><text x="273.0" y="24.5" class="ts" text-anchor="middle">レプリカ1</text><text x="273.0" y="42.5" class="tm c-fol" text-anchor="middle">12 ms</text><rect x="214" y="58" width="118" height="42" rx="6" class="f-fol"/><text x="273.0" y="74.5" class="ts" text-anchor="middle">レプリカ2</text><text x="273.0" y="92.5" class="tm c-fol" text-anchor="middle">15 ms</text><rect x="214" y="108" width="118" height="42" rx="6" class="f-bad"/><text x="273.0" y="124.5" class="ts" text-anchor="middle">レプリカ3</text><text x="273.0" y="142.5" class="ts c-bad" text-anchor="middle">900 ms（不調）</text><polygon points="214.0,29.0 207.7,35.4 205.1,27.8" class="hd-fol"/><line x1="94.0" y1="70.0" x2="207.4" y2="31.3" class="ln-fol"/><polygon points="214.0,79.0 206.0,83.0 206.0,75.0" class="hd-fol"/><line x1="94.0" y1="79.0" x2="207.0" y2="79.0" class="ln-fol"/><polygon points="214.0,129.0 205.1,130.2 207.7,122.6" class="hd-bad"/><line x1="94.0" y1="88.0" x2="207.4" y2="126.7" class="ln-bad dash"/><text x="8" y="176" class="ts" text-anchor="start">速い2つがそろった時点で応答（r = 2 の場合）</text><text x="8" y="196" class="ts c-fol" text-anchor="start">遅い1台は待たない</text></svg></div><figcaption>リクエストヘッジング。遅い1台に足を引っぱられません。時間は説明用です。</figcaption></figure>
+
+<p>いちばん速い返事を使うことを、<b>リクエストヘッジング</b>と呼びます。たまに起きるひどい遅れ（末尾遅延、テールレイテンシ）を大きく減らせます。</p>
+
+<div class="box key">
+<span class="lab">リーダーレスの強さの源</span>
+<p>リーダーレスは、<b>ふだんの場合と、障害の場合を区別しません</b>。これはとくに<b>グレー障害</b>に効きます。グレー障害とは、ノードが完全に止まってはいないけれど、異常に遅い、という中途半端な状態です。</p>
+<p>リーダーベースでは、「フェイルオーバーするほど深刻か」を判断しなければなりません（フェイルオーバー自体が、さらに障害を起こすこともあります）。リーダーレスでは、その判断そのものがいりません。</p>
+</div>
+
+<p>リーダーレスにも、性能の問題はあります。</p>
+<ul>
+<li><b>ヒントの受け渡しが重い。</b>フェイルオーバーはいりませんが、止まったレプリカを見つけてヒントを預かり、戻ってきたら渡す必要があります。すでに苦しいときに、さらに負荷がかかります。</li>
+<li><b>クォーラムが大きいと遅くなる。</b>待つ返事が多いほど、遅いレプリカに当たる確率が上がります。実際には、7台中4台、9台中5台を超えるクォーラムはほとんどありません。</li>
+<li><b>大きなネットワーク障害では、クォーラムを作れなくなる。</b>クライアントが多くのレプリカから切り離されると、そうなります。</li>
+</ul>
+
+<div class="box">
+<span class="lab">用語：緩いクォーラム</span>
+<p>クォーラムを作れないとき、<b>そのキーの本来の担当でなくても、届くレプリカに書き込みを受けてもらう</b>設定を持つデータベースがあります。RiakとDynamoでは<b>緩いクォーラム</b>（sloppy quorum）、CassandraとScyllaDBでは<b>整合性レベルANY</b>と呼びます。</p>
+<p>あとの読み取りで、その値が見える保証はありません。でもアプリによっては、書き込みが失敗するよりはましです。</p>
+</div>
+
+<h4>3つの方式を並べると</h4>
+<div class="cmp three">
+<div class="side ldr">
+<span class="tag">マルチリーダー</span>
+<p>ネットワーク障害にいちばん強い。読み書きは1つのリーダーと話すだけで済み、そのリーダーをクライアントのそばに置ける。<b class="bad">でも</b>、読み取りはいくらでも古い値を返しうる。</p>
+</div>
+<div class="side fol">
+<span class="tag">クォーラム（リーダーレス）</span>
+<p>その中間。障害によく耐えながら、新しいデータを高い確率で読める。</p>
+</div>
+<div class="side log">
+<span class="tag">シングルリーダー</span>
+<p>強い一貫性を出せる。<b class="bad">でも</b>、リーダーの調子と、リーダーへの回線に左右される。</p>
+</div>
+</div>
+
+<!-- ----------------------------------------------------- 6.3.3 -->
+<h3 id="s633"><span class="num">6.3.3</span>マルチリージョンオペレーション</h3>
+<p>リーダーレスは、並行した書き込みのコンフリクト、ネットワーク障害、遅延の急な増加を受け入れるように作られています。だから複数リージョンの運用にも向いています。</p>
+
+<figure class="fig" id="fig-lrregion"><div class="canvas"><svg viewBox="0 0 340 226" role="img" aria-label="クライアントは近くのコーディネーターノードに書く。コーディネーターは自分のリージョンの全レプリカと、他リージョンの1つのレプリカに転送する。受け取ったレプリカがそのリージョン内に配る"><text x="8" y="16" class="ts c-mute" text-anchor="start">クライアントは近くのノードに書く</text><rect x="8" y="26" width="160" height="170" rx="10" class="zone"/><text x="88" y="46" class="ts c-mute" text-anchor="middle">リージョンA</text><rect x="20" y="56" width="136" height="34" rx="6" class="f-ldr"/><text x="88.0" y="77.5" class="ts" text-anchor="middle">コーディネーター</text><rect x="20" y="142" width="64" height="34" rx="6" class="f-fol"/><text x="52.0" y="163.5" class="ts" text-anchor="middle">レプリカ</text><rect x="92" y="142" width="64" height="34" rx="6" class="f-fol"/><text x="124.0" y="163.5" class="ts" text-anchor="middle">レプリカ</text><polygon points="52.0,142.0 50.2,133.2 57.9,135.3" class="hd-log"/><line x1="66.0" y1="90.0" x2="53.8" y2="135.2" class="ln-log"/><polygon points="124.0,142.0 118.1,135.3 125.8,133.2" class="hd-log"/><line x1="110.0" y1="90.0" x2="122.2" y2="135.2" class="ln-log"/><rect x="180" y="26" width="152" height="170" rx="10" class="zone"/><text x="256" y="46" class="ts c-mute" text-anchor="middle">リージョンB</text><rect x="192" y="56" width="128" height="34" rx="6" class="f-fol"/><text x="256.0" y="77.5" class="ts" text-anchor="middle">レプリカ（窓口）</text><rect x="192" y="142" width="60" height="34" rx="6" class="f-fol"/><text x="222.0" y="163.5" class="ts" text-anchor="middle">レプリカ</text><rect x="260" y="142" width="60" height="34" rx="6" class="f-fol"/><text x="290.0" y="163.5" class="ts" text-anchor="middle">レプリカ</text><polygon points="222.0,142.0 220.8,133.1 228.4,135.7" class="hd-log"/><line x1="240.0" y1="90.0" x2="224.3" y2="135.4" class="ln-log"/><polygon points="290.0,142.0 283.6,135.7 291.2,133.1" class="hd-log"/><line x1="272.0" y1="90.0" x2="287.7" y2="135.4" class="ln-log"/><polygon points="192.0,73.0 184.0,77.0 184.0,69.0" class="hd-log"/><line x1="156.0" y1="73.0" x2="185.0" y2="73.0" class="ln-log"/><text x="170" y="216" class="ts c-log" text-anchor="middle">リージョンをまたぐ通信は1回で済む</text></svg></div><figcaption>CassandraとScyllaDBのマルチリージョン書き込み。</figcaption></figure>
+
+<p>CassandraとScyllaDBでは、クライアントはまず、自分のリージョンのノードを1つ<b>コーディネーターノード</b>に選んで、そこに書き込みを送ります。コーディネーターは、自分のリージョンの全レプリカと、<b>他の各リージョンのレプリカ1つ</b>に転送します。受け取ったレプリカが、そのリージョンの残りのレプリカに配ります。こうすれば、リージョンをまたぐ通信を何度もしなくて済みます。</p>
+<p>成功に必要な返事の数は、いくつかの<b>整合性レベル</b>から選べます。</p>
+<ul>
+<li>全リージョンのレプリカ全体でのクォーラム</li>
+<li>各リージョンそれぞれでのクォーラム</li>
+<li>クライアントのいるリージョンだけでのクォーラム（ローカルクォーラム）</li>
+</ul>
+<p>ローカルクォーラムなら、他のリージョンへの遅いリクエストを待たずに済みます。そのかわり、古い結果が返りやすくなります。</p>
+<p>Riakは違うやり方です。クライアントとデータベースの通信を、すべて1つのリージョンの中にとどめます。だから n は、そのリージョンの中のレプリカ数です。リージョン間のレプリケーションは、マルチリーダーに似た形で、裏で非同期に行います。</p>
+
+<!-- ----------------------------------------------------- 6.3.4 -->
+<h3 id="s634"><span class="num">6.3.4</span>並行書き込みの検出</h3>
+<p>リーダーレスでも、マルチリーダーと同じように、同じキーへの並行した書き込みが起こり、コンフリクトになります。書き込みのときに見つかることもあれば、あとで（リードリペア、ヒント付きハンドオフ、アンチエントロピーの途中で）見つかることもあります。</p>
+<p>問題のもとは、ネットワークの遅れや部分的な障害のせいで、<b>ノードごとに、イベントが違う順番で届く</b>ことです。</p>
+
+<figure class="fig" id="fig-concurrent"><div class="canvas"><svg viewBox="0 0 340 210" role="img" aria-label="クライアントAとBがキーXに並行して書く。ノード1にはAだけが届き、ノード2にはAの後にB、ノード3にはBの後にAが届く。単純に上書きするとノード2だけ値がBになる"><rect x="8" y="8" width="100" height="30" rx="6" class="f-fol"/><text x="58.0" y="27.5" class="ts" text-anchor="middle">ノード1</text><rect x="120" y="8" width="100" height="30" rx="6" class="f-fol"/><text x="170.0" y="27.5" class="ts" text-anchor="middle">ノード2</text><rect x="232" y="8" width="100" height="30" rx="6" class="f-fol"/><text x="282.0" y="27.5" class="ts" text-anchor="middle">ノード3</text><text x="8" y="58" class="ts c-mute" text-anchor="start">届いた書き込み</text><rect x="8" y="66" width="100" height="44" rx="6" class="f-panel"/><text x="58.0" y="83.5" class="ts" text-anchor="middle">A だけ</text><text x="58.0" y="101.5" class="ts c-bad" text-anchor="middle">Bは障害で不達</text><rect x="120" y="66" width="100" height="44" rx="6" class="f-panel"/><text x="170.0" y="83.5" class="tm" text-anchor="middle">A → B</text><text x="170.0" y="101.5" class="ts c-mute" text-anchor="middle">Aが先</text><rect x="232" y="66" width="100" height="44" rx="6" class="f-panel"/><text x="282.0" y="83.5" class="tm" text-anchor="middle">B → A</text><text x="282.0" y="101.5" class="ts c-mute" text-anchor="middle">Bが先</text><text x="8" y="134" class="ts c-mute" text-anchor="start">単純に上書きすると、最後の値は</text><rect x="8" y="142" width="100" height="36" rx="6" class="f-panel"/><text x="58.0" y="164.5" class="tm" text-anchor="middle">X = A</text><rect x="120" y="142" width="100" height="36" rx="6" class="f-bad"/><text x="170.0" y="164.5" class="tm c-bad" text-anchor="middle">X = B</text><rect x="232" y="142" width="100" height="36" rx="6" class="f-panel"/><text x="282.0" y="164.5" class="tm" text-anchor="middle">X = A</text><text x="170" y="200" class="ts c-bad" text-anchor="middle">ノード2だけ値が違う。放っておくと食い違ったまま</text></svg></div><figcaption>本の図6-14にあたる図です。届く順番がノードごとに違うので、上書きするだけだと結果がそろいません。</figcaption></figure>
+
+<p>結果整合性を実現するには、レプリカは最終的に同じ値にそろわなければなりません。そのために、<a href="#s623">6.2.3</a>で見た解決方法のどれかを使えます。LWW（CassandraとScyllaDB）、手動の解決、CRDT（Riak）などです。</p>
+<p>LWWは実装が簡単です。でも、タイムスタンプだけでは、2つの値が<b>本当にぶつかっている（並行）のか、順番に書かれただけなのか</b>を見分けられません。コンフリクトをきちんと解決したいなら、並行した書き込みを<b>見つける</b>しくみが要ります。</p>
+
+<h4 id="s6341"><span class="num">6.3.4.1</span>「前に起こった」と「並行」</h4>
+<p>2つの操作が並行かどうかを、どう決めるのでしょうか。</p>
+<ul>
+<li><b>追い越しの図（図6-8）は、並行ではありません。</b>Bが更新した行は、Aが挿入した行です。BはAの操作の上に成り立っています。だからAはBの<b>前に起こりました</b>（happens before）。BはAに<b>因果的に依存</b>している、とも言います。</li>
+<li><b>上の図（図6-14）は、並行です。</b>それぞれのクライアントは、操作を始めた時点で、相手が同じキーに書いていることを知りません。</li>
+</ul>
+
+<figure class="fig" id="fig-hb"><div class="canvas"><svg viewBox="0 0 340 170" role="img" aria-label="2つの操作の関係は3通り。AがBの前、BがAの前、どちらも相手を知らない並行"><rect x="8" y="10" width="60" height="30" rx="6" class="f-panel"/><text x="38.0" y="29.5" class="tm" text-anchor="middle">A</text><polygon points="110.0,25.0 102.0,29.0 102.0,21.0" class="hd"/><line x1="68.0" y1="25.0" x2="103.0" y2="25.0" class="ln"/><rect x="110" y="10" width="60" height="30" rx="6" class="f-panel"/><text x="140.0" y="29.5" class="tm" text-anchor="middle">B</text><text x="332" y="30" class="ts c-mute" text-anchor="end">BはAを知っている</text><rect x="8" y="56" width="60" height="30" rx="6" class="f-panel"/><text x="38.0" y="75.5" class="tm" text-anchor="middle">B</text><polygon points="110.0,71.0 102.0,75.0 102.0,67.0" class="hd"/><line x1="68.0" y1="71.0" x2="103.0" y2="71.0" class="ln"/><rect x="110" y="56" width="60" height="30" rx="6" class="f-panel"/><text x="140.0" y="75.5" class="tm" text-anchor="middle">A</text><text x="332" y="76" class="ts c-mute" text-anchor="end">AはBを知っている</text><rect x="8" y="102" width="60" height="30" rx="6" class="f-bad"/><text x="38.0" y="121.5" class="tm" text-anchor="middle">A</text><rect x="110" y="102" width="60" height="30" rx="6" class="f-bad"/><text x="140.0" y="121.5" class="tm" text-anchor="middle">B</text><text x="332" y="122" class="ts c-bad" text-anchor="end">互いに知らない＝並行</text><text x="8" y="160" class="ts" text-anchor="start">並行のときだけ、コンフリクトの解決が要る</text></svg></div><figcaption>2つの操作の関係は、この3つのどれかです。</figcaption></figure>
+
+<p>「AがBの前に起こった」とは、BがAを知っている、BがAに依存している、BがAの上に成り立っている、という意味です。どちらも相手より前に起こっていないなら、その2つは並行です。</p>
+<p>だから必要なのは、<b>2つの操作が並行かどうかを見分けるアルゴリズム</b>です。片方が前なら、後の操作が前の操作を上書きすればよい。並行なら、解決が必要なコンフリクトです。</p>
+
+<div class="box">
+<span class="lab">本のコラム：並行性、時間、そして相対性</span>
+<p>「同時に起きたら並行」と思いたくなります。でも、時間的に本当に重なっているかどうかは、重要ではありません。分散システムでは時計に問題があるので、2つのことがまったく同じ時刻に起きたかどうかを知るのは、とても難しい（9章）。</p>
+<p>並行かどうかに、正確な時刻は関係ありません。物理的にいつ起きたかにかかわらず、<b>互いに相手を知らなければ、並行</b>です。</p>
+<p>これを物理学の特殊相対性理論と結びつける人もいます。情報は光より速く伝わらない。だから、離れた場所で、光が届く時間より短い間隔で起きた2つのイベントは、互いに影響できません。</p>
+<p>コンピュータでは、光なら届いたはずの場合でも、並行になることがあります。ネットワークが遅かったり切れていたりすれば、ある程度の時間差があっても、片方がもう片方を知ることができないからです。</p>
+</div>
+
+<h4 id="s6342"><span class="num">6.3.4.2</span>「前に起こった」をつかまえるアルゴリズム</h4>
+<p>かんたんにするため、まず<b>レプリカが1つだけ</b>のデータベースで考えます。</p>
+<ol>
+<li>サーバーは、キーごとに<b class="log">バージョン番号</b>を持ちます。そのキーが書かれるたびに番号を1つ上げ、新しい番号を値と一緒に保存します。</li>
+<li>クライアントがキーを読むと、サーバーは、<b>まだ上書きされていない値を全部</b>（兄弟値）と、最新のバージョン番号を返します。クライアントは、書く前に必ず読みます。</li>
+<li>クライアントがキーを書くときは、<b>前の読み取りでもらったバージョン番号</b>を付けます。そして、前の読み取りでもらった値を<b>全部混ぜて</b>から書きます。書き込みの返事も兄弟値を全部返すので、続けて書き込めます。</li>
+<li>サーバーは、あるバージョン番号つきの書き込みを受けると、<b>その番号以下の値を全部上書きします</b>（新しい値に混ぜ込まれているとわかるから）。<b>それより大きい番号の値は全部残します</b>（今回の書き込みと並行だから）。</li>
+</ol>
+
+<p>本の例です。2つのクライアントが、同じショッピングカートに並行して商品を足します。最初、カートは空です。</p>
+
+<figure class="fig" id="fig-versions"><div class="canvas"><svg viewBox="0 0 340 614" role="img" aria-label="2つのクライアントが同じカートに並行して5回書き込む。サーバーは書き込みのたびにバージョン番号を上げ、クライアントが見た番号以下の値は上書きし、それより大きい番号の値は並行として残す。最後にv4とv5の2つが残る"><text x="8" y="18" class="ts" text-anchor="start">① クライアント1（見た番号：なし）</text><text x="8" y="38" class="tm c-mute" text-anchor="start">送る値 [milk]</text><rect x="8" y="48" width="324" height="26" rx="4" class="f-fol"/><text x="18" y="65.5" class="tm" text-anchor="start">v1 [milk]</text><text x="322" y="65.5" class="ts c-fol" text-anchor="end">今回の値</text><text x="8" y="110" class="ts" text-anchor="start">② クライアント2（見た番号：なし）</text><text x="8" y="130" class="tm c-mute" text-anchor="start">送る値 [eggs]</text><rect x="8" y="140" width="324" height="26" rx="4" class="f-log"/><text x="18" y="157.5" class="tm" text-anchor="start">v1 [milk]</text><text x="322" y="157.5" class="ts c-log" text-anchor="end">並行なので残す</text><rect x="8" y="170" width="324" height="26" rx="4" class="f-fol"/><text x="18" y="187.5" class="tm" text-anchor="start">v2 [eggs]</text><text x="322" y="187.5" class="ts c-fol" text-anchor="end">今回の値</text><text x="8" y="232" class="ts" text-anchor="start">③ クライアント1（見た番号：v1）</text><text x="8" y="252" class="tm c-mute" text-anchor="start">送る値 [milk, flour]</text><rect x="8" y="262" width="324" height="26" rx="4" class="f-log"/><text x="18" y="279.5" class="tm" text-anchor="start">v2 [eggs]</text><text x="322" y="279.5" class="ts c-log" text-anchor="end">並行なので残す</text><rect x="8" y="292" width="324" height="26" rx="4" class="f-fol"/><text x="18" y="309.5" class="tm" text-anchor="start">v3 [milk, flour]</text><text x="322" y="309.5" class="ts c-fol" text-anchor="end">今回の値</text><text x="8" y="354" class="ts" text-anchor="start">④ クライアント2（見た番号：v2）</text><text x="8" y="374" class="tm c-mute" text-anchor="start">送る値 [eggs, milk, ham]</text><rect x="8" y="384" width="324" height="26" rx="4" class="f-log"/><text x="18" y="401.5" class="tm" text-anchor="start">v3 [milk, flour]</text><text x="322" y="401.5" class="ts c-log" text-anchor="end">並行なので残す</text><rect x="8" y="414" width="324" height="26" rx="4" class="f-fol"/><text x="18" y="431.5" class="tm" text-anchor="start">v4 [eggs, milk, ham]</text><text x="322" y="431.5" class="ts c-fol" text-anchor="end">今回の値</text><text x="8" y="476" class="ts" text-anchor="start">⑤ クライアント1（見た番号：v3）</text><text x="8" y="496" class="tm c-mute" text-anchor="start">送る値 [milk, flour, eggs, bacon]</text><rect x="8" y="506" width="324" height="26" rx="4" class="f-log"/><text x="18" y="523.5" class="tm" text-anchor="start">v4 [eggs, milk, ham]</text><text x="322" y="523.5" class="ts c-log" text-anchor="end">並行なので残す</text><rect x="8" y="536" width="324" height="26" rx="4" class="f-fol"/><text x="18" y="553.5" class="tm" text-anchor="start">v5 [milk, flour, eggs, bacon]</text><text x="322" y="553.5" class="ts c-fol" text-anchor="end">今回の値</text><rect x="8" y="582" width="14" height="14" rx="3" class="f-fol"/><text x="28" y="594" class="ts" text-anchor="start">今回書いた値</text><rect x="150" y="582" width="14" height="14" rx="3" class="f-log"/><text x="170" y="594" class="ts" text-anchor="start">残っている兄弟値</text></svg></div><figcaption>本の図6-15にあたる図です。下の箱が、その書き込みのあとサーバーに残っている値です。</figcaption></figure>
+
+<ol>
+<li>クライアント1が milk を足します。このキーへの最初の書き込みなので、サーバーはバージョン1を付けて保存します。</li>
+<li>クライアント2が eggs を足します。クライアント1が milk を足したことは知りません。サーバーはバージョン2を付け、<b>milk と eggs を別々の値として</b>持ちます。そして両方をクライアント2に返します。</li>
+<li>クライアント1は、eggs のことを知らないまま、flour を足します。送る値は [milk, flour]、付ける番号は前にもらった1です。サーバーは番号を見て、「これは [milk] の置き換えだ。でも [eggs] とは並行だ」とわかります。</li>
+<li>クライアント2は、前にもらった [milk] と [eggs] を混ぜ、ham を足して [eggs, milk, ham] を作ります。番号2を付けて送ります。サーバーは [eggs] を上書きし、[milk, flour] は並行なので残します。</li>
+<li>クライアント1は、前にもらった [milk, flour] と [eggs] を混ぜ、bacon を足して送ります。番号は3です。[milk, flour] を上書きし、[eggs, milk, ham] は並行なので残します。</li>
+</ol>
+
+<p>このデータの流れをグラフにすると、こうなります。</p>
+
+<figure class="fig" id="fig-depgraph"><div class="canvas"><svg viewBox="0 0 340 262" role="img" aria-label="図6-15の依存関係。milkからmilk,flour、さらにmilk,flour,eggs,baconへ。eggsからeggs,milk,hamへ。milkからeggs,milk,hamへ、eggsからmilk,flour,eggs,baconへも矢印がある"><text x="84" y="14" class="ts c-mute" text-anchor="middle">クライアント1</text><text x="264" y="14" class="ts c-mute" text-anchor="middle">クライアント2</text><rect x="8" y="22" width="152" height="38" rx="6" class="f-panel"/><text x="84.0" y="45.5" class="tm" text-anchor="middle">[milk]</text><rect x="196" y="22" width="136" height="38" rx="6" class="f-panel"/><text x="264.0" y="45.5" class="tm" text-anchor="middle">[eggs]</text><rect x="8" y="112" width="152" height="38" rx="6" class="f-panel"/><text x="84.0" y="135.5" class="tm" text-anchor="middle">[milk, flour]</text><rect x="196" y="112" width="136" height="38" rx="6" class="f-fol"/><text x="264.0" y="135.5" class="tmx" text-anchor="middle">[eggs, milk, ham]</text><rect x="8" y="202" width="152" height="48" rx="6" class="f-fol"/><text x="84.0" y="221.5" class="tm" text-anchor="middle">[milk, flour,</text><text x="84.0" y="239.5" class="tm" text-anchor="middle">eggs, bacon]</text><polygon points="84.0,112.0 80.0,104.0 88.0,104.0" class="hd"/><line x1="84.0" y1="60.0" x2="84.0" y2="105.0" class="ln"/><polygon points="84.0,202.0 80.0,194.0 88.0,194.0" class="hd"/><line x1="84.0" y1="150.0" x2="84.0" y2="195.0" class="ln"/><polygon points="264.0,112.0 260.0,104.0 268.0,104.0" class="hd"/><line x1="264.0" y1="60.0" x2="264.0" y2="105.0" class="ln"/><polygon points="214.0,112.0 205.3,110.1 210.3,103.9" class="hd-log"/><line x1="150.0" y1="60.0" x2="208.6" y2="107.6" class="ln-log"/><polygon points="150.0,202.0 148.8,193.1 156.4,195.7" class="hd-log"/><line x1="198.0" y1="60.0" x2="152.2" y2="195.4" class="ln-log"/></svg></div><figcaption>本の図6-16にあたる図です。矢印は「前に起こった」。下の2つは互いに矢印がないので、並行です。</figcaption></figure>
+
+<p>この例では、いつも相手が並行して何かしているので、クライアントは完全に最新の状態にはなれません。でも、古いバージョンの値はいずれ上書きされ、<b>書き込みは1つも失われません</b>。</p>
+
+<div class="box key">
+<span class="lab">ここがうまいところ</span>
+<p>サーバーは、<b>バージョン番号を見るだけ</b>で、2つの操作が並行かどうかを判定できます。値の中身を理解する必要がありません。だから値は、どんなデータ構造でもかまいません。</p>
+<p>番号を付けずに書くと、他のすべての書き込みと並行だとみなされます。何も上書きせず、あとの読み取りで返る値の1つになるだけです。</p>
+</div>
+
+<h4 id="s6343"><span class="num">6.3.4.3</span>バージョンベクター</h4>
+<p>今の例はレプリカが1つでした。レプリカが複数あって、リーダーがいない場合はどうなるでしょうか。</p>
+<p>バージョン番号1つでは足りません。キーごとに加えて、<b>レプリカごと</b>にもバージョン番号を持ちます。各レプリカは、書き込みを処理するとき自分の番号を上げ、他のレプリカについて知っている番号も覚えておきます。これで、どの値を上書きし、どの値を兄弟値として残すかがわかります。</p>
+<p>全レプリカぶんのバージョン番号をまとめたものが、<b>バージョンベクター</b>です。</p>
+
+<figure class="fig" id="fig-vv"><div class="canvas"><svg viewBox="0 0 340 162" role="img" aria-label="バージョンベクターの比べ方。すべての番号が同じか大きいなら上書きしてよい。番号ごとに勝ち負けが割れるなら並行なので両方残す"><text x="8" y="18" class="ts c-mute" text-anchor="start">レプリカごとの番号を並べて比べる</text><rect x="8" y="28" width="120" height="34" rx="6" class="f-fol"/><text x="68.0" y="49.5" class="tm" text-anchor="middle">{r1:2, r2:1}</text><rect x="136" y="28" width="120" height="34" rx="6" class="f-panel"/><text x="196.0" y="49.5" class="tm" text-anchor="middle">{r1:1, r2:1}</text><text x="332" y="50" class="ts c-fol" text-anchor="end">左が新しい</text><text x="8" y="82" class="ts c-fol" text-anchor="start">全部の番号が同じか大きい → 上書きしてよい</text><rect x="8" y="100" width="120" height="34" rx="6" class="f-bad"/><text x="68.0" y="121.5" class="tm" text-anchor="middle">{r1:2, r2:1}</text><rect x="136" y="100" width="120" height="34" rx="6" class="f-bad"/><text x="196.0" y="121.5" class="tm" text-anchor="middle">{r1:1, r2:2}</text><text x="332" y="122" class="ts c-bad" text-anchor="end">並行</text><text x="8" y="154" class="ts c-bad" text-anchor="start">勝ち負けが番号ごとに割れる → 両方残す</text></svg></div><figcaption>補足：バージョンベクターの比べ方の考え方です。本はここまで踏み込んでいません。</figcaption></figure>
+
+<p>いくつかの変種があります。いちばん面白いのは、Riak 2.0が使っている<b>ドット付きバージョンベクター</b>でしょう、と本は言っています（くわしくは踏み込みません）。動きは、さっきのショッピングカートの例とかなり似ています。</p>
+<ul>
+<li>値を読むとき、バージョンベクターはレプリカからクライアントに送られます。値を書くとき、クライアントからデータベースに送り返します。Riakはこれを<b>因果コンテキスト</b>という文字列にして渡します。</li>
+<li>バージョンベクターのおかげで、データベースは「上書き」と「並行した書き込み」を区別できます。</li>
+<li><b>あるレプリカから読んで、別のレプリカに書き戻しても安全</b>です。兄弟値ができることはありますが、正しく混ぜるかぎり、データは失われません。</li>
+</ul>
+
+<div class="box">
+<span class="lab">用語：バージョンベクターとベクタークロック</span>
+<p>バージョンベクターは<b>ベクタークロック</b>と呼ばれることもあります。厳密には同じものではなく、わずかに違います。かんたんに言うと、<b>レプリカの状態を比べる</b>なら、バージョンベクターが適切なデータ構造です。</p>
+</div>
+
+<!-- ===================================================== 6.4 -->
+<h2 id="s64"><span class="num">6.4</span>まとめ</h2>
+
+<p>レプリケーションの目的を、本は最後に5つにまとめています。</p>
+<dl class="pick">
+<div><dt>高可用性</dt><dd>マシンが（ゾーンやリージョンごと）落ちても動かし続ける</dd></div>
+<div><dt>永続性</dt><dd>マシンが永久に壊れても、データを失わない</dd></div>
+<div><dt>切断時のオペレーション</dt><dd>ネットワークが切れても、アプリが動き続ける</dd></div>
+<div><dt>レイテンシ</dt><dd>データをユーザーの近くに置いて速くする</dd></div>
+<div><dt>スケーラビリティ</dt><dd>1台ではさばけない量の読み取りを、レプリカでさばく</dd></div>
+</dl>
+
+<p>考え方はシンプルです。同じデータのコピーを、複数のマシンに持つだけ。でも実際はとても厄介です。並行性について、そして起こりうるあらゆる障害について、慎重に考えなければなりません。</p>
+
+<h3>3つの方式</h3>
+<div class="cmp three">
+<div class="side ldr">
+<span class="tag">シングルリーダー</span>
+<p>書き込みは全部、1つのリーダーへ。リーダーが変更のストリームをフォロワーに送る。読み取りはどのレプリカでもできるが、フォロワーの値は古いかもしれない。</p>
+<p><b>わかりやすく、強い一貫性を出せる</b>ので人気。</p>
+</div>
+<div class="side ldr">
+<span class="tag">マルチリーダー</span>
+<p>複数のリーダーのどれかに書く。リーダーは変更のストリームを互いに送り合い、フォロワーにも送る。</p>
+</div>
+<div class="side fol">
+<span class="tag">リーダーレス</span>
+<p>複数のノードに書く。古いデータを持つノードを見つけて直すために、複数のノードから並列で読む。</p>
+</div>
+</div>
+<p>マルチリーダーとリーダーレスは、壊れたノード、ネットワーク障害、遅延の急な増加に強い。その代償として、<b>コンフリクトの解決が必要</b>になり、出せる一貫性の保証が弱くなります。</p>
+
+<h3>同期と非同期</h3>
+<p>どちらにするかで、障害が起きたときの振る舞いが大きく変わります。非同期は、順調なときは速い。でも、ラグが大きくなったとき、サーバーが壊れたときに何が起こるかを知っておくことが大事です。リーダーが壊れて、非同期のフォロワーを昇格させると、最近コミットしたデータを失うかもしれません。</p>
+
+<h3>コピーをそろえる方法</h3>
+<p>マルチリーダーとリーダーレスは、次の2段階で、全レプリカを最終的に同じ状態にそろえます。</p>
+<ul>
+<li><b>見つける：</b>バージョンベクターなどで、どの書き込みが並行かを検出する。</li>
+<li><b>混ぜる：</b>CRDTのようなアルゴリズムで、並行して書かれた値をマージする。LWWや手動の解決もできる。</li>
+</ul>
+
+<p>この章は、「全レプリカがデータベース全体のコピーを持つ」という前提でした。大きなデータではこれは無理です。次の7章は<b>シャーディング</b>。各マシンがデータの一部だけを持てるようにする話です。</p>
+
+<h3>確認問題</h3>
+<p>答えは、タップすると開きます。</p>
+
+<details>
+<summary>1. レプリカがあるのに、バックアップも要るのはなぜ？</summary>
+<div class="ans"><p>レプリカは書き込みをすぐ写すので、うっかり消した「削除」もすぐ伝わります。過去の時点に戻れるのはバックアップだけです。</p></div>
+</details>
+
+<details>
+<summary>2. 同期と非同期。リーダーが突然壊れて戻らないとき、何が違う？</summary>
+<div class="ans"><p>同期なら、フォロワーに最新のコピーが必ず残っています。非同期だと、まだ届いていなかった書き込みは消えます。クライアントに「成功」と返していても消えます。</p></div>
+</details>
+
+<details>
+<summary>3. 全部のフォロワーを同期にしないのはなぜ？</summary>
+<div class="ans"><p>1台でも返事をしないと、書き込みが全部止まるからです。ノードが増えるほど、どれかが止まっている確率は上がります。だから同期は1台だけにする（準同期）のが現実的です。</p></div>
+</details>
+
+<details>
+<summary>4. WALシッピングと論理ログ。止めずにデータベースをアップグレードしやすいのはどっち？</summary>
+<div class="ans"><p>論理ログです。ストレージエンジンの中身と切り離されているので、リーダーとフォロワーで別のバージョンを動かせます。先にフォロワーを上げて、フェイルオーバーでリーダーにすれば済みます。WALはディスク上の形式そのものなので、バージョンが違うとふつう読めません。</p></div>
+</details>
+
+<details>
+<summary>5. 投稿してすぐリロードしたら、自分の投稿が消えていた。足りない保証は？ 対策は？</summary>
+<div class="ans"><p>リードアフターライト整合性です。対策の例：自分が変えたかもしれないものはリーダーから読む。最後の更新から1分間はリーダーから読む。最後の書き込みのタイムスタンプを覚えておき、そこまで追いついたレプリカから読む。</p></div>
+</details>
+
+<details>
+<summary>6. LWW（最終書き込み優先）の「最終」が当てにならない理由を2つ。</summary>
+<div class="ans"><p>1つ目。並行した書き込みは、どちらが後かがそもそも定まっていません。タイムスタンプの順番は実質ランダムで、負けたほうは黙って捨てられます。2つ目。実際の時計を使うと、時計が進んだノードの値が勝ち続け、後から書いた値が無視されることがあります。</p></div>
+</details>
+
+<details>
+<summary>7. n = 5、w = 3、r = 3。何台まで止まっても読み書きできる？ なぜ最新が読める？</summary>
+<div class="ans"><p>2台までです。w + r &gt; n（3 + 3 &gt; 5）なので、書いた3台と読む3台は、少なくとも1台重なります。その1台が最新の値を持っています。ただし、これは絶対の保証ではありません（リバランシング中、並行した書き込み、一部だけ成功した書き込みなど）。</p></div>
+</details>
+
+<details>
+<summary>8. ショッピングカートの例で、サーバーは「上書きしてよい値」と「残す値」をどう見分ける？</summary>
+<div class="ans"><p>クライアントが書き込みに付けてくるバージョン番号で見分けます。その番号以下の値は、クライアントがすでに見て混ぜ込んだものなので上書きします。それより大きい番号の値は、クライアントが知らずに書いた（並行した）ものなので残します。値の中身は見ません。</p></div>
+</details>
+
+<p class="foot">このページは『データ指向アプリケーションデザイン 第2版』6章の内容を、かみくだいて説明したものです。「補足」と書いた囲み、たとえ話、図の中の説明用の値（名前、数字、時刻、バージョンなど）は本にはありません。図は本の図をもとに描き直したもので、本の図そのものではありません。「6.0」は章の導入部分に付けた仮の番号です。</p>
+
+</main>
+<nav class="etc-ddia-nav etc-ddia-nav--end" aria-label="図解ノートの目次へ"><a href="../">← 目次に戻る</a><a href="../../">et cetera の一覧</a></nav>
+</body>
+</html>
